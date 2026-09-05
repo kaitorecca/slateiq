@@ -170,7 +170,9 @@ recorded on session state and streamed to the UI.
 **4 — Documents come out.** `report_agent` builds the **Daily Progress Report** (scenes, pages in
 eighths, setups, takes, circled, NG, print ratio, wrap and overtime) and the **Editor's Log** — the
 digital form of the script supervisor's facing pages — entirely from live queries, then Gemini TTS
-reads the short version aloud.
+reads the short version aloud. The Editor's Log also exports straight into the cutting room:
+`GET /api/export/editors-log?day=12&format=csv|ale|md` — the **ALE (Avid Log Exchange)** file drops
+the day's circled takes, with Gemini's notes and flags as bin columns, into Avid Media Composer or Resolve.
 
 ---
 
