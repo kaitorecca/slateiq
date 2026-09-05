@@ -9,12 +9,25 @@
   pre{padding:30px 34px;font-size:21px;line-height:1.62;color:#C9CEd6;white-space:pre;min-height:640px}
   .p{color:var(--circled)} .c{color:var(--ink)} .g{color:var(--faint)}
   .y{color:var(--slate)} .r{color:var(--ng)} .b{color:var(--hold)}
+  .bar .chmark{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:700;
+          letter-spacing:.04em;color:#0E1013;background:var(--slate);
+          padding:4px 11px;border-radius:5px;margin-left:6px}
+  .bar .chmark b{font-weight:800}
+  .sub{margin-bottom:22px;display:flex;align-items:center;gap:14px;
+       font-size:22px;color:var(--dim);letter-spacing:.01em}
+  .sub .tag{font-size:14px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+            color:var(--slate);border:1px solid var(--slate);border-radius:4px;padding:4px 10px}
+  .sub code{color:var(--ink);font-family:"DejaVu Sans Mono",monospace;font-size:20px}
   .cur{display:inline-block;width:11px;height:23px;background:var(--slate);vertical-align:-4px;animation:bl 1s steps(1) infinite}
   @keyframes bl{50%{opacity:0}}
 </style>
 <div class="stage">
+  <div class="sub"><span class="tag">Benchmark</span>
+    <span>the agent runs this identical SQL through the official <code>mcp-clickhouse</code> server</span>
+  </div>
   <div class="term">
     <div class="bar"><i style="background:#E0574F"></i><i style="background:#F0B429"></i><i style="background:#5FBF7F"></i>
+      <span class="chmark"><b>ClickHouse</b></span>
       <span class="mono">slateiq — clickhouse-client — 3,074,957 rows of frame telemetry</span></div>
     <pre id="t" class="mono"></pre>
   </div>

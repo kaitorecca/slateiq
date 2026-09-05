@@ -1,179 +1,187 @@
 1
-00:00:03,500 --> 00:00:09,044
-One a.m. On every film set in the world, three people
+00:00:00,000 --> 00:00:03,471
+A circled take with 13 seconds of soft focus.
 
 2
-00:00:09,044 --> 00:00:13,961
-are still awake, typing up what happened today.
+00:00:03,471 --> 00:00:05,400
+Found in 65 milliseconds.
 
 3
-00:00:13,961 --> 00:00:18,982
-Which takes got circled. How many pages we made.
+00:00:07,700 --> 00:00:13,244
+One a.m. On every film set in the world, three people
 
 4
-00:00:19,282 --> 00:00:23,928
-That's three crew-hours a day. Ninety hours over a feature.
+00:00:13,244 --> 00:00:18,161
+are still awake, typing up what happened today.
 
 5
-00:00:23,928 --> 00:00:27,234
-And the knowledge ends up trapped in a PDF
+00:00:18,161 --> 00:00:23,182
+Which takes got circled. How many pages we made.
 
 6
-00:00:27,234 --> 00:00:30,069
-that can't answer a single question.
+00:00:23,482 --> 00:00:28,128
+That's three crew-hours a day. Ninety hours over a feature.
 
 7
-00:00:30,069 --> 00:00:32,274
-So we built the other thing.
+00:00:28,128 --> 00:00:31,434
+And the knowledge ends up trapped in a PDF
 
 8
-00:00:32,574 --> 00:00:37,364
-Gemini three point five Flash watches every take.
+00:00:31,434 --> 00:00:34,269
+that can't answer a single question.
 
 9
-00:00:37,364 --> 00:00:42,349
-Dialogue, boom in shot, soft focus, a flubbed line.
+00:00:34,269 --> 00:00:36,474
+So we built the other thing.
 
 10
-00:00:42,349 --> 00:00:48,019
-And we measure the file itself twenty-five times a second:
+00:00:36,774 --> 00:00:41,564
+Gemini three point five Flash watches every take.
 
 11
-00:00:48,019 --> 00:00:53,200
-focus, exposure, audio peak. Both land in ClickHouse.
+00:00:41,564 --> 00:00:46,549
+Dialogue, boom in shot, soft focus, a flubbed line.
 
 12
-00:00:53,200 --> 00:00:56,622
-Three million rows, one production.
+00:00:46,549 --> 00:00:52,219
+And we measure the file itself twenty-five times a second:
 
 13
-00:00:56,922 --> 00:01:00,196
-Now ask something nobody could ask before.
+00:00:52,219 --> 00:00:57,400
+focus, exposure, audio peak. Both land in ClickHouse.
 
 14
-00:01:00,196 --> 00:01:03,626
-The director circled scene twelve, take two.
+00:00:57,400 --> 00:01:00,822
+Three million rows, one production.
 
 15
-00:01:03,626 --> 00:01:07,836
-It is soft for thirteen seconds, and nobody caught it.
+00:01:01,122 --> 00:01:04,396
+Now ask something nobody could ask before.
 
 16
-00:01:07,836 --> 00:01:10,643
-That answer joins what Gemini saw to
+00:01:04,396 --> 00:01:07,826
+The director circled scene twelve, take two.
 
 17
-00:01:10,643 --> 00:01:13,293
-what the camera actually measured.
+00:01:07,826 --> 00:01:12,036
+It is soft for thirteen seconds, and nobody caught it.
 
 18
-00:01:13,293 --> 00:01:17,191
-Three million rows, sixty-five milliseconds, every
+00:01:12,036 --> 00:01:14,843
+That answer joins what Gemini saw to
 
 19
-00:01:17,191 --> 00:01:21,011
-query through the official ClickHouse MCP server.
+00:01:14,843 --> 00:01:17,493
+what the camera actually measured.
 
 20
-00:01:21,011 --> 00:01:24,442
-That's a reshoot you don't have to schedule.
+00:01:17,493 --> 00:01:21,391
+Three million rows, sixty-five milliseconds, every
 
 21
-00:01:24,742 --> 00:01:26,940
-Ask like an assistant editor:
+00:01:21,391 --> 00:01:25,211
+query through the official ClickHouse MCP server.
 
 22
-00:01:26,940 --> 00:01:31,337
-the line, the take, the timecode, and it plays from there.
+00:01:25,211 --> 00:01:28,642
+That's a reshoot you don't have to schedule.
 
 23
-00:01:31,337 --> 00:01:32,853
-Ask like a producer:
+00:01:28,942 --> 00:01:31,004
+Ask like an assistant editor:
 
 24
-00:01:32,853 --> 00:01:35,203
-forty-eight and a half pages of
+00:01:31,004 --> 00:01:35,128
+the line, the take, the timecode, and it plays from there.
 
 25
-00:01:35,203 --> 00:01:37,856
-fifty-two, three and a half behind.
+00:01:35,128 --> 00:01:36,550
+Ask like a producer:
 
 26
-00:01:37,856 --> 00:01:41,267
-It knows days eight and eleven lost setups to
+00:01:36,550 --> 00:01:40,461
+forty-eight and four-eighths pages of fifty-two — three
 
 27
-00:01:41,267 --> 00:01:44,148
-rain, because it read the call sheets.
+00:01:40,461 --> 00:01:44,230
+and a half pages behind after day twelve, yet on pace
 
 28
-00:01:44,448 --> 00:01:46,700
-Ask like a script supervisor.
+00:01:44,230 --> 00:01:47,288
+to finish with a day and a half of cushion.
 
 29
-00:01:46,700 --> 00:01:49,883
-It reads across every take of a scene and
+00:01:47,288 --> 00:01:50,914
+It knows days eight and eleven lost setups to rain.
 
 30
-00:01:49,883 --> 00:01:52,911
-tells you which one is the odd one out.
+00:01:51,214 --> 00:01:53,466
+Ask like a script supervisor.
 
 31
-00:01:53,211 --> 00:01:56,332
-And at wrap it writes the paperwork.
+00:01:53,466 --> 00:01:56,649
+It reads across every take of a scene and
 
 32
-00:01:56,332 --> 00:01:59,627
-The progress report, the editor's log,
+00:01:56,649 --> 00:01:59,677
+tells you which one is the odd one out.
 
 33
-00:01:59,627 --> 00:02:02,488
-the facing pages in digital form.
+00:01:59,977 --> 00:02:03,098
+And at wrap it writes the paperwork.
 
 34
-00:02:02,488 --> 00:02:06,649
-Pages in eighths, setups, circled, NG, overtime.
+00:02:03,098 --> 00:02:06,393
+The progress report, the editor's log,
 
 35
-00:02:06,649 --> 00:02:10,464
-Every field is a live query, not a template.
+00:02:06,393 --> 00:02:09,254
+the facing pages in digital form.
 
 36
-00:02:10,464 --> 00:02:14,278
-And it reads you the short version out loud.
+00:02:09,254 --> 00:02:13,415
+Pages in eighths, setups, circled, NG, overtime.
 
 37
-00:02:14,578 --> 00:02:17,682
-Same database, straight through Grafana.
+00:02:13,415 --> 00:02:17,230
+Every field is a live query, not a template.
 
 38
-00:02:17,682 --> 00:02:20,397
-Print ratio by scene, pages against
+00:02:17,230 --> 00:02:21,044
+And it reads you the short version out loud.
 
 39
-00:02:20,397 --> 00:02:23,035
-plan, where the flags are landing.
+00:02:21,344 --> 00:02:24,448
+Same database, straight through Grafana.
 
 40
-00:02:23,035 --> 00:02:26,060
-And every take in the shoot, browsable.
+00:02:24,448 --> 00:02:27,163
+Print ratio by scene, pages against
 
 41
-00:02:26,360 --> 00:02:30,474
-Gemini and Google Cloud Agent Builder on Cloud Run.
+00:02:27,163 --> 00:02:29,801
+plan, where the flags are landing.
 
 42
-00:02:30,474 --> 00:02:34,185
-ClickHouse as the production's memory, reached
+00:02:29,801 --> 00:02:32,826
+And every take in the shoot, browsable.
 
 43
-00:02:34,185 --> 00:02:37,169
-only through its official MCP server.
+00:02:33,126 --> 00:02:37,240
+Gemini and Google Cloud Agent Builder on Cloud Run.
 
 44
-00:02:37,169 --> 00:02:41,767
-It's live, it's open source, and the link is right there.
+00:02:37,240 --> 00:02:40,951
+ClickHouse as the production's memory, reached
 
 45
-00:02:42,067 --> 00:02:46,455
+00:02:40,951 --> 00:02:43,935
+only through its official MCP server.
+
+46
+00:02:43,935 --> 00:02:48,533
+It's live, it's open source, and the link is right there.
+
+47
+00:02:48,833 --> 00:02:53,221
 SlateIQ. Your dailies, finally talking back.

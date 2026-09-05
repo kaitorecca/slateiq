@@ -42,8 +42,9 @@ FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 W, H, FPS = 1920, 1080, 30
 VO_TEMPO = 1.06      # imperceptible tighten; buys ~10 s against the 3:00 ceiling
 GAP = 0.30           # breath between beats
-LEAD = 3.20          # slate + title before the first line of narration
-TAIL = 3.50          # hold on the end card after the last word
+LEAD = 1.70          # slate + title before the first line of narration
+TAIL = 3.00          # hold on the end card after the last word
+COLD = 1.80          # each of the three cold-open stills
 
 
 @dataclass
@@ -54,6 +55,7 @@ class Clip:
     dur: float
     speed: float = 1.0                    # >1 speeds the shot up (eats agent wait time)
     crop: tuple[int, int, int, int] | None = None   # w,h,x,y — punch in on a detail
+    freeze: bool = False                  # hold one frame from `start` for `dur` (cold open)
 
 
 @dataclass
@@ -88,6 +90,16 @@ def timeline(manifest: dict, marks: dict) -> list[Beat]:
     live = marks.get("live", {})
     hl = marks.get("health", {})
     return [
+        # cold open: the proof, before anyone says a word.
+        # three real frames out of the captured footage — the clickhouse-client
+        # benchmark, the full-frame mcp-clickhouse trace, and the take itself.
+        Beat(None,
+             [Clip("terminal", 11.6, COLD, freeze=True),
+              Clip("hero", hero.get("traceIn", 40.8) + 1.8, COLD, freeze=True),
+              Clip("hero", hero.get("takeIn", 49.0) + 1.6, COLD, freeze=True,
+                   crop=(1000, 562, 460, 420))],
+             caption=["A circled take with 13 seconds of soft focus.",
+                      "Found in 65 milliseconds."]),
         # the slate claps and the title lands before anyone speaks
         Beat(None, [Clip("title", 0.0, LEAD)]),
         Beat("b01", [Clip("title", LEAD, d["b01"])]),
@@ -140,6 +152,23 @@ def render_clip(clip: Clip, dst: Path, fast: bool) -> None:
     start = resolve_start(clip, src_dur)
     have = max(0.0, (src_dur - start) / clip.speed)
     need = clip.dur
+
+    if clip.freeze:
+        # one real frame, held — the cold open is a stack of evidence stills, not
+        # motion, and freezing keeps them readable at 1.8 s apiece.
+        still = dst.with_suffix(".png")
+        sh([FFMPEG, "-y", "-v", "error", "-ss", f"{min(start, max(0.0, src_dur - 0.1)):.3f}",
+            "-i", str(src), "-frames:v", "1", str(still)])
+        svf = []
+        if clip.crop:
+            svf.append("crop={}:{}:{}:{}".format(*clip.crop))
+        svf += [f"scale={W}:{H}:force_original_aspect_ratio=decrease",
+                f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:black", "setsar=1", f"fps={FPS}"]
+        sh([FFMPEG, "-y", "-v", "error", "-loop", "1", "-t", f"{need:.3f}", "-i", str(still),
+            "-vf", ",".join(svf), "-an", "-c:v", "libx264",
+            "-preset", "ultrafast" if fast else "medium", "-crf", "16",
+            "-pix_fmt", "yuv420p", str(dst)])
+        return
 
     vf = [f"fps={FPS}"]
     if clip.crop:
@@ -288,6 +317,15 @@ def main() -> int:
             ct = seg_start
             for line in lines:
                 span = vo_len * len(line) / total_chars
+                cues.append((ct, ct + span, line))
+                ct += span
+        elif beat.caption:
+            # a silent beat that still carries a card (the cold open) captions itself
+            seg_len = sum(c.dur for c in beat.clips)
+            total_chars = sum(len(x) for x in beat.caption)
+            ct = seg_start
+            for line in beat.caption:
+                span = seg_len * len(line) / total_chars
                 cues.append((ct, ct + span, line))
                 ct += span
         if bi < len(beats) - 1:
