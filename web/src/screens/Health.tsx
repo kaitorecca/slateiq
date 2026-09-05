@@ -167,12 +167,18 @@ function GrafanaPanels() {
             <h3 className="text-[13px] font-semibold text-ink">{p.title}</h3>
             <span className="chip ml-auto px-2 py-[2px] text-[10px]">Grafana · ClickHouse</span>
           </div>
-          <iframe
-            title={p.title}
-            src={`${GRAFANA_URL}/d-solo/${GRAFANA_DASH_UID}?orgId=1&panelId=${p.id}&${range}&theme=dark&kiosk`}
-            className="h-[260px] w-full border-0 bg-cell"
-            loading="lazy"
-          />
+          {/* `kiosk` strips the dashboard chrome but each d-solo panel still
+              draws its own title bar, which would repeat the card header above.
+              Clip it: the frame is 46px taller than the window and slid up by
+              exactly that, so only the chart itself shows. */}
+          <div className="h-[260px] overflow-hidden">
+            <iframe
+              title={p.title}
+              src={`${GRAFANA_URL}/d-solo/${GRAFANA_DASH_UID}?orgId=1&panelId=${p.id}&${range}&theme=dark&kiosk`}
+              className="-mt-[46px] h-[306px] w-full border-0 bg-cell"
+              loading="lazy"
+            />
+          </div>
         </div>
       ))}
     </div>

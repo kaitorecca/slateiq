@@ -188,7 +188,7 @@
       "id": 3,
       "type": "barchart",
       "title": "Print ratio (takes per circled take) by scene",
-      "description": "Takes exposed per printed (circled) take. A tall bar means the scene was fought for \u2014 coverage, resets, or a performance problem.",
+      "description": "Takes exposed per printed (circled) take. A tall bar means the scene was fought for — coverage, resets, or a performance problem.",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "slateiq-clickhouse"
@@ -223,7 +223,7 @@
           "refId": "A",
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT concat('Sc ', scene_number) AS scene,\n       round(print_ratio, 2)     AS \"print ratio\"\nFROM slateiq.scene_progress\nWHERE production_id = '$production' AND print_ratio > 0\nORDER BY print_ratio DESC\nLIMIT 20"
+          "rawSql": "SELECT concat('Sc ', scene_number) AS scene,\n       round(print_ratio, 2)     AS \"print ratio\"\nFROM slateiq.scene_progress\nWHERE production_id = '$production' AND print_ratio > 0\nORDER BY print_ratio DESC\nLIMIT 10"
         }
       ]
     },
@@ -274,7 +274,7 @@
     {
       "id": 5,
       "type": "barchart",
-      "title": "Takes per hour \u2014 shooting day $day",
+      "title": "Takes per hour — shooting day $day",
       "description": "The shape of a shooting day, keyed off the slate timecode: the lunch dip, and whether the unit was still rolling after the 12th hour.",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
@@ -512,7 +512,7 @@
       "id": 8,
       "type": "table",
       "title": "Scenes at risk",
-      "description": "Every scene by print ratio \u2014 takes burned per usable take. Where a producer should look first.",
+      "description": "Every scene by print ratio — takes burned per usable take. Where a producer should look first.",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "slateiq-clickhouse"
@@ -584,7 +584,7 @@
           "refId": "A",
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT sp.scene_number              AS scene,\n       sp.slug                      AS slug,\n       round(sp.page_eighths / 8, 2) AS pages,\n       sp.takes                     AS takes,\n       sp.circled                   AS circled,\n       round(sp.print_ratio, 2)  AS \"print ratio\",\n       sp.status                    AS status\nFROM slateiq.scene_progress AS sp\nWHERE sp.production_id = '$production'\nORDER BY sp.print_ratio DESC\nLIMIT 15"
+          "rawSql": "SELECT sp.scene_number              AS scene,\n       sp.slug                      AS slug,\n       multiIf(sp.page_eighths = 0, '0',\n               sp.page_eighths < 8, concat(toString(sp.page_eighths), '/8'),\n               sp.page_eighths % 8 = 0, toString(intDiv(sp.page_eighths, 8)),\n               concat(toString(intDiv(sp.page_eighths, 8)), ' ', toString(sp.page_eighths % 8), '/8')) AS pages,\n       sp.takes                     AS takes,\n       sp.circled                   AS circled,\n       round(sp.print_ratio, 2)  AS \"print ratio\",\n       sp.status                    AS status\nFROM slateiq.scene_progress AS sp\nWHERE sp.production_id = '$production'\nORDER BY sp.print_ratio DESC\nLIMIT 15"
         }
       ]
     }

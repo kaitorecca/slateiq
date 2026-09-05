@@ -38,8 +38,10 @@ GRAFANA_DASH_UID="${GRAFANA_DASH_UID:-slateiq-prod-health}"
 # id:title, matching deploy/grafana/dashboards/slateiq-production-health.json.
 GRAFANA_PANELS="${GRAFANA_PANELS:-2:Schedule position,1:Pages planned vs shot per day,3:Print ratio (takes per circled take) by scene,8:Scenes at risk}"
 REPO_URL="${REPO_URL:-https://github.com/kaitorecca/slateiq}"
-# Own URL, for the About page's "Live" table. Reuses the existing service URL.
-APP_URL="${APP_URL:-$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)' 2>/dev/null || true)}"
+# Own URL, for the About page's "Live" table. Cloud Run answers on two hostnames
+# (the project-number form and the hbissixc2q alias); pin the project-number one
+# so the app, the README and deploy/OUTPUT.md all quote the same URL.
+APP_URL="${APP_URL:-https://slateiq-${PNUM_HINT:-957930801789}.${REGION}.run.app}"
 # Direct read-only ClickHouse, for the UI's takes-gallery passthrough only (all agent
 # reasoning goes through MCP). Port 8443 is Caddy serving ClickHouse HTTP at the root path,
 # because clickhouse-connect cannot address a server mounted under /ch/.
