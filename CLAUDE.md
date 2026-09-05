@@ -12,7 +12,7 @@ Read `docs/PLAN.md` first. Deadline: 9 Sep 2026 14:00 PDT. Judging: Tech impleme
 ## Environments (two venvs on purpose — mcp-clickhouse needs mcp 2.x, ADK needs mcp 1.x)
 - `.venv/` — ADK 2.8, google-genai, clickhouse-connect, fastapi. `source .venv/bin/activate`. Use `uv pip install`.
 - `.venv-mcp/` — `mcp-clickhouse` 0.6 only. Start: `scripts/mcp_up.sh` → http://localhost:8765/mcp (health `/health`). Tools: `list_databases`, `list_tables`, `run_query` (read-only).
-- Local ClickHouse: docker `slateiq-ch` → http://localhost:8123 user `default` / pass `clickhouse`. (Port 8000 is taken by Airbyte — never use it.)
+- Local ports: SlateIQ API=8811, Vite dev=5188 (8080/3000/8000 are taken by other apps on this machine). Local ClickHouse: docker `slateiq-ch` → http://localhost:8123 user `default` / pass `clickhouse`. (Port 8000 is taken by Airbyte — never use it.)
 - Env: `set -a; source .env; set +a` (GEMINI/GOOGLE_API_KEY, GOOGLE_CLOUD_PROJECT=gke-hackathon-472816, GOOGLE_APPLICATION_CREDENTIALS=.secrets/gcp-sa.json, CLICKHOUSE_*).
 - ffmpeg: `~/miniconda3/envs/media/bin/ffmpeg`. Node 24 available. gcloud authed (project gke-hackathon-472816). `gh` authed (kaitorecca).
 - ADK MCP import: `from google.adk.tools.mcp_tool.mcp_toolset import McpToolset`; `from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams` (set `timeout=30, sse_read_timeout=300`). Verified working smoke test: `docs/smoke_mcp_adk.py`.

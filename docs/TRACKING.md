@@ -2,3 +2,4 @@
 | Time (AEST) | Who | Item | Status |
 |---|---|---|---|
 | 13:36 | orchestrator | env ready: ADK 2.8 + mcp-clickhouse 0.6 (HTTP :8765) + CH docker + Gemini key + gcloud | done |
+| 13:52 | orchestrator | tick: CH seeded (take 2479, take_event 26.5k, frame_telemetry 3.07M); 5 build agents running; local ports: API→8811 (8080/3000 taken by other apps) | in progress |
