@@ -17,3 +17,4 @@
 | 14:42 | agent eng | agent/ done: 5-agent ADK network over one McpToolset, guardrails, SSE API, DPR/TTS, evals 16/16 MCP hit, judge 4.88/5, docker build OK; live on :8811 | done |
 | 14:42 | orchestrator | launched QC#1 (judge-style UI e2e + screenshots, fixes web/agent) and QC#2 (agent correctness/guardrails/perf); deploy eng still running | in progress |
 | 14:52 | orchestrator | tick: QC#1, QC#2, deploy eng running; API :8811 healthy; no new agents (avoid conflicts) | in progress |
+| 15:02 | orchestrator | tick: nudged deploy eng to ship slateiq Cloud Run + OUTPUT.md before finishing VM seed; QC#1/#2 running | in progress |
