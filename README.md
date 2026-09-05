@@ -56,8 +56,12 @@ circled) against **3.07 M rows of independently measured frame telemetry** (this
 | **Clips + poster frames (GCS)** | `https://storage.googleapis.com/slateiq-media-gke-hackathon-472816` |
 | **Repo** | <https://github.com/kaitorecca/slateiq> |
 
-> Cloud Run runs at `min-instances 0` on the free tier — **if the first request takes 3–5 seconds,
-> that is a cold start**, not the database. Every request after it is warm.
+> Cloud Run runs at `min-instances 0` on the free tier, because idle instances cost money and a
+> hackathon budget is zero. **A cold start is ~16 s** — measured from the Cloud Run logs, container
+> start to `Application startup complete`; it is the ADK import, not the database. Warm requests
+> are **~0.6 s** to the UI and to `/api/health`. If the first click feels slow, that is the whole
+> explanation; everything after it is warm. (Keeping it warm would mean `min-instances 1`, which
+> leaves the free tier, so we chose the honest number over the invisible bill.)
 
 Reproduce the partner call in ten seconds — the SSE stream emits the `run_query` tool call, the
 generated SQL and the row count as they happen:

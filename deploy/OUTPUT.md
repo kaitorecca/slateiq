@@ -1,6 +1,6 @@
 # deploy/OUTPUT.md — live SlateIQ endpoints
 
-Last verified: **2026-09-05 ~05:00 UTC** · project `gke-hackathon-472816` · region `us-central1`
+Last verified: **2026-09-05 ~16:40 UTC** (revision `slateiq-00007-jnp`) · project `gke-hackathon-472816` · region `us-central1`
 
 Secrets referenced below live in `.secrets/deploy.env` (gitignored). Nothing here is a secret.
 
@@ -22,8 +22,18 @@ Secrets referenced below live in `.secrets/deploy.env` (gitignored). Nothing her
 ```bash
 CLICKHOUSE_MCP_URL=https://35.239.36.85.sslip.io/mcp
 CLICKHOUSE_MCP_TOKEN=<.secrets/deploy.env: CLICKHOUSE_MCP_TOKEN>   # sent as: Authorization: Bearer <token>
+# Media. When set, the server rewrites relative clip_uri/thumb_uri ("clips/x.mp4") to absolute
+# GCS URLs in /api/takes, /api/take/{id}/events and the take enrichment that runs before the
+# `final` SSE event. Unset = local behaviour (files served from /clips and /thumbs).
 CLIPS_BASE_URL=https://storage.googleapis.com/slateiq-media-gke-hackathon-472816
+
+# Served to the browser by GET /api/config. web/ is a static Vite build, so VITE_* is frozen at
+# build time; this is the only path by which server config reaches the SPA.
+APP_URL=https://slateiq-957930801789.us-central1.run.app
 GRAFANA_URL=https://slateiq-grafana-hbissixc2q-uc.a.run.app
+GRAFANA_DASH_UID=slateiq-prod-health
+GRAFANA_PANELS=2:Schedule position,1:Pages planned vs shot per day,3:Print ratio (takes per circled take) by scene,8:Scenes at risk
+REPO_URL=https://github.com/kaitorecca/slateiq
 
 # Direct read-only ClickHouse — UI takes-gallery passthrough ONLY, never agent reasoning.
 CLICKHOUSE_HOST=35.239.36.85.sslip.io
@@ -101,6 +111,45 @@ event: final   "On Day 12, we shot a total of **175 takes**, of which **38 were 
 $ curl -sI https://storage.googleapis.com/slateiq-media-gke-hackathon-472816/clips/TOS-D12-S12-A-01-A.mp4
 HTTP/2 200 · content-type: video/mp4 · cache-control: public, max-age=31536000, immutable
 ```
+
+### Hosted media + runtime config (re-verified 16:40 UTC, revision `slateiq-00007-jnp`)
+
+```
+$ curl -s .../api/config
+{"app_url":"https://slateiq-957930801789.us-central1.run.app",
+ "grafana_url":"https://slateiq-grafana-hbissixc2q-uc.a.run.app",
+ "grafana_dash_uid":"slateiq-prod-health",
+ "grafana_panels":[{"id":"2","title":"Schedule position"},
+                   {"id":"1","title":"Pages planned vs shot per day"},
+                   {"id":"3","title":"Print ratio (takes per circled take) by scene"},
+                   {"id":"8","title":"Scenes at risk"}],
+ "mcp_health_url":"https://35.239.36.85.sslip.io/health",
+ "repo_url":"https://github.com/kaitorecca/slateiq",
+ "clips_base_url":"https://storage.googleapis.com/slateiq-media-gke-hackathon-472816"}
+
+$ curl -s '.../api/takes?scene=27&limit=3'   # media URLs are absolute, not "clips/x.mp4"
+TOS-D12-S27-A-01-A | https://storage.googleapis.com/slateiq-media-.../clips/TOS-D12-S27-A-01-A.mp4
+                   | https://storage.googleapis.com/slateiq-media-.../thumbs/TOS-D12-S27-A-01-A.jpg
+
+$ curl -sI <that clip>   -> HTTP/2 200 · video/mp4  · 1,620,774 B · access-control-allow-origin: *
+$ curl -sI <that thumb>  -> HTTP/2 200 · image/jpeg ·    11,529 B
+$ curl -sI .../thumbs/TOS-D12-S27-A-01-A.jpg  -> HTTP/2 200 · image/jpeg (baked into the image too)
+$ curl -s -o /dev/null -w '%{http_code} %{content_type}' .../thumbs/nope.jpg  -> 404 application/json
+   (was 200 text/html — the SPA catch-all used to swallow every missing poster)
+
+$ curl -s -o /dev/null -w '%{time_total}' '.../api/report/dpr?day=12'   -> 0.67 s  (was ~200 s)
+```
+
+Browser check on the hosted URL at 1440×900 (Chrome DevTools): Takes shows **24/24 posters loaded**
+and a clip plays inline (`currentSrc` = the GCS URL, 1280×534, `readyState 4`); Production Health
+renders **4 live Grafana `d-solo` iframes**; **0 console errors**.
+
+### Cold start
+
+`min-instances` stays **0** (an idle instance is the one thing that would cost money). Measured
+from the Cloud Run logs, `Starting new instance` → `Application startup complete` = **15.7 s**,
+which is the ADK import, not ClickHouse. Warm: **~0.6 s** for `/` and `/api/health`. Documented in
+the README instead of papered over with a warm-up cron.
 
 ## Hosted data (seeded from local ClickHouse, exact row-count match)
 
