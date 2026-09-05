@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Optional
+from typing import Any
 
 from google.adk.tools.base_tool import BaseTool
 from google.adk.tools.tool_context import ToolContext
@@ -34,9 +34,7 @@ _FORBIDDEN = re.compile(
 
 _COMMENT = re.compile(r"(--[^\n]*|#[^\n]*|/\*.*?\*/)", re.DOTALL)
 _LIMIT = re.compile(r"\blimit\s+(\d+)", re.IGNORECASE)
-_AGGREGATE_ONLY = re.compile(
-    r"^\s*select\b(?!.*\bfrom\b)", re.IGNORECASE | re.DOTALL
-)
+_AGGREGATE_ONLY = re.compile(r"^\s*select\b(?!.*\bfrom\b)", re.IGNORECASE | re.DOTALL)
 
 # A single-quoted SQL literal, honouring both '' and \' escaping.
 _STRING = re.compile(r"'(?:''|\\.|[^'\\])*'", re.DOTALL)
@@ -184,7 +182,7 @@ def friendly_error(exc: BaseException | str) -> str:
     )
 
 
-def enforce(sql: str) -> tuple[Optional[str], str]:
+def enforce(sql: str) -> tuple[str | None, str]:
     """Validate and normalise SQL.
 
     Returns ``(error_reason, safe_sql)``. When ``error_reason`` is None the
@@ -200,7 +198,7 @@ def enforce(sql: str) -> tuple[Optional[str], str]:
     if ";" in masked:
         return "multiple statements are not allowed", sql
 
-    if not (lowered.startswith("select") or lowered.startswith("with")):
+    if not (lowered.startswith(("select", "with"))):
         return "query must start with SELECT or WITH", sql
 
     if lowered.startswith("with") and not re.search(r"\bselect\b", lowered):
@@ -219,22 +217,17 @@ def enforce(sql: str) -> tuple[Optional[str], str]:
     tf = _TABLE_FUNCTIONS.search(masked)
     if tf:
         return (
-            f"table function '{tf.group(1)}()' reads from outside ClickHouse "
-            "and is not allowed"
+            f"table function '{tf.group(1)}()' reads from outside ClickHouse and is not allowed"
         ), sql
 
-    if re.search(r"\bframe_telemetry\b", lowered) and _UNBOUNDED_ARRAY.search(
-        masked
-    ):
+    if re.search(r"\bframe_telemetry\b", lowered) and _UNBOUNDED_ARRAY.search(masked):
         return (
             "an unbounded groupArray over frame_telemetry returns millions of "
             "values in a single row that LIMIT cannot bound -- use the sized "
             "form groupArray(50)(col), or aggregate with avg/count/countIf"
         ), sql
 
-    if re.search(r"\binto\s+outfile\b", lowered) or re.search(
-        r"\bformat\s+\w*file\b", lowered
-    ):
+    if re.search(r"\binto\s+outfile\b", lowered) or re.search(r"\bformat\s+\w*file\b", lowered):
         return "file output is not allowed", sql
 
     return None, _apply_limit(body, masked)
@@ -253,7 +246,7 @@ def _apply_limit(body: str, masked: str = "") -> str:
     tail = ""
     m = _TAIL_CLAUSE.search(masked)
     if m:
-        tail = " " + body[m.start():].strip()
+        tail = " " + body[m.start() :].strip()
         body = body[: m.start()].rstrip()
         masked = masked[: m.start()].rstrip()
 
@@ -262,16 +255,16 @@ def _apply_limit(body: str, masked: str = "") -> str:
         last = limits[-1]
         # Only clamp a trailing LIMIT (a LIMIT inside a subquery is the
         # model's business as long as the outer one is bounded).
-        if body[last.end():].strip() == "" and int(last.group(1)) > MAX_ROWS:
-            body = body[: last.start(1)] + str(MAX_ROWS) + body[last.end(1):]
-        elif body[last.end():].strip() != "":
+        if body[last.end() :].strip() == "" and int(last.group(1)) > MAX_ROWS:
+            body = body[: last.start(1)] + str(MAX_ROWS) + body[last.end(1) :]
+        elif body[last.end() :].strip() != "":
             body = f"{body} LIMIT {MAX_ROWS}"
     elif not _AGGREGATE_ONLY.match(body):
         body = f"{body} LIMIT {MAX_ROWS}"
     return body + tail
 
 
-def validate_sql(sql: str) -> Optional[str]:
+def validate_sql(sql: str) -> str | None:
     """Back-compat helper used by the evals: error reason or None."""
     return enforce(sql)[0]
 
@@ -280,7 +273,7 @@ def _budget_for(agent_name: str) -> int:
     return MAX_QUERIES_REPORT if "report" in (agent_name or "") else MAX_QUERIES
 
 
-def _over_budget(tool_context: ToolContext) -> Optional[dict[str, Any]]:
+def _over_budget(tool_context: ToolContext) -> dict[str, Any] | None:
     """Hard cap on `run_query` calls within one user turn.
 
     The instructions ask for query economy and the model mostly obeys, but on
@@ -299,9 +292,7 @@ def _over_budget(tool_context: ToolContext) -> Optional[dict[str, Any]]:
         if used >= budget:
             return {
                 "error": "SlateIQ query budget reached",
-                "reason": (
-                    f"this turn has already run {used} queries (limit {budget})"
-                ),
+                "reason": (f"this turn has already run {used} queries (limit {budget})"),
                 "hint": (
                     "Stop querying and answer now from the results you already "
                     "have. Say plainly if something is still unknown -- a "
@@ -317,7 +308,7 @@ def _over_budget(tool_context: ToolContext) -> Optional[dict[str, Any]]:
 
 def before_tool_guardrail(
     tool: BaseTool, args: dict[str, Any], tool_context: ToolContext
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Reject non-SELECT SQL before it reaches the MCP server."""
     if tool.name != "run_query":
         return None
@@ -347,8 +338,7 @@ def _truncate_text(text: str) -> tuple[str, bool]:
         return text, False
     keep = MAX_TOOL_RESULT_CHARS
     return (
-        text[:keep]
-        + f"\n\n... [SlateIQ truncated {len(text) - keep} characters. "
+        text[:keep] + f"\n\n... [SlateIQ truncated {len(text) - keep} characters. "
         "Re-run with tighter filters, fewer columns, or an aggregate.]",
         True,
     )
@@ -359,7 +349,7 @@ def after_tool_truncate(
     args: dict[str, Any],
     tool_context: ToolContext,
     tool_response: Any,
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Clamp huge tool results so they cannot exhaust the context window."""
     try:
         raw = (

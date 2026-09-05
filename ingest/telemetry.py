@@ -22,13 +22,12 @@ import json
 import subprocess
 
 import numpy as np
-
 from config import FFMPEG, TAKES, Take
 
-WIN = 0.04         # telemetry window, seconds (25 Hz, per db/SCHEMA.md)
-VFPS = 25          # decode fps for the video pass
-VW = 160           # decode width
-ASR = 8000         # audio sample rate
+WIN = 0.04  # telemetry window, seconds (25 Hz, per db/SCHEMA.md)
+VFPS = 25  # decode fps for the video pass
+VW = 160  # decode width
+ASR = 8000  # audio sample rate
 DBFLOOR = -90.0
 
 # calibration: Laplacian variance of a well-focused 160px-wide luma frame in
@@ -51,28 +50,59 @@ def _pipe(cmd: list[str]) -> bytes:
 def _laplacian_var(frames: np.ndarray) -> np.ndarray:
     """Variance of a 4-neighbour Laplacian per frame, vectorised over N."""
     f = frames
-    lap = (-4.0 * f[:, 1:-1, 1:-1]
-           + f[:, :-2, 1:-1] + f[:, 2:, 1:-1]
-           + f[:, 1:-1, :-2] + f[:, 1:-1, 2:])
+    lap = (
+        -4.0 * f[:, 1:-1, 1:-1]
+        + f[:, :-2, 1:-1]
+        + f[:, 2:, 1:-1]
+        + f[:, 1:-1, :-2]
+        + f[:, 1:-1, 2:]
+    )
     return lap.reshape(lap.shape[0], -1).var(axis=1)
 
 
 def video_pass(clip, height_hint: int = 0) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Return (focus, exposure_ev, motion) arrays sampled at VFPS."""
     # figure out the decoded frame height for the fixed width
-    probe = json.loads(_pipe([
-        FFMPEG.replace("ffmpeg", "ffprobe"), "-v", "error", "-select_streams", "v:0",
-        "-show_entries", "stream=width,height", "-of", "json", str(clip),
-    ]).decode())["streams"][0]
+    probe = json.loads(
+        _pipe(
+            [
+                FFMPEG.replace("ffmpeg", "ffprobe"),
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=width,height",
+                "-of",
+                "json",
+                str(clip),
+            ]
+        ).decode()
+    )["streams"][0]
     h = max(2, int(round(VW * probe["height"] / probe["width"] / 2)) * 2)
 
-    raw = _pipe([
-        FFMPEG, "-hide_banner", "-loglevel", "error", "-i", str(clip),
-        "-vf", f"fps={VFPS},scale={VW}:{h},format=gray",
-        "-f", "rawvideo", "-pix_fmt", "gray", "-",
-    ])
+    raw = _pipe(
+        [
+            FFMPEG,
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            str(clip),
+            "-vf",
+            f"fps={VFPS},scale={VW}:{h},format=gray",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "gray",
+            "-",
+        ]
+    )
     n = len(raw) // (VW * h)
-    frames = np.frombuffer(raw[: n * VW * h], dtype=np.uint8).reshape(n, h, VW).astype(np.float32) / 255.0
+    frames = (
+        np.frombuffer(raw[: n * VW * h], dtype=np.uint8).reshape(n, h, VW).astype(np.float32)
+        / 255.0
+    )
     if n == 0:
         return (np.zeros(0),) * 3
 
@@ -85,10 +115,24 @@ def video_pass(clip, height_hint: int = 0) -> tuple[np.ndarray, np.ndarray, np.n
 
 
 def audio_pass(clip) -> np.ndarray:
-    raw = _pipe([
-        FFMPEG, "-hide_banner", "-loglevel", "error", "-i", str(clip),
-        "-vn", "-ac", "1", "-ar", str(ASR), "-f", "f32le", "-",
-    ])
+    raw = _pipe(
+        [
+            FFMPEG,
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            str(clip),
+            "-vn",
+            "-ac",
+            "1",
+            "-ar",
+            str(ASR),
+            "-f",
+            "f32le",
+            "-",
+        ]
+    )
     return np.frombuffer(raw, dtype=np.float32)
 
 
@@ -96,7 +140,7 @@ def _windows(arr: np.ndarray, per_win: float, nwin: int):
     """Yield the slice of arr belonging to each 0.5 s window."""
     for i in range(nwin):
         a, b = int(i * per_win), int((i + 1) * per_win)
-        yield arr[a:b] if b > a else arr[a:a + 1]
+        yield arr[a:b] if b > a else arr[a : a + 1]
 
 
 def telemetry_rows(t: Take, duration: float) -> list[tuple]:
@@ -128,8 +172,16 @@ def telemetry_rows(t: Take, duration: float) -> list[tuple]:
         # dBFS: a lossy decode can overshoot 1.0, but a level meter cannot
         pdb = min(0.0, 20 * np.log10(peak)) if peak > 1e-5 else DBFLOOR
         rdb = min(0.0, 20 * np.log10(rms)) if rms > 1e-5 else DBFLOOR
-        rows.append((round(i * WIN, 3), round(f, 4), round(ev, 3), round(mo, 4),
-                     round(float(pdb), 2), round(float(rdb), 2)))
+        rows.append(
+            (
+                round(i * WIN, 3),
+                round(f, 4),
+                round(ev, 3),
+                round(mo, 4),
+                round(float(pdb), 2),
+                round(float(rdb), 2),
+            )
+        )
     return rows
 
 
@@ -144,9 +196,11 @@ def main() -> int:
             continue
         rows = telemetry_rows(t, probe_duration(t.clip_path))
         arr = np.array([[r[1], r[2], r[3], r[4]] for r in rows])
-        print(f"{t.take_id:<22} {len(rows):>4} rows  focus~{arr[:,0].mean():.3f} "
-              f"soft_s={(arr[:,0]<0.55).sum()*WIN:5.1f} ev~{arr[:,1].mean():+.2f} "
-              f"motion~{arr[:,2].mean():.3f} peak_max={arr[:,3].max():6.1f}dB")
+        print(
+            f"{t.take_id:<22} {len(rows):>4} rows  focus~{arr[:, 0].mean():.3f} "
+            f"soft_s={(arr[:, 0] < 0.55).sum() * WIN:5.1f} ev~{arr[:, 1].mean():+.2f} "
+            f"motion~{arr[:, 2].mean():.3f} peak_max={arr[:, 3].max():6.1f}dB"
+        )
     return 0
 
 

@@ -12,7 +12,6 @@ import csv
 import io
 
 import pytest
-
 from slateiq_agent import export
 from slateiq_agent.export import (
     ale_columns,
@@ -53,9 +52,20 @@ def row(**over):
     return base
 
 
-ROWS = [row(), row(take_id="TOS-D12-S102-A-01-A", scene_number="102", shot="A",
-             take_number=1, camera="A", tc_in="19:06:30:11", duration_s=13.667,
-             flags=[], director_note="Final of the day — got it.")]
+ROWS = [
+    row(),
+    row(
+        take_id="TOS-D12-S102-A-01-A",
+        scene_number="102",
+        shot="A",
+        take_number=1,
+        camera="A",
+        tc_in="19:06:30:11",
+        duration_s=13.667,
+        flags=[],
+        director_note="Final of the day — got it.",
+    ),
+]
 
 
 # ---------------------------------------------------------------------------
@@ -127,7 +137,7 @@ def parse_ale(text: str) -> tuple[dict[str, str], list[str], list[list[str]]]:
     columns = lines[i + 2].split("\t")
     assert lines[i + 3] == ""
     assert lines[i + 4] == "Data"
-    data = [ln.split("\t") for ln in lines[i + 5:] if ln]
+    data = [ln.split("\t") for ln in lines[i + 5 :] if ln]
     return heading, columns, data
 
 
@@ -167,7 +177,7 @@ def test_every_data_row_has_exactly_as_many_fields_as_there_are_columns() -> Non
 def test_ale_carries_the_slate_the_rolls_and_the_note() -> None:
     _, columns, data = parse_ale(to_ale([row()]))
     rec = dict(zip(columns, data[0]))
-    assert rec["Name"] == "12/B/2-B"          # slate + camera letter
+    assert rec["Name"] == "12/B/2-B"  # slate + camera letter
     assert rec["Scene"] == "12"
     assert rec["Take"] == "2"
     assert rec["Camroll"] == "B012"
@@ -301,9 +311,7 @@ def test_the_export_query_passes_the_agent_guardrail_too() -> None:
     """Belt and braces: the export SQL is read-only by the same standard."""
     from slateiq_agent.guardrails import enforce
 
-    probe = export.EDITORS_LOG_SQL.replace("%(day)s", "12").replace(
-        "%(statuses)s", "('circled')"
-    )
+    probe = export.EDITORS_LOG_SQL.replace("%(day)s", "12").replace("%(statuses)s", "('circled')")
     assert enforce(probe)[0] is None
 
 

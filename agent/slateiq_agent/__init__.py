@@ -16,12 +16,12 @@ from .agent import (
 )
 
 __all__ = [
-    "root_agent",
-    "clickhouse_toolset",
     "build_clickhouse_toolset",
-    "build_root_agent",
+    "build_continuity_agent",
     "build_editor_agent",
     "build_production_agent",
-    "build_continuity_agent",
     "build_report_agent",
+    "build_root_agent",
+    "clickhouse_toolset",
+    "root_agent",
 ]

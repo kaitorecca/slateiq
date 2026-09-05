@@ -14,9 +14,7 @@ from pathlib import Path
 
 from .config import DB, REPO_ROOT
 
-SCHEMA_PATH = Path(
-    os.environ.get("SLATEIQ_SCHEMA_MD", str(REPO_ROOT / "db" / "SCHEMA.md"))
-)
+SCHEMA_PATH = Path(os.environ.get("SLATEIQ_SCHEMA_MD", str(REPO_ROOT / "db" / "SCHEMA.md")))
 
 FALLBACK_SCHEMA = f"""\
 # SlateIQ ClickHouse schema (fallback summary -- db/SCHEMA.md not found)

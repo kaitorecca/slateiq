@@ -72,8 +72,16 @@ class TakeAnalysis(BaseModel):
 class ContinuityItem(BaseModel):
     take_id_a: str
     take_id_b: str
-    category: Literal["wardrobe", "props", "hair_makeup", "screen_direction",
-                      "lighting", "action_match", "dialogue", "set_dressing"]
+    category: Literal[
+        "wardrobe",
+        "props",
+        "hair_makeup",
+        "screen_direction",
+        "lighting",
+        "action_match",
+        "dialogue",
+        "set_dressing",
+    ]
     description: str
     severity: int = Field(ge=1, le=3)
 

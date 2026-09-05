@@ -58,8 +58,6 @@ CLIPS_DIR = _env("CLIPS_DIR", str(REPO_ROOT / "data" / "clips"))
 WEB_DIST = _env("SLATEIQ_WEB_DIST", str(REPO_ROOT / "web" / "dist"))
 
 # --- Sessions ---------------------------------------------------------------
-SESSION_DB_URI = _env(
-    "SLATEIQ_SESSION_DB_URI", f"sqlite:///{AGENT_DIR / 'sessions.db'}"
-)
+SESSION_DB_URI = _env("SLATEIQ_SESSION_DB_URI", f"sqlite:///{AGENT_DIR / 'sessions.db'}")
 
 APP_NAME = "slateiq_agent"

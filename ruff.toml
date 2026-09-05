@@ -1,0 +1,21 @@
+# SlateIQ lint config — one ruleset for agent/, ingest/ and db/.
+#   ruff check agent ingest db      # must be clean
+#   ruff format agent ingest db
+line-length = 100
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4", "PIE", "RUF"]
+ignore = [
+  "E501",    # long lines are allowed; the formatter owns wrapping
+  "ISC004",  # implicit string concatenation in lists is deliberate here
+  "RUF046",  # int(round(...)) is clearer about intent than round(...)
+  "SIM105",  # contextlib.suppress is not clearer than try/except: pass
+  "SIM115",  # a couple of long-lived file handles are closed explicitly
+  "B905",    # zip() over sequences we build to the same length
+  "E702",    # a few deliberate one-line `a = 1; b = 2` pairs in the generator
+]
+
+[lint.per-file-ignores]
+"agent/tests/*" = ["C4"]
+"agent/evals/run_eval.py" = ["E402"]  # sys.path is patched before the package imports

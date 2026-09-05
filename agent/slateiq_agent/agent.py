@@ -12,14 +12,14 @@ ADK convention: `root_agent` is what `adk web` / `get_fast_api_app` pick up.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from google.adk.agents import LlmAgent
+from google.adk.agents.readonly_context import ReadonlyContext
 from google.adk.tools.mcp_tool.mcp_session_manager import (
     StreamableHTTPConnectionParams,
 )
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
-from google.adk.agents.readonly_context import ReadonlyContext
 from google.genai import types
 
 from . import prompts
@@ -36,12 +36,12 @@ from .guardrails import after_tool_truncate, before_tool_guardrail
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    "root_agent",
+    "SUB_AGENT_NAMES",
     "SelfHealingMcpToolset",
     "build_clickhouse_toolset",
-    "build_root_agent",
     "build_report_agent",
-    "SUB_AGENT_NAMES",
+    "build_root_agent",
+    "root_agent",
 ]
 
 SUB_AGENT_NAMES = (
@@ -147,9 +147,7 @@ class SelfHealingMcpToolset(McpToolset):
         tool._slateiq_self_healing = True
         return tool
 
-    async def get_tools(
-        self, readonly_context: Optional[ReadonlyContext] = None
-    ) -> list[Any]:
+    async def get_tools(self, readonly_context: ReadonlyContext | None = None) -> list[Any]:
         try:
             tools = await super().get_tools(readonly_context)
         except Exception as exc:
@@ -198,7 +196,7 @@ def _specialist(
     description: str,
     instruction_fn,
     model: str = MODEL,
-    toolset: Optional[McpToolset] = None,
+    toolset: McpToolset | None = None,
 ) -> LlmAgent:
     return LlmAgent(
         name=name,
@@ -212,7 +210,7 @@ def _specialist(
     )
 
 
-def build_editor_agent(toolset: Optional[McpToolset] = None) -> LlmAgent:
+def build_editor_agent(toolset: McpToolset | None = None) -> LlmAgent:
     return _specialist(
         "editor_agent",
         "Assistant editor. Take search, best/circled takes, dialogue line "
@@ -223,7 +221,7 @@ def build_editor_agent(toolset: Optional[McpToolset] = None) -> LlmAgent:
     )
 
 
-def build_production_agent(toolset: Optional[McpToolset] = None) -> LlmAgent:
+def build_production_agent(toolset: McpToolset | None = None) -> LlmAgent:
     return _specialist(
         "production_agent",
         "1st AD / UPM analyst. Schedule health, pages planned vs shot, "
@@ -234,7 +232,7 @@ def build_production_agent(toolset: Optional[McpToolset] = None) -> LlmAgent:
     )
 
 
-def build_continuity_agent(toolset: Optional[McpToolset] = None) -> LlmAgent:
+def build_continuity_agent(toolset: McpToolset | None = None) -> LlmAgent:
     return _specialist(
         "continuity_agent",
         "Script supervisor. Cross-take continuity conflicts for a scene and "
@@ -244,7 +242,7 @@ def build_continuity_agent(toolset: Optional[McpToolset] = None) -> LlmAgent:
     )
 
 
-def build_report_agent(toolset: Optional[McpToolset] = None) -> LlmAgent:
+def build_report_agent(toolset: McpToolset | None = None) -> LlmAgent:
     return _specialist(
         "report_agent",
         "Production office. Generates the Daily Progress Report and the "
@@ -255,7 +253,7 @@ def build_report_agent(toolset: Optional[McpToolset] = None) -> LlmAgent:
     )
 
 
-def build_root_agent(toolset: Optional[McpToolset] = None) -> LlmAgent:
+def build_root_agent(toolset: McpToolset | None = None) -> LlmAgent:
     ts = toolset or clickhouse_toolset
     return LlmAgent(
         name="slateiq_coordinator",

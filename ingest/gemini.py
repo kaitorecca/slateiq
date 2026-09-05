@@ -70,8 +70,10 @@ def _account(resp) -> None:
 
 def token_report() -> str:
     t = _TOKENS
-    return (f"gemini: {t['calls']} live call(s), prompt={t['prompt']} "
-            f"output={t['output']} total={t['total']} tokens")
+    return (
+        f"gemini: {t['calls']} live call(s), prompt={t['prompt']} "
+        f"output={t['output']} total={t['total']} tokens"
+    )
 
 
 def generate(cl, *, contents, config, model: str | None = None, attempts: int = 5):
@@ -84,14 +86,16 @@ def generate(cl, *, contents, config, model: str | None = None, attempts: int = 
                 resp = cl.models.generate_content(model=m, contents=contents, config=config)
                 _account(resp)
                 return resp, m
-            except Exception as exc:  # noqa: BLE001 - genai raises many shapes
+            except Exception as exc:
                 last = exc
                 msg = str(exc)
-                retryable = any(s in msg for s in ("429", "RESOURCE_EXHAUSTED", "503",
-                                                   "500", "UNAVAILABLE", "deadline"))
+                retryable = any(
+                    s in msg
+                    for s in ("429", "RESOURCE_EXHAUSTED", "503", "500", "UNAVAILABLE", "deadline")
+                )
                 if not retryable:
                     break  # try the fallback model
-                wait = min(60.0, (2 ** i) * 2.0) + random.random() * 1.5
+                wait = min(60.0, (2**i) * 2.0) + random.random() * 1.5
                 print(f"    retry in {wait:.1f}s ({msg[:90]})", file=sys.stderr)
                 time.sleep(wait)
         print(f"    model {m} failed, falling back", file=sys.stderr)

@@ -33,25 +33,24 @@ import re
 import struct
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 # Make the package importable when uvicorn is started from agent/.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from fastapi import HTTPException, Query, Request  # noqa: E402
-from fastapi.responses import (  # noqa: E402
+from fastapi import HTTPException, Query, Request
+from fastapi.responses import (
     JSONResponse,
     Response,
     StreamingResponse,
 )
-from fastapi.staticfiles import StaticFiles  # noqa: E402
-from starlette.exceptions import HTTPException as StarletteHTTPException  # noqa: E402
-from google.adk.cli.fast_api import get_fast_api_app  # noqa: E402
-from pydantic import BaseModel, Field  # noqa: E402
-
-from slateiq_agent import config, export  # noqa: E402
-from slateiq_agent.runtime import run_once, stream_agent  # noqa: E402
-from slateiq_agent.schema import schema_source  # noqa: E402
+from fastapi.staticfiles import StaticFiles
+from google.adk.cli.fast_api import get_fast_api_app
+from pydantic import BaseModel, Field
+from slateiq_agent import config, export
+from slateiq_agent.runtime import run_once, stream_agent
+from slateiq_agent.schema import schema_source
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logging.basicConfig(level=os.environ.get("SLATEIQ_LOG_LEVEL", "INFO"))
 logger = logging.getLogger("slateiq.api")
@@ -77,8 +76,7 @@ def _probe_mcp() -> str:
         import urllib.request
 
         base = config.MCP_URL.rstrip("/")
-        if base.endswith("/mcp"):
-            base = base[: -len("/mcp")]
+        base = base.removesuffix("/mcp")
         req = urllib.request.Request(base + "/health", method="GET")
         if config.MCP_TOKEN:
             req.add_header("Authorization", f"Bearer {config.MCP_TOKEN}")
@@ -188,8 +186,7 @@ def _mcp_health_url() -> str:
     if explicit:
         return explicit
     base = config.MCP_URL.rstrip("/")
-    if base.endswith("/mcp"):
-        base = base[: -len("/mcp")]
+    base = base.removesuffix("/mcp")
     return base + "/health"
 
 
@@ -212,15 +209,13 @@ async def app_config() -> dict[str, Any]:
     """Runtime configuration the SPA reads at boot."""
     return {
         "app_url": (os.environ.get("APP_URL") or _DEFAULT_APP_URL).rstrip("/"),
-        "grafana_url": (
-            os.environ.get("GRAFANA_URL") or _DEFAULT_GRAFANA_URL
-        ).rstrip("/"),
+        "grafana_url": (os.environ.get("GRAFANA_URL") or _DEFAULT_GRAFANA_URL).rstrip("/"),
         "grafana_dash_uid": os.environ.get("GRAFANA_DASH_UID") or "slateiq-prod-health",
         "grafana_panels": _grafana_panels(),
         "mcp_health_url": _mcp_health_url(),
-        "repo_url": (
-            os.environ.get("REPO_URL") or "https://github.com/kaitorecca/slateiq"
-        ).rstrip("/"),
+        "repo_url": (os.environ.get("REPO_URL") or "https://github.com/kaitorecca/slateiq").rstrip(
+            "/"
+        ),
         "clips_base_url": CLIPS_BASE_URL,
     }
 
@@ -230,7 +225,7 @@ async def app_config() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1)
-    session_id: Optional[str] = None
+    session_id: str | None = None
     user_id: str = "web"
     agent: str = "coordinator"
 
@@ -278,8 +273,7 @@ def _enrich_takes(refs: list[Any]) -> list[dict[str, Any]]:
             parameters={"ids": ids},
         )
         by_id = {
-            row["take_id"]: row
-            for row in (dict(zip(res.column_names, r)) for r in res.result_rows)
+            row["take_id"]: row for row in (dict(zip(res.column_names, r)) for r in res.result_rows)
         }
     except Exception as exc:  # never fail the answer because of the gallery
         logger.warning("take enrichment failed: %s", exc)
@@ -324,9 +318,7 @@ async def chat(req: ChatRequest, request: Request) -> StreamingResponse:
 
                     event = {
                         **event,
-                        "takes": await anyio.to_thread.run_sync(
-                            _enrich_takes, event["takes"]
-                        ),
+                        "takes": await anyio.to_thread.run_sync(_enrich_takes, event["takes"]),
                     }
                 yield _sse(event)
         except Exception as exc:  # pragma: no cover
@@ -385,7 +377,7 @@ def _cache_path(kind: str, day: int) -> Path:
     return _REPORT_CACHE / f"{kind}_day{day:02d}.json"
 
 
-def _cache_read(kind: str, day: int) -> Optional[dict[str, Any]]:
+def _cache_read(kind: str, day: int) -> dict[str, Any] | None:
     try:
         return json.loads(_cache_path(kind, day).read_text("utf-8"))
     except Exception:
@@ -395,9 +387,7 @@ def _cache_read(kind: str, day: int) -> Optional[dict[str, Any]]:
 def _cache_write(kind: str, day: int, payload: dict[str, Any]) -> None:
     try:
         _REPORT_CACHE.mkdir(parents=True, exist_ok=True)
-        _cache_path(kind, day).write_text(
-            json.dumps(payload, indent=1, default=str), "utf-8"
-        )
+        _cache_path(kind, day).write_text(json.dumps(payload, indent=1, default=str), "utf-8")
     except Exception as exc:  # caching is best-effort
         logger.warning("could not cache %s day %s: %s", kind, day, exc)
 
@@ -407,9 +397,7 @@ async def _report(prompt: str, day: int, kind: str, refresh: bool = False) -> di
         cached = _cache_read(kind, day)
         if cached and cached.get("markdown"):
             return {**cached, "cached": True}
-    result = await run_once(
-        prompt.format(day=day), user_id="report", agent_key="report"
-    )
+    result = await run_once(prompt.format(day=day), user_id="report", agent_key="report")
     if result.get("error"):
         raise HTTPException(502, result["error"])
     payload = {
@@ -426,16 +414,12 @@ async def _report(prompt: str, day: int, kind: str, refresh: bool = False) -> di
 
 
 @app.get("/api/report/dpr")
-async def dpr(
-    day: int = Query(..., ge=1, le=365), refresh: bool = False
-) -> dict[str, Any]:
+async def dpr(day: int = Query(..., ge=1, le=365), refresh: bool = False) -> dict[str, Any]:
     return await _report(_DPR_PROMPT, day, "dpr", refresh)
 
 
 @app.get("/api/report/editor-log")
-async def editor_log(
-    day: int = Query(..., ge=1, le=365), refresh: bool = False
-) -> dict[str, Any]:
+async def editor_log(day: int = Query(..., ge=1, le=365), refresh: bool = False) -> dict[str, Any]:
     return await _report(_LOG_PROMPT, day, "editor_log", refresh)
 
 
@@ -444,7 +428,7 @@ async def editor_log(
 # ---------------------------------------------------------------------------
 class TTSRequest(BaseModel):
     text: str = Field(..., min_length=1)
-    voice: Optional[str] = None
+    voice: str | None = None
     summarize: bool = True
 
 
@@ -455,8 +439,11 @@ def _pcm_to_wav(pcm: bytes, rate: int = 24000, channels: int = 1, width: int = 2
     buf.write(b"RIFF")
     buf.write(struct.pack("<I", 36 + data_len))
     buf.write(b"WAVEfmt ")
-    buf.write(struct.pack("<IHHIIHH", 16, 1, channels, rate,
-                          rate * channels * width, channels * width, width * 8))
+    buf.write(
+        struct.pack(
+            "<IHHIIHH", 16, 1, channels, rate, rate * channels * width, channels * width, width * 8
+        )
+    )
     buf.write(b"data")
     buf.write(struct.pack("<I", data_len))
     buf.write(pcm)
@@ -474,12 +461,10 @@ def _rate_from_mime(mime: str) -> int:
     return 24000
 
 
-_TTS_CACHE = Path(
-    os.environ.get("SLATEIQ_TTS_CACHE", str(_REPO_ROOT / "data" / "cache" / "tts"))
-)
+_TTS_CACHE = Path(os.environ.get("SLATEIQ_TTS_CACHE", str(_REPO_ROOT / "data" / "cache" / "tts")))
 
 
-def _tts_key(req: "TTSRequest") -> str:
+def _tts_key(req: TTSRequest) -> str:
     import hashlib
 
     raw = f"{config.TTS_MODEL}|{req.voice or config.TTS_VOICE}|{req.summarize}|{req.text.strip()}"
@@ -518,8 +503,7 @@ async def tts(req: TTSRequest) -> Response:
                 contents=(
                     "Rewrite this film-production update as a spoken briefing "
                     "for the producer. Maximum 90 words, plain sentences, no "
-                    "markdown, no lists, no symbols. Keep every number.\n\n"
-                    + text
+                    "markdown, no lists, no symbols. Keep every number.\n\n" + text
                 ),
             )
             if condensed.text:
@@ -601,9 +585,9 @@ def _ch_client():
 
 @app.get("/api/takes")
 async def takes(
-    scene: Optional[str] = None,
-    day: Optional[int] = None,
-    status: Optional[str] = None,
+    scene: str | None = None,
+    day: int | None = None,
+    status: str | None = None,
     limit: int = Query(100, ge=1, le=500),
 ) -> JSONResponse:
     """Direct ClickHouse listing for the UI gallery (not agent reasoning).
@@ -635,7 +619,7 @@ async def takes(
             WHERE kind = 'flag' AND flag_type != ''
             GROUP BY take_id
         ) f USING (take_id)
-        WHERE {' AND '.join(where)}
+        WHERE {" AND ".join(where)}
         -- takes whose media is served locally lead the gallery; the rest of
         -- the 30-day synthetic shoot has rows but no footage on this box.
         ORDER BY startsWith(t.clip_uri, 'clips/') DESC,
@@ -771,9 +755,8 @@ if _dist.is_dir():
     # ADK registers a `/` route that redirects to its dev UI. The SlateIQ web
     # app owns the site root, so drop that route before mounting; the ADK dev
     # UI stays reachable at /dev-ui/.
-    app.router.routes = [
-        r for r in app.router.routes if getattr(r, "path", None) != "/"
-    ]
+    app.router.routes = [r for r in app.router.routes if getattr(r, "path", None) != "/"]
+
     class _SpaStatic(StaticFiles):
         """StaticFiles that falls back to index.html for client-side routes."""
 
@@ -784,9 +767,7 @@ if _dist.is_dir():
                 # Media and build assets must 404 honestly -- silently handing
                 # back index.html made every missing thumbnail look like a
                 # successful load with no console error to notice.
-                if exc.status_code == 404 and not path.startswith(
-                    ("assets/", "clips/", "thumbs/")
-                ):
+                if exc.status_code == 404 and not path.startswith(("assets/", "clips/", "thumbs/")):
                     return await super().get_response("index.html", scope)
                 raise
 
@@ -798,5 +779,8 @@ else:
 
     @app.get("/api/ui-status")
     async def ui_status() -> dict[str, Any]:
-        return {"web_dist": False, "path": str(_dist),
-                "hint": "build web/ then restart, or use the ADK dev UI"}
+        return {
+            "web_dist": False,
+            "path": str(_dist),
+            "hint": "build web/ then restart, or use the ADK dev UI",
+        }

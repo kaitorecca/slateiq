@@ -26,9 +26,9 @@ import os
 from datetime import datetime, timedelta
 
 import clickhouse_connect
-
 from config import (
     DAY_NUMBER,
+    FPS,
     PRODUCTION_ID,
     REAL_SCENES,
     SHOOT_DATE,
@@ -37,7 +37,6 @@ from config import (
     Take,
     roll_for,
     sound_roll_for,
-    FPS,
 )
 
 DB = os.environ.get("CLICKHOUSE_DB", "slateiq")
@@ -75,28 +74,83 @@ DDL = [
     ) ENGINE = MergeTree ORDER BY (production_id, take_id)""",
 ]
 
-TAKE_COLS = ["production_id", "take_id", "day_number", "scene_number", "shot",
-             "take_number", "camera", "roll", "sound_roll", "clip_uri", "thumb_uri",
-             "tc_in", "duration_s", "status", "director_note", "lens_mm", "fps",
-             "iso", "created_at"]
-EVENT_COLS = ["production_id", "take_id", "event_id", "t_offset_s", "t_end_s", "kind",
-              "speaker", "text", "flag_type", "severity", "score", "meta"]
-ANALYSIS_COLS = ["production_id", "take_id", "summary", "transcript", "quality_score",
-                 "recommended", "emotion_intensity", "performance_note", "model",
-                 "analyzed_at"]
-CONT_COLS = ["production_id", "scene_number", "take_id_a", "take_id_b", "category",
-             "description", "severity", "created_at"]
-TELEM_COLS = ["production_id", "take_id", "t_s", "focus_score", "exposure_ev",
-              "motion", "audio_peak_db", "audio_rms_db"]
+TAKE_COLS = [
+    "production_id",
+    "take_id",
+    "day_number",
+    "scene_number",
+    "shot",
+    "take_number",
+    "camera",
+    "roll",
+    "sound_roll",
+    "clip_uri",
+    "thumb_uri",
+    "tc_in",
+    "duration_s",
+    "status",
+    "director_note",
+    "lens_mm",
+    "fps",
+    "iso",
+    "created_at",
+]
+EVENT_COLS = [
+    "production_id",
+    "take_id",
+    "event_id",
+    "t_offset_s",
+    "t_end_s",
+    "kind",
+    "speaker",
+    "text",
+    "flag_type",
+    "severity",
+    "score",
+    "meta",
+]
+ANALYSIS_COLS = [
+    "production_id",
+    "take_id",
+    "summary",
+    "transcript",
+    "quality_score",
+    "recommended",
+    "emotion_intensity",
+    "performance_note",
+    "model",
+    "analyzed_at",
+]
+CONT_COLS = [
+    "production_id",
+    "scene_number",
+    "take_id_a",
+    "take_id_b",
+    "category",
+    "description",
+    "severity",
+    "created_at",
+]
+TELEM_COLS = [
+    "production_id",
+    "take_id",
+    "t_s",
+    "focus_score",
+    "exposure_ev",
+    "motion",
+    "audio_peak_db",
+    "audio_rms_db",
+]
 
 # what an induced degradation looks like as a flag event (severity on the
 # 1..5 house scale from db/SCHEMA.md)
 DEGRADE_FLAG = {
-    "soft_focus": (5, "Image goes soft through the middle of the take; the focus "
-                      "puller never recovers the eyes."),
+    "soft_focus": (
+        5,
+        "Image goes soft through the middle of the take; the focus puller never recovers the eyes.",
+    ),
     "boom_in_shot": (5, "Boom microphone dips into the top of frame, left of centre."),
-    "audio_clip": (3, "Production sound clips hard — the level slams into 0 dBFS and "
-                      "distorts."),
+    "audio_clip": (3, "Production sound clips hard — the level slams into 0 dBFS and distorts."),
     "frame_edge": (3, "Operator drifts right and the subject is cut by the frame edge."),
 }
 # Gemini scores severity 1..3; the database is 1..5
@@ -114,20 +168,24 @@ DEGRADE_EXTRA_NOTE = {
 # replacing our slice we rebuild exactly the affected roll-up keys straight
 # from `take`, which is the source of truth.
 AGG_REPAIR = [
-    ("take_daily_agg",
-     "production_id = '{prod}' AND day_number = {day}",
-     """SELECT production_id, day_number, count(), countIf(status='circled'),
+    (
+        "take_daily_agg",
+        "production_id = '{prod}' AND day_number = {day}",
+        """SELECT production_id, day_number, count(), countIf(status='circled'),
                countIf(status='ng'), sum(toFloat64(duration_s)),
                uniqState(concat(scene_number, '/', shot))
         FROM {db}.take WHERE production_id='{prod}' AND day_number={day}
-        GROUP BY production_id, day_number"""),
-    ("take_scene_agg",
-     "production_id = '{prod}' AND scene_number IN ({scenes})",
-     """SELECT production_id, scene_number, count(), countIf(status='circled'),
+        GROUP BY production_id, day_number""",
+    ),
+    (
+        "take_scene_agg",
+        "production_id = '{prod}' AND scene_number IN ({scenes})",
+        """SELECT production_id, scene_number, count(), countIf(status='circled'),
                countIf(status='ng'), sum(toFloat64(duration_s)), uniqState(shot),
                min(day_number), max(day_number)
         FROM {db}.take WHERE production_id='{prod}' AND scene_number IN ({scenes})
-        GROUP BY production_id, scene_number"""),
+        GROUP BY production_id, scene_number""",
+    ),
 ]
 
 
@@ -137,8 +195,9 @@ def repair_aggregates(cl) -> None:
     for table, where, select in AGG_REPAIR:
         if not cl.command(f"EXISTS TABLE {DB}.{table}"):
             continue
-        cl.command(f"DELETE FROM {DB}.{table} WHERE " + where.format(**fmt),
-                   settings={"mutations_sync": 2})
+        cl.command(
+            f"DELETE FROM {DB}.{table} WHERE " + where.format(**fmt), settings={"mutations_sync": 2}
+        )
         cl.command(f"INSERT INTO {DB}.{table} " + select.format(**fmt))
     print("  rebuilt take_daily_agg / take_scene_agg for the affected keys")
 
@@ -172,13 +231,29 @@ def build_rows(base_url: str | None, live_continuity: bool):
             missing.append(t.take_id)
             continue
         duration = probe_duration(t.clip_path)
-        takes.append([
-            PRODUCTION_ID, t.take_id, DAY_NUMBER, t.scene_number, t.shot,
-            t.take_number, t.camera, roll_for(t), sound_roll_for(t),
-            uri(t.clip_rel, base_url), uri(t.thumb_rel, base_url), t.tc_in,
-            round(duration, 3), t.status, t.director_note, t.lens_mm, FPS, t.iso,
-            tc_to_dt(t.tc_in),
-        ])
+        takes.append(
+            [
+                PRODUCTION_ID,
+                t.take_id,
+                DAY_NUMBER,
+                t.scene_number,
+                t.shot,
+                t.take_number,
+                t.camera,
+                roll_for(t),
+                sound_roll_for(t),
+                uri(t.clip_rel, base_url),
+                uri(t.thumb_rel, base_url),
+                t.tc_in,
+                round(duration, 3),
+                t.status,
+                t.director_note,
+                t.lens_mm,
+                FPS,
+                t.iso,
+                tc_to_dt(t.tc_in),
+            ]
+        )
 
         # telemetry always comes from the take's OWN clip (variants included)
         for r in telemetry_rows(t, duration):
@@ -195,9 +270,18 @@ def build_rows(base_url: str | None, live_continuity: bool):
 
     cont = []
     for scene, n in all_notes(live=live_continuity):
-        cont.append([PRODUCTION_ID, scene, n["take_id_a"], n["take_id_b"],
-                     n["category"], n["description"],
-                     SEVERITY_MAP.get(int(n["severity"]), 3), now])
+        cont.append(
+            [
+                PRODUCTION_ID,
+                scene,
+                n["take_id_a"],
+                n["take_id_b"],
+                n["category"],
+                n["description"],
+                SEVERITY_MAP.get(int(n["severity"]), 3),
+                now,
+            ]
+        )
 
     return takes, events, analyses, cont, telemetry, missing
 
@@ -209,46 +293,89 @@ def events_for(t: Take, a: dict, duration: float) -> list[list]:
     def add(t_off, t_end, kind, speaker, text, flag_type, severity, score, meta):
         nonlocal n
         n += 1
-        rows.append([
-            PRODUCTION_ID, t.take_id, f"{t.take_id}_e{n:03d}",
-            round(min(float(t_off), duration), 3),
-            round(min(float(t_end), duration), 3),
-            kind, speaker, text, flag_type, int(severity), float(score),
-            json.dumps(meta, separators=(",", ":")),
-        ])
+        rows.append(
+            [
+                PRODUCTION_ID,
+                t.take_id,
+                f"{t.take_id}_e{n:03d}",
+                round(min(float(t_off), duration), 3),
+                round(min(float(t_end), duration), 3),
+                kind,
+                speaker,
+                text,
+                flag_type,
+                int(severity),
+                float(score),
+                json.dumps(meta, separators=(",", ":")),
+            ]
+        )
 
     slate_text = f"Scene {t.scene_number} {t.shot} take {t.take_number} camera {t.camera}"
-    add(0.0, min(2.0, duration), "slate", "", slate_text, "", 0, 0.0,
-        {"marker": "head", "read": a.get("slate", "")})
+    add(
+        0.0,
+        min(2.0, duration),
+        "slate",
+        "",
+        slate_text,
+        "",
+        0,
+        0.0,
+        {"marker": "head", "read": a.get("slate", "")},
+    )
     for seg in a.get("transcript", []):
         add(seg["start"], seg["end"], "dialogue", seg["speaker"], seg["text"], "", 0, 0.0, {})
     for beat in a.get("actions", []):
         add(beat["start"], beat["end"], "action", "", beat["text"], "", 0, 0.0, {})
     for e in a.get("emotions", []):
-        add(e["start"], e["end"], "emotion", "", e["label"], "", 0,
-            float(e["intensity"]), {"label": e["label"]})
+        add(
+            e["start"],
+            e["end"],
+            "emotion",
+            "",
+            e["label"],
+            "",
+            0,
+            float(e["intensity"]),
+            {"label": e["label"]},
+        )
     for c in a.get("camera", []):
         add(c["start"], c["end"], "camera", "", c["text"], "", 0, 0.0, {})
     for f in a.get("flags", []):
-        add(f["start"], f["end"], "flag", "", f["evidence"], f["type"],
-            SEVERITY_MAP.get(int(f["severity"]), 3), 0.0, {"source": "gemini"})
+        add(
+            f["start"],
+            f["end"],
+            "flag",
+            "",
+            f["evidence"],
+            f["type"],
+            SEVERITY_MAP.get(int(f["severity"]), 3),
+            0.0,
+            {"source": "gemini"},
+        )
 
     # the induced defect on a degraded variant
     if t.is_variant:
         sev, evidence = DEGRADE_FLAG[t.degrade]
         s, e = t.defect_window
-        add(s, e, "flag", "", evidence, t.degrade, sev, 0.0,
-            {"source": "induced", "parent_take_id": t.parent})
+        add(
+            s,
+            e,
+            "flag",
+            "",
+            evidence,
+            t.degrade,
+            sev,
+            0.0,
+            {"source": "induced", "parent_take_id": t.parent},
+        )
     return rows
 
 
 def analysis_row(t: Take, a: dict, cached: dict) -> list:
-    transcript = " ".join(
-        f"{s['speaker']}: {s['text']}" for s in a.get("transcript", [])
-    ).strip()
+    transcript = " ".join(f"{s['speaker']}: {s['text']}" for s in a.get("transcript", [])).strip()
     emo = [float(e["intensity"]) for e in a.get("emotions", [])]
     emotion_intensity = round(min(1.0, max(emo)), 3) if emo else 0.0
-    score = float(a["quality_score"]) / 10.0   # Gemini scores 0..10, the db is 0..1
+    score = float(a["quality_score"]) / 10.0  # Gemini scores 0..10, the db is 0..1
     summary = a["summary"]
     note = a["performance_note"]
     recommended = bool(a["recommended"])
@@ -261,8 +388,15 @@ def analysis_row(t: Take, a: dict, cached: dict) -> list:
         note = f"{note} {DEGRADE_EXTRA_NOTE[t.degrade]}"
 
     return [
-        PRODUCTION_ID, t.take_id, summary, transcript, score, recommended,
-        emotion_intensity, note, cached["model"],
+        PRODUCTION_ID,
+        t.take_id,
+        summary,
+        transcript,
+        score,
+        recommended,
+        emotion_intensity,
+        note,
+        cached["model"],
         datetime.strptime(cached["analyzed_at"], "%Y-%m-%d %H:%M:%S"),
     ]
 
@@ -270,20 +404,30 @@ def analysis_row(t: Take, a: dict, cached: dict) -> list:
 # --------------------------------------------------------------------------
 def main() -> int:
     ap = argparse.ArgumentParser(description="load real day-12 dailies into ClickHouse")
-    ap.add_argument("--replace", action="store_true",
-                    help="delete this slice (day 12, real scenes) before inserting")
-    ap.add_argument("--base-url", default=os.environ.get("SLATEIQ_MEDIA_BASE_URL"),
-                    help="prefix clip_uri/thumb_uri, e.g. https://storage.googleapis.com/bucket")
-    ap.add_argument("--offline-continuity", action="store_true",
-                    help="use only cached continuity results")
+    ap.add_argument(
+        "--replace",
+        action="store_true",
+        help="delete this slice (day 12, real scenes) before inserting",
+    )
+    ap.add_argument(
+        "--base-url",
+        default=os.environ.get("SLATEIQ_MEDIA_BASE_URL"),
+        help="prefix clip_uri/thumb_uri, e.g. https://storage.googleapis.com/bucket",
+    )
+    ap.add_argument(
+        "--offline-continuity", action="store_true", help="use only cached continuity results"
+    )
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
     print("building rows ...")
     takes, events, analyses, cont, telem, missing = build_rows(
-        args.base_url, live_continuity=not args.offline_continuity)
-    print(f"  take={len(takes)} take_event={len(events)} take_analysis={len(analyses)} "
-          f"continuity_note={len(cont)} frame_telemetry={len(telem)}")
+        args.base_url, live_continuity=not args.offline_continuity
+    )
+    print(
+        f"  take={len(takes)} take_event={len(events)} take_analysis={len(analyses)} "
+        f"continuity_note={len(cont)} frame_telemetry={len(telem)}"
+    )
     if missing:
         print(f"  !! no clip/analysis for: {sorted(set(missing))}")
     if args.dry_run:
@@ -302,15 +446,22 @@ def main() -> int:
         ids = "', '".join(t[1] for t in takes)
         scenes = "', '".join(REAL_SCENES)
         settings = {"mutations_sync": 2}
-        cl.command(f"DELETE FROM {DB}.take WHERE production_id='{PRODUCTION_ID}' "
-                   f"AND day_number={DAY_NUMBER} AND scene_number IN ('{scenes}')",
-                   settings=settings)
+        cl.command(
+            f"DELETE FROM {DB}.take WHERE production_id='{PRODUCTION_ID}' "
+            f"AND day_number={DAY_NUMBER} AND scene_number IN ('{scenes}')",
+            settings=settings,
+        )
         for tbl in ("take_event", "take_analysis", "frame_telemetry"):
-            cl.command(f"DELETE FROM {DB}.{tbl} WHERE production_id='{PRODUCTION_ID}' "
-                       f"AND take_id IN ('{ids}')", settings=settings)
-        cl.command(f"DELETE FROM {DB}.continuity_note WHERE production_id='{PRODUCTION_ID}' "
-                   f"AND (take_id_a IN ('{ids}') OR take_id_b IN ('{ids}'))",
-                   settings=settings)
+            cl.command(
+                f"DELETE FROM {DB}.{tbl} WHERE production_id='{PRODUCTION_ID}' "
+                f"AND take_id IN ('{ids}')",
+                settings=settings,
+            )
+        cl.command(
+            f"DELETE FROM {DB}.continuity_note WHERE production_id='{PRODUCTION_ID}' "
+            f"AND (take_id_a IN ('{ids}') OR take_id_b IN ('{ids}'))",
+            settings=settings,
+        )
         print("  replaced: deleted existing day-12 real-footage rows")
 
     cl.insert(f"{DB}.take", takes, column_names=TAKE_COLS)

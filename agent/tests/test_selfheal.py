@@ -7,7 +7,6 @@ ClickHouse error -- with a fake tool instead of a real MCP server.
 from __future__ import annotations
 
 import pytest
-
 from slateiq_agent.agent import SelfHealingMcpToolset, _is_transport_failure
 
 
@@ -62,7 +61,7 @@ class _FakeTool:
 class _Toolset(SelfHealingMcpToolset):
     """Counts resets instead of touching a real session manager."""
 
-    def __init__(self):  # noqa: D107 - deliberately skips McpToolset.__init__
+    def __init__(self):
         self.resets = 0
 
     async def _reset_session(self) -> None:

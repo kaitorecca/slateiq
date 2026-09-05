@@ -12,7 +12,6 @@ pure text in / text out.
 from __future__ import annotations
 
 import pytest
-
 from slateiq_agent import guardrails
 from slateiq_agent.config import MAX_ROWS
 from slateiq_agent.guardrails import enforce, validate_sql
@@ -41,8 +40,8 @@ def rejected(sql: str) -> str:
     [
         f"SELECT count() FROM {DB}.take",
         f"select take_id from {DB}.take limit 5",
-        f"  \n SELECT 1 ",
-        f"WITH x AS (SELECT 1 AS a) SELECT a FROM x LIMIT 1",
+        "  \n SELECT 1 ",
+        "WITH x AS (SELECT 1 AS a) SELECT a FROM x LIMIT 1",
         # A literal that merely contains a scary word is production data, not a
         # statement -- searching dialogue for "drop" must keep working.
         f"SELECT text FROM {DB}.take_event WHERE text ILIKE '%drop%' LIMIT 10",
@@ -144,9 +143,7 @@ def test_blocks_a_table_function_with_whitespace_before_the_paren() -> None:
 
 
 def test_rejects_file_output() -> None:
-    assert "file output" in rejected(
-        f"SELECT * FROM {DB}.take INTO OUTFILE '/tmp/x.csv'"
-    )
+    assert "file output" in rejected(f"SELECT * FROM {DB}.take INTO OUTFILE '/tmp/x.csv'")
     assert "file output" in rejected(f"SELECT * FROM {DB}.take FORMAT CSVFile")
 
 
@@ -176,19 +173,14 @@ def test_a_bare_aggregate_needs_no_limit() -> None:
 
 
 def test_a_subquery_limit_does_not_count_as_the_outer_bound() -> None:
-    safe = ok(
-        f"SELECT s.scene_number FROM (SELECT scene_number FROM {DB}.take "
-        f"LIMIT 5) AS s"
-    )
+    safe = ok(f"SELECT s.scene_number FROM (SELECT scene_number FROM {DB}.take LIMIT 5) AS s")
     assert safe.endswith(f"LIMIT {MAX_ROWS}")
     assert "LIMIT 5" in safe  # the inner one survives
 
 
 def test_limit_is_appended_before_a_settings_clause() -> None:
     safe = ok(f"SELECT * FROM {DB}.take SETTINGS join_use_nulls = 1")
-    assert safe == (
-        f"SELECT * FROM {DB}.take LIMIT {MAX_ROWS} SETTINGS join_use_nulls = 1"
-    )
+    assert safe == (f"SELECT * FROM {DB}.take LIMIT {MAX_ROWS} SETTINGS join_use_nulls = 1")
 
 
 def test_limit_is_appended_before_a_format_clause() -> None:
@@ -252,18 +244,12 @@ def test_a_hash_comment_is_removed() -> None:
 
 
 def test_an_escaped_quote_inside_a_literal_does_not_unbalance_the_mask() -> None:
-    sql = (
-        f"SELECT text FROM {DB}.take_event "
-        "WHERE text = 'don''t drop it' LIMIT 5"
-    )
+    sql = f"SELECT text FROM {DB}.take_event WHERE text = 'don''t drop it' LIMIT 5"
     ok(sql)
 
 
 def test_a_forbidden_keyword_only_inside_a_literal_is_allowed() -> None:
-    ok(
-        f"SELECT text FROM {DB}.take_event "
-        "WHERE text ILIKE '%insert into the frame%' LIMIT 5"
-    )
+    ok(f"SELECT text FROM {DB}.take_event WHERE text ILIKE '%insert into the frame%' LIMIT 5")
 
 
 def test_mask_preserves_length() -> None:
@@ -275,16 +261,12 @@ def test_mask_preserves_length() -> None:
 # Injection through a scene number, and the eval-facing helper
 # ---------------------------------------------------------------------------
 def test_injection_payload_inside_a_literal_is_just_text() -> None:
-    ok(
-        f"SELECT count() FROM {DB}.take "
-        "WHERE scene_number = '12'' OR ''1''=''1' LIMIT 5"
-    )
+    ok(f"SELECT count() FROM {DB}.take WHERE scene_number = '12'' OR ''1''=''1' LIMIT 5")
 
 
 def test_injection_payload_that_escapes_the_literal_is_refused() -> None:
     rejected(
-        f"SELECT count() FROM {DB}.take WHERE scene_number = '12' OR '1'='1'; "
-        f"DROP TABLE {DB}.take"
+        f"SELECT count() FROM {DB}.take WHERE scene_number = '12' OR '1'='1'; DROP TABLE {DB}.take"
     )
 
 
@@ -314,7 +296,7 @@ def test_other_failures_keep_their_detail_but_never_invent_a_number() -> None:
 # the chat window on a hosted 503.
 _GEMINI_503 = (
     "ServerError: 503 Service Unavailable. {'message': '{\n \"error\": {\n "
-    "\"code\": 503,\n \"message\": \"This model is currently experiencing "
+    '"code": 503,\n "message": "This model is currently experiencing '
     "high demand. Spikes in demand are usually temporary. Please try again.\"}}'}"
 )
 

@@ -27,15 +27,33 @@ from config import (
     TAKES,
     TAKES_BY_ID,
     THUMBS_DIR,
-    Take,
     VARIANTS,
+    Take,
 )
 
 V_ENC = [
-    "-c:v", "libx264", "-preset", "veryfast", "-crf", "26",
-    "-pix_fmt", "yuv420p", "-profile:v", "high", "-g", "48",
-    "-c:a", "aac", "-b:a", "96k", "-ac", "2", "-ar", "48000",
-    "-movflags", "+faststart",
+    "-c:v",
+    "libx264",
+    "-preset",
+    "veryfast",
+    "-crf",
+    "26",
+    "-pix_fmt",
+    "yuv420p",
+    "-profile:v",
+    "high",
+    "-g",
+    "48",
+    "-c:a",
+    "aac",
+    "-b:a",
+    "96k",
+    "-ac",
+    "2",
+    "-ar",
+    "48000",
+    "-movflags",
+    "+faststart",
 ]
 SCALE = "scale=1280:-2"
 
@@ -49,20 +67,44 @@ def run(cmd: list[str]) -> None:
 
 def probe_duration(path) -> float:
     out = subprocess.run(
-        [FFPROBE, "-v", "error", "-show_entries", "format=duration",
-         "-of", "default=nw=1:nk=1", str(path)],
-        capture_output=True, text=True, check=True,
+        [
+            FFPROBE,
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "default=nw=1:nk=1",
+            str(path),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout.strip()
     return float(out)
 
 
 def cut_original(t: Take) -> None:
     dur = round(t.src_end - t.src_start, 3)
-    run([
-        FFMPEG, "-hide_banner", "-loglevel", "error", "-y",
-        "-ss", f"{t.src_start:.3f}", "-i", str(FOOTAGE), "-t", f"{dur:.3f}",
-        "-vf", SCALE, *V_ENC, str(t.clip_path),
-    ])
+    run(
+        [
+            FFMPEG,
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-ss",
+            f"{t.src_start:.3f}",
+            "-i",
+            str(FOOTAGE),
+            "-t",
+            f"{dur:.3f}",
+            "-vf",
+            SCALE,
+            *V_ENC,
+            str(t.clip_path),
+        ]
+    )
 
 
 def variant_filters(t: Take) -> tuple[str, str]:
@@ -94,21 +136,47 @@ def variant_filters(t: Take) -> tuple[str, str]:
 def make_variant(t: Take) -> None:
     parent = TAKES_BY_ID[t.parent]
     vf, af = variant_filters(t)
-    run([
-        FFMPEG, "-hide_banner", "-loglevel", "error", "-y",
-        "-i", str(parent.clip_path),
-        "-vf", vf, "-af", af, *V_ENC, str(t.clip_path),
-    ])
+    run(
+        [
+            FFMPEG,
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-i",
+            str(parent.clip_path),
+            "-vf",
+            vf,
+            "-af",
+            af,
+            *V_ENC,
+            str(t.clip_path),
+        ]
+    )
 
 
 def make_thumb(t: Take) -> None:
     dur = probe_duration(t.clip_path)
-    run([
-        FFMPEG, "-hide_banner", "-loglevel", "error", "-y",
-        "-ss", f"{dur * 0.25:.2f}", "-i", str(t.clip_path),
-        "-frames:v", "1", "-vf", "scale=480:-2", "-q:v", "4",
-        str(t.thumb_path),
-    ])
+    run(
+        [
+            FFMPEG,
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-y",
+            "-ss",
+            f"{dur * 0.25:.2f}",
+            "-i",
+            str(t.clip_path),
+            "-frames:v",
+            "1",
+            "-vf",
+            "scale=480:-2",
+            "-q:v",
+            "4",
+            str(t.thumb_path),
+        ]
+    )
 
 
 def main() -> int:
@@ -138,8 +206,10 @@ def main() -> int:
             make_thumb(t)
 
     sizes = sum(t.clip_path.stat().st_size for t in TAKES) / 1e6
-    print(f"{len(TAKES)} clips ({len(ORIGINALS)} original + {len(VARIANTS)} variant), "
-          f"{total:.0f}s of original footage to analyse, {sizes:.1f} MB on disk")
+    print(
+        f"{len(TAKES)} clips ({len(ORIGINALS)} original + {len(VARIANTS)} variant), "
+        f"{total:.0f}s of original footage to analyse, {sizes:.1f} MB on disk"
+    )
     return 0
 
 

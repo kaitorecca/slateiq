@@ -42,7 +42,7 @@ needs pairwise comparison across takes; the report agent needs a fixed document 
 larger query budget (8 rather than 6 `run_query` calls). Routing is ADK's `transfer_to_agent`, so
 the coordinator's job is one decision, not four playbooks.
 
-**One `McpToolset` instance is shared by all five agents** ([`agent/slateiq_agent/agent.py:53-77`](../agent/slateiq_agent/agent.py)).
+**One `McpToolset` instance is shared by all five agents** ([`agent/slateiq_agent/agent.py:162-187`](../agent/slateiq_agent/agent.py)).
 ADK 2.8 reparents *sub-agents* but not *toolsets*: constructing one per agent would open five MCP
 sessions against a 1 GiB VM for no benefit. One instance means one connection for the whole network,
 closed once at shutdown.
@@ -90,7 +90,7 @@ can be down — which is why `/api/health` surfaces the MCP endpoint and the UI 
 
 Two ADK callbacks wrap every tool call ([`agent/slateiq_agent/guardrails.py`](../agent/slateiq_agent/guardrails.py)).
 
-**`before_tool_callback` → `enforce()`**, on every `run_query` (`guardrails.py:127`):
+**`before_tool_callback` → `enforce()`**, on every `run_query` (`guardrails.py:313`):
 
 - The statement must be **single** and must start with `SELECT` or `WITH` (and a `WITH` block must
   actually contain a `SELECT`). Statement stacking is rejected.

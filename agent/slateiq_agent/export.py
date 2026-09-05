@@ -35,7 +35,8 @@ from __future__ import annotations
 import csv
 import io
 import re
-from typing import Any, Iterable, Optional, Sequence
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 from .config import DB
 
@@ -46,10 +47,10 @@ __all__ = [
     "editors_log_rows",
     "frames_to_tc",
     "render",
+    "tc_to_frames",
     "to_ale",
     "to_csv",
     "to_markdown",
-    "tc_to_frames",
 ]
 
 FORMATS = ("csv", "ale", "md")
@@ -100,7 +101,7 @@ ORDER BY toUInt32OrZero(extract(t.scene_number, '^[0-9]+')),
 _TC = re.compile(r"^\s*(\d{1,3}):([0-5]?\d):([0-5]?\d)[:;](\d{1,3})\s*$")
 
 
-def tc_to_frames(tc: str, fps: int = 24) -> Optional[int]:
+def tc_to_frames(tc: str, fps: int = 24) -> int | None:
     """``'12:04:11:00'`` -> absolute frame count. None if it is not a timecode."""
     m = _TC.match(tc or "")
     if not m or fps <= 0:
@@ -223,7 +224,7 @@ CSV_COLUMNS: tuple[tuple[str, str], ...] = (
 )
 
 
-def _csv_value(header: str, key: Optional[str], row: dict[str, Any]) -> str:
+def _csv_value(header: str, key: str | None, row: dict[str, Any]) -> str:
     if header == "TC Out":
         return tc_out(row)
     if header == "Quality":
@@ -313,7 +314,7 @@ def to_ale(
     cols = ale_columns()
     out: list[str] = [
         "Heading",
-        f"FIELD_DELIM\tTABS",
+        "FIELD_DELIM\tTABS",
         f"VIDEO_FORMAT\t{video_format}",
         f"AUDIO_FORMAT\t{audio_format}",
         f"FPS\t{fps}",

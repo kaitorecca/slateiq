@@ -16,7 +16,8 @@ from __future__ import annotations
 import json
 import re
 import uuid
-from typing import Any, AsyncIterator, Optional
+from collections.abc import AsyncIterator
+from typing import Any
 
 from google.adk.agents import LlmAgent
 from google.adk.agents.run_config import RunConfig, StreamingMode
@@ -66,9 +67,7 @@ def get_runner(agent_key: str = "coordinator") -> Runner:
     return _runners[agent_key]
 
 
-async def ensure_session(
-    runner: Runner, user_id: str, session_id: Optional[str]
-) -> str:
+async def ensure_session(runner: Runner, user_id: str, session_id: str | None) -> str:
     """Get or create a session id for this user."""
     if session_id:
         existing = await runner.session_service.get_session(
@@ -177,7 +176,7 @@ async def stream_agent(
     message: str,
     *,
     user_id: str = "web",
-    session_id: Optional[str] = None,
+    session_id: str | None = None,
     agent_key: str = "coordinator",
     stream_text: bool = True,
     max_llm_calls: int = 40,
@@ -200,7 +199,7 @@ async def stream_agent(
     last_complete_text = ""
     streamed_text: list[str] = []
     sql: list[str] = []
-    seen_agent: Optional[str] = None
+    seen_agent: str | None = None
     call_names: dict[str, str] = {}
     # In SSE streaming mode ADK emits each function call twice (once on the
     # partial event, once on the aggregated one) -- emit it to the UI once.
@@ -318,7 +317,7 @@ async def run_once(
     message: str,
     *,
     user_id: str = "api",
-    session_id: Optional[str] = None,
+    session_id: str | None = None,
     agent_key: str = "coordinator",
 ) -> dict[str, Any]:
     """Collect a full run into one result dict (used by /api/report + evals)."""
@@ -343,7 +342,5 @@ async def run_once(
         "events": events,
         "tool_calls": [{"name": e["name"], "args": e["args"]} for e in tool_calls],
         "ran_query": any(e["name"] == "run_query" for e in tool_calls),
-        "error": next(
-            (e["message"] for e in events if e["type"] == "error"), None
-        ),
+        "error": next((e["message"] for e in events if e["type"] == "error"), None),
     }

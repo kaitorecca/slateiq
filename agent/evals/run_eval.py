@@ -22,7 +22,7 @@ import os
 import statistics
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import yaml
@@ -31,8 +31,8 @@ EVAL_DIR = Path(__file__).resolve().parent
 AGENT_DIR = EVAL_DIR.parent
 sys.path.insert(0, str(AGENT_DIR))
 
-from slateiq_agent import config  # noqa: E402
-from slateiq_agent.runtime import run_once  # noqa: E402
+from slateiq_agent import config
+from slateiq_agent.runtime import run_once
 
 JUDGE_MODEL = os.environ.get("SLATEIQ_JUDGE_MODEL", "gemini-3.5-flash")
 
@@ -90,18 +90,15 @@ async def judge(
         question=question,
         rubric=rubric.strip(),
         sql="\n".join(f"- {s}" for s in sql) or "(none -- the agent never queried)",
-        results="\n".join(f"[{i}] {r}" for i, r in enumerate(results, 1))
-        or "(none)",
+        results="\n".join(f"[{i}] {r}" for i, r in enumerate(results, 1)) or "(none)",
         answer=answer[:12000],
     )
     try:
-        resp = await client.aio.models.generate_content(
-            model=JUDGE_MODEL, contents=prompt
-        )
+        resp = await client.aio.models.generate_content(model=JUDGE_MODEL, contents=prompt)
         text = (resp.text or "").strip()
         if text.startswith("```"):
             text = text.strip("`")
-            text = text[text.find("{"):]
+            text = text[text.find("{") :]
         start, end = text.find("{"), text.rfind("}")
         return json.loads(text[start : end + 1])
     except Exception as exc:
@@ -112,26 +109,34 @@ async def run_question(q: dict, client, do_judge: bool, timeout: float) -> dict:
     started = time.perf_counter()
     try:
         result = await asyncio.wait_for(
-            run_once(
-                q["question"], user_id=f"eval_{q['id']}", agent_key="coordinator"
-            ),
+            run_once(q["question"], user_id=f"eval_{q['id']}", agent_key="coordinator"),
             timeout=timeout,
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return {
-            **q, "latency_s": time.perf_counter() - started,
+            **q,
+            "latency_s": time.perf_counter() - started,
             "error": f"timed out after {timeout:.0f}s",
-            "answer": "", "sql": [], "tool_calls": [], "ran_query": False,
-            "agents": [], "takes": 0,
-            "judge": {"score": 0, "grounded": False,
-                      "reason": f"timed out after {timeout:.0f}s"},
+            "answer": "",
+            "sql": [],
+            "tool_calls": [],
+            "ran_query": False,
+            "agents": [],
+            "takes": 0,
+            "judge": {"score": 0, "grounded": False, "reason": f"timed out after {timeout:.0f}s"},
         }
     except Exception as exc:
         return {
-            **q, "latency_s": time.perf_counter() - started, "error": str(exc),
-            "answer": "", "sql": [], "tool_calls": [], "ran_query": False,
-            "agents": [], "takes": 0, "judge": {"score": 0, "grounded": False,
-                                                "reason": f"crashed: {exc}"},
+            **q,
+            "latency_s": time.perf_counter() - started,
+            "error": str(exc),
+            "answer": "",
+            "sql": [],
+            "tool_calls": [],
+            "ran_query": False,
+            "agents": [],
+            "takes": 0,
+            "judge": {"score": 0, "grounded": False, "reason": f"crashed: {exc}"},
         }
     latency = time.perf_counter() - started
     agents = []
@@ -172,17 +177,18 @@ async def run_question(q: dict, client, do_judge: bool, timeout: float) -> dict:
 def render(rows: list[dict], elapsed: float) -> str:
     n = len(rows)
     queried = sum(1 for r in rows if r["ran_query"])
-    scores = [r["judge"]["score"] for r in rows if isinstance(r["judge"].get("score"), int) and r["judge"]["score"] > 0]
-    routed = sum(
-        1 for r in rows
-        if not r.get("expect_agent") or r["expect_agent"] in r["agents"]
-    )
+    scores = [
+        r["judge"]["score"]
+        for r in rows
+        if isinstance(r["judge"].get("score"), int) and r["judge"]["score"] > 0
+    ]
+    routed = sum(1 for r in rows if not r.get("expect_agent") or r["expect_agent"] in r["agents"])
     lat = [r["latency_s"] for r in rows]
 
     out = [
         "# SlateIQ eval — last run",
         "",
-        f"- Run at: {datetime.now(timezone.utc).isoformat(timespec='seconds')}",
+        f"- Run at: {datetime.now(UTC).isoformat(timespec='seconds')}",
         f"- Coordinator model: `{config.MODEL}` · report model: `{config.REPORT_MODEL}` · judge: `{JUDGE_MODEL}`",
         f"- ClickHouse MCP: `{config.MCP_URL}` (auth: {bool(config.MCP_TOKEN)})",
         f"- Questions: **{n}** · wall clock {elapsed:.1f}s",
@@ -233,9 +239,14 @@ def render(rows: list[dict], elapsed: float) -> str:
             out += ["```", "", "</details>", ""]
         answer = r["answer"].strip()
         out += [
-            "<details><summary>Answer</summary>", "",
+            "<details><summary>Answer</summary>",
+            "",
             answer[:4000] + ("\n\n…truncated…" if len(answer) > 4000 else ""),
-            "", "</details>", "", "---", "",
+            "",
+            "</details>",
+            "",
+            "---",
+            "",
         ]
     return "\n".join(out)
 
@@ -247,8 +258,9 @@ async def main() -> int:
     ap.add_argument("--only", nargs="*", help="question ids to run")
     ap.add_argument("--no-judge", action="store_true")
     ap.add_argument("--concurrency", type=int, default=2)
-    ap.add_argument("--timeout", type=float, default=240.0,
-                    help="per-question wall-clock limit in seconds")
+    ap.add_argument(
+        "--timeout", type=float, default=240.0, help="per-question wall-clock limit in seconds"
+    )
     args = ap.parse_args()
 
     spec = yaml.safe_load(Path(args.questions).read_text())

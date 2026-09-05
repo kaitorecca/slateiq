@@ -17,7 +17,15 @@ import sys
 import time
 
 from config import CACHE_DIR, GEMINI_MODEL, ORIGINALS, Take
-from gemini import cache_get, cache_put, client, generate, sha1_file, token_report, upload_active
+from gemini import (
+    cache_get,
+    cache_put,
+    client,
+    generate,
+    sha1_file,
+    token_report,
+    upload_active,
+)
 from schema_models import TakeAnalysis
 
 PROMPT = """You are a script supervisor and DIT reviewing a single unedited camera
@@ -52,7 +60,7 @@ def analyse_clip(cl, t: Take, duration: float, model: str) -> dict:
     if cached is not None:
         return cached
 
-    print(f"  upload {t.take_id} ({t.clip_path.stat().st_size/1e6:.1f} MB)")
+    print(f"  upload {t.take_id} ({t.clip_path.stat().st_size / 1e6:.1f} MB)")
     f = upload_active(cl, t.clip_path)
     cfg = {
         "response_mime_type": "application/json",
@@ -79,10 +87,12 @@ def analyse_clip(cl, t: Take, duration: float, model: str) -> dict:
     cache_put(key, payload)
     try:
         cl.files.delete(name=f.name)
-    except Exception:  # noqa: BLE001 - best effort cleanup
+    except Exception:
         pass
-    print(f"    ok in {time.time()-t0:.1f}s  score={data['quality_score']} "
-          f"flags={[fl['type'] for fl in data['flags']]}")
+    print(
+        f"    ok in {time.time() - t0:.1f}s  score={data['quality_score']} "
+        f"flags={[fl['type'] for fl in data['flags']]}"
+    )
     return payload
 
 
@@ -104,8 +114,10 @@ def main() -> int:
     todo = [t for t in ORIGINALS if not args.only or t.take_id in args.only]
     missing = [t for t in todo if cache_get(sha1_file(t.clip_path)) is None]
     secs = sum(probe_duration(t.clip_path) for t in missing)
-    print(f"{len(todo)} original clips, {len(missing)} uncached "
-          f"({secs/60:.1f} min of video to send to {args.model})")
+    print(
+        f"{len(todo)} original clips, {len(missing)} uncached "
+        f"({secs / 60:.1f} min of video to send to {args.model})"
+    )
     if args.dry_run:
         return 0
     if secs > 12 * 60:
@@ -115,7 +127,7 @@ def main() -> int:
     for t in todo:
         try:
             analyse_clip(cl, t, probe_duration(t.clip_path), args.model)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             print(f"  !! {t.take_id}: {exc}", file=sys.stderr)
     print(token_report())
     return 0
