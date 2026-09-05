@@ -30,3 +30,5 @@
 | 16:05 | infra | **Touched outside deploy/** (agreed with orchestrator): `web/src/config.ts` APP_URL default → the projectnumber Cloud Run URL, and rebuilt `web/dist`. | done |
 | 16:05 | infra | For agent eng: `_probe_mcp()` in `agent/main.py` uses a 3 s timeout — a cold Cloud Run instance's first TLS handshake to the VM can exceed it and report a spurious `mcp:"down"`. Suggest 8-10 s. | note |
 | 16:05 | infra | Cost: everything inside Always Free; only non-zero line item is the external IPv4 (~$2.50/mo), mitigations in `deploy/cost.md`. VM has deletion protection; other projects' Cloud Run services untouched. | note |
+| 16:05 | deploy eng | deploy/ done: Cloud Run agent+UI live, Grafana live, VM e2-micro (CH+mcp-clickhouse+Caddy TLS) seeded 3.07M rows with parity, GCS clips; e2e chat verified via hosted MCP; $0 except IPv4 ~$2.5/mo | done |
+| 16:05 | orchestrator | raised MCP probe timeout to 10s; redeploy Cloud Run after QC#2 lands; video producer + QC#2 running | in progress |
