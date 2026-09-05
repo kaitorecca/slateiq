@@ -155,3 +155,46 @@ Ordered by what would actually cost a point.
 5. **The DPR chat chip is 87 s** (#4). The button is 0.5 s. A judge who picks the chip forms a slow impression of a fast product.
 6. **Impact is still priced in hours, not money** — JR#3's item #6, unchanged. One clause (*"a reshoot day on a mid-budget feature is $80–150 k"*) in the README and Devpost "What it does" is the cheapest available point in the whole submission.
 7. **Single-region, single-VM MCP.** `35.239.36.85` is one e2-micro. It has a systemd unit and restart policies and survived a reboot in 103 s, but if it is down during judging, every analytical answer degrades to the friendly MCP message.
+
+---
+
+## Lighthouse
+
+Chrome DevTools Lighthouse, **desktop, `navigation` mode**, against the hosted Ask screen
+<https://slateiq-957930801789.us-central1.run.app/>, on Cloud Run revision **`slateiq-00011-qzd`**
+(commit `a469ff2`).
+
+| Category | Before | After |
+|---|---|---|
+| **Accessibility** | 96 | **100** |
+| **Best practices** | 100 | **100** |
+| **SEO** | 91 | **100** |
+| **Agentic browsing** | 67 | **100** |
+
+52 audits pass, 0 fail.
+
+**Performance** is not part of the Lighthouse categories the DevTools MCP returns (it excludes it
+in favour of a real trace), so the numbers below come from a DevTools performance trace of the
+same URL, warm instance, no throttling:
+
+| Metric | Value |
+|---|---|
+| **LCP** | **522 ms** (TTFB 2 ms · render delay 520 ms) |
+| **CLS** | **0.00** |
+| Render-blocking savings available | 110 ms FCP / LCP — the single Tailwind CSS file |
+
+The 520 ms render delay is the SPA booting: `index.js` (64 kB gzip) plus the React chunk
+(45 kB gzip), then the first paint. It is not worth chasing — the honest performance story for
+this product is the **cold start** (risk #2 below), which no front-end change touches.
+
+### The four failures, and what was done
+
+| Audit | What Lighthouse saw | Fix |
+|---|---|---|
+| `color-contrast` | `text-faint` **#666D77** on the raised panel is **3.16:1** at 10.5 px — under the 4.5:1 floor. Hit the composer hint line ("Enter to send · Shift+Enter for a new line") and every `.label` caption. | Palette token `faint` → **#828A94**: 4.74:1 on `raise`, 5.15:1 on `panel`, 5.70:1 on `void`. Still visibly quieter than `dim`. |
+| `label-content-name-mismatch` | The Ask button's `aria-label` was *"Send question"* while its visible text is *"Ask"* — a voice-control user saying "Ask" cannot activate it. | `aria-label="Ask question"`. Two more of the same shape found by inspection and fixed: the drawer close button (visible *Esc*, label *"Close panel"* → *"Close panel (Esc)"*) and the SQL copy button, whose label now tracks its copied state. |
+| `robots-txt` | `/robots.txt` returned **200 `text/html`** — the SPA catch-all handing back `index.html`, which Lighthouse then parsed line by line as a broken robots file. | Real `web/public/robots.txt`; `/api/`, `/clips/`, `/thumbs/`, `/dev-ui/` disallowed. |
+| `llms-txt` | No `/llms.txt`. | Added — the four screens, the three API routes, the footage credit, and the note that only day 12 has real footage. |
+
+All four are front-end-only; no product behaviour changed. Verified after redeploy:
+`/api/health` → `mcp:up`, `clickhouse:up`; `/robots.txt` and `/llms.txt` both **200 `text/plain`**.
