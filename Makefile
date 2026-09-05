@@ -46,7 +46,11 @@ eval:  ## 28 judged questions through the real coordinator + real MCP (costs Gem
 lint:  ## ruff check (must be clean) + tsc --noEmit
 	$(PY) -m ruff check agent ingest db scripts
 	$(PY) -m ruff format --check agent ingest db scripts
-	cd web && npx tsc --noEmit
+	@if [ -d web/node_modules ]; then \
+	  cd web && npx tsc --noEmit; \
+	else \
+	  echo "skipping tsc --noEmit: run 'cd web && npm ci' first"; \
+	fi
 
 fmt:  ## apply ruff's safe fixes and formatting
 	$(PY) -m ruff check agent ingest db scripts --fix
