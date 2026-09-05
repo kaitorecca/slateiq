@@ -13,6 +13,7 @@ clip boundaries, same cache keys on every run.
 from __future__ import annotations
 
 import os
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -26,8 +27,9 @@ CLIPS_DIR = DATA_DIR / "clips"
 THUMBS_DIR = DATA_DIR / "thumbs"
 CACHE_DIR = DATA_DIR / "cache"
 
-FFMPEG = os.environ.get("FFMPEG_BIN", str(Path.home() / "miniconda3/envs/media/bin/ffmpeg"))
-FFPROBE = os.environ.get("FFPROBE_BIN", str(Path.home() / "miniconda3/envs/media/bin/ffprobe"))
+# ffmpeg/ffprobe: whatever is on PATH, overridable with FFMPEG_BIN / FFPROBE_BIN.
+FFMPEG = os.environ.get("FFMPEG_BIN") or shutil.which("ffmpeg") or "ffmpeg"
+FFPROBE = os.environ.get("FFPROBE_BIN") or shutil.which("ffprobe") or "ffprobe"
 
 # --------------------------------------------------------------------------
 # production constants

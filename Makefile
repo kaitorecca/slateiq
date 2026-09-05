@@ -8,16 +8,23 @@ PY        := .venv/bin/python
 PIP       := .venv/bin/python -m pip
 API_PORT  ?= 8811
 WEB_PORT  ?= 5188
+MCP_PORT  ?= 8765
 
 .DEFAULT_GOAL := help
-.PHONY: help mcp api web test verify eval lint fmt build deploy
+.PHONY: help venvs mcp api web test verify eval lint fmt build deploy
 
 help:  ## show this list
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) \
 	  | awk -F':.*?## ' '{printf "  \033[1m%-8s\033[0m %s\n", $$1, $$2}'
 
+venvs:  ## create .venv (agent + pipeline) and .venv-mcp (mcp-clickhouse); run once
+	python3 -m venv .venv
+	$(PIP) install -q -r agent/requirements.txt -r ingest/requirements.txt
+	python3 -m venv .venv-mcp
+	.venv-mcp/bin/python -m pip install -q 'mcp-clickhouse==0.6.0'
+
 mcp:  ## start the official mcp-clickhouse server on :8765 (data path for every agent)
-	scripts/mcp_up.sh
+	CLICKHOUSE_MCP_BIND_PORT=$(MCP_PORT) scripts/mcp_up.sh
 
 api:  ## run the agent + UI on :8811  (/ app, /dev-ui/ ADK dev UI, /docs OpenAPI)
 	set -a; source .env; set +a; \

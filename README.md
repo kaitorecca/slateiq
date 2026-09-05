@@ -246,29 +246,21 @@ the MCP server lives in its own environment and is reached over HTTP.
 ```bash
 git clone https://github.com/kaitorecca/slateiq.git && cd slateiq
 
-# 0 — env
-cat > .env <<'EOF'
-GOOGLE_API_KEY=<your Gemini API key>
-GEMINI_API_KEY=<same>
-CLICKHOUSE_HOST=localhost
-CLICKHOUSE_PORT=8123
-CLICKHOUSE_USER=default
-CLICKHOUSE_PASSWORD=clickhouse
-CLICKHOUSE_MCP_URL=http://localhost:8765/mcp
-EOF
+# 0 — env  (.env.example documents every variable; it is the only file to edit)
+cp .env.example .env && ${EDITOR:-vi} .env        # paste your Gemini API key
 set -a; source .env; set +a
 
 # 1 — ClickHouse
 docker run -d --name slateiq-ch -p 8123:8123 -p 9000:9000 \
   -e CLICKHOUSE_PASSWORD=clickhouse clickhouse/clickhouse-server:25.6
 
-# 2 — venvs
-python3 -m venv .venv      && .venv/bin/pip install -r agent/requirements.txt
-python3 -m venv .venv-mcp  && .venv-mcp/bin/pip install 'mcp-clickhouse==0.6.0'
+# 2 — venvs (`make venvs` does exactly this)
+python3 -m venv .venv && .venv/bin/pip install \
+    -r agent/requirements.txt -r ingest/requirements.txt
+python3 -m venv .venv-mcp && .venv-mcp/bin/pip install 'mcp-clickhouse==0.6.0'
 
-# 3 — data: 30-day synthetic shoot + real day-12 dailies (Gemini results are cached in-repo → free)
-.venv/bin/python db/generate_synthetic.py --reset     # ~4 s
-./ingest/run_all.sh                                   # replays from data/cache/
+# 3 — data: the deterministic 30-day synthetic shoot (no API calls, no footage)
+.venv/bin/python db/generate_synthetic.py --reset     # ~4 s, 3.07 M telemetry rows
 .venv/bin/python db/verify.py                         # 43 checks, non-zero exit on failure
 
 # 4 — the official ClickHouse MCP server
@@ -277,6 +269,36 @@ scripts/mcp_up.sh &                                   # http://localhost:8765/mc
 # 5 — the agent + UI
 source .venv/bin/activate && cd agent && uvicorn main:app --port 8811
 ```
+
+Step 3 is all you need: **`db/verify.py` passes 43/43 on the synthetic seed alone** and the app,
+the agents and the MCP data path all work against it.
+
+<details>
+<summary><b>Optional — rebuilding the real day-12 dailies slice (needs the source footage)</b></summary>
+
+The 24 day-12 takes cut from *Tears of Steel* are the one part of the dataset that is **not**
+reproducible from the repo alone. `data/cache/` holds every Gemini result, keyed by the **SHA-1 of
+the clip file**, so replaying costs $0 — but the clips themselves are gitignored (≈40 MB) and are
+cut from `data/footage/tos.mp4` (≈355 MB), which is not committed either. Without that file
+`ingest/run_all.sh` stops immediately with `missing source footage …/data/footage/tos.mp4`.
+
+```bash
+mkdir -p data/footage
+# Tears of Steel (c) Blender Foundation, CC BY 3.0 - mango.blender.org
+# This is the exact encode the committed cache keys were computed from.
+curl -L -o data/footage/tos.mp4 \
+  https://ftp.halifax.rwth-aachen.de/blender/demo/movies/ToS/tears_of_steel_720p.mov
+md5sum data/footage/tos.mp4    # 8821bfe2b76c5c303ae0990a22f8802d, 372,178,639 bytes
+
+./ingest/run_all.sh            # clips -> cached Gemini analysis -> ClickHouse
+```
+
+Any other encode cuts different bytes, so the clip SHA-1s miss `data/cache/` and `analyze.py`
+falls back to **live, billable Gemini calls**. Check before you run: `python ingest/analyze.py
+--dry-run` reports the cache state and calls nothing.
+
+`ffmpeg` and `ffprobe` must be on `PATH` (or set `FFMPEG_BIN` / `FFPROBE_BIN`).
+</details>
 
 Open **<http://localhost:8811/>** for the app, `/dev-ui/` for the ADK developer UI (agent tree and
 traces), `/docs` for OpenAPI.
@@ -289,6 +311,9 @@ cd web && npm install && npm run dev       # or `npm run mock` for a zero-depend
 
 > Ports: **8811** SlateIQ API · **5188** Vite · **8765** `mcp-clickhouse` · **8123** ClickHouse HTTP.
 > (8080/3000/8000 are deliberately avoided — they are taken on the dev box.)
+> All four are overridable, so a second stack can run alongside the first:
+> `CLICKHOUSE_PORT` (and the `docker run -p`), `CLICKHOUSE_MCP_BIND_PORT` + `CLICKHOUSE_MCP_URL`
+> — keep those two in step — and `make api API_PORT=…` / `make mcp MCP_PORT=…`.
 
 Ask it something:
 

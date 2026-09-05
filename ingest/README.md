@@ -27,6 +27,23 @@ conversion — Gemini is asked for 0..10 / 1..3, which it scores more reliably.
 used here as stand-in dailies footage; SlateIQ is not affiliated with the
 Blender Foundation.
 
+It is **not committed** (355 MB). Fetch the exact encode the cache keys were
+computed from before running the pipeline:
+
+```bash
+mkdir -p data/footage
+curl -L -o data/footage/tos.mp4 \
+  https://ftp.halifax.rwth-aachen.de/blender/demo/movies/ToS/tears_of_steel_720p.mov
+md5sum data/footage/tos.mp4   # 8821bfe2b76c5c303ae0990a22f8802d, 372,178,639 bytes
+```
+
+`data/cache/` is keyed by the **SHA-1 of each cut clip**, so a different encode
+misses the cache and `analyze.py` makes **live, billable Gemini calls**.
+`python ingest/analyze.py --dry-run` reports cache state without calling anything.
+
+None of this is needed to run SlateIQ: `db/generate_synthetic.py` alone satisfies
+all 43 `db/verify.py` checks and the whole agent stack.
+
 ## Pipeline
 
 ```
