@@ -66,3 +66,4 @@
 | 18:58 | QC final | docs/QC_FINAL.md 18/20, no P0; fixed 2 P1 (Gemini 503 leak, stale TTS cache) → Cloud Run rev 00010; 7/7 chips trace via MCP; exports OK; 116 tests; no secrets in git | done |
 | 18:59 | orchestrator | added reshoot-day cost clause to README/DEVPOST (impact); video v2 still running | in progress |
 | 18:52 | orchestrator | tick: launched code-quality/repo-hygiene agent (ruff, Makefile, Lighthouse, a11y); video v2 running | in progress |
+| 19:01 | orchestrator | tick: code-quality agent committed ruff/hygiene/Makefile/a11y (finishing); video v2 running | in progress |
