@@ -23,12 +23,12 @@ Joins - take.take_id -> take_event/take_analysis/frame_telemetry/continuity_note
 
 ## Views (pre-aggregated - prefer these for reports)
 - daily_progress per day: pages_planned_eighths, pages_shot_eighths, setups, takes, circled, ng, camera_minutes, wrap_delay_min
-- scene_progress per scene: takes, circled, setups, first_day, last_day, shooting_ratio, status (not_shot|no_circled|partial|complete)
+- scene_progress per scene: takes, circled, setups, first_day, last_day, print_ratio, status (not_shot|no_circled|partial|complete)
 - flag_summary per day+flag_type: flags, takes_affected, avg_severity
 
 ## Gotchas
 - page_eighths/8.0 = script pages. scene_number is never numeric ('14A').
-- Shooting ratio = takes/circled (higher = more film burned); guard greatest(circled,1).
+- Print ratio = takes/circled (takes shot per circled take; higher = more film burned — NOT "shooting ratio", which is footage shot vs. final cut); guard greatest(circled,1).
 - A take row is one camera's slate: a 2-cam setup = 2 rows. Setups = uniq(scene_number,shot).
 - Days 8 & 11 lost setups to rain: pages_shot < pages_planned, some planned scenes have no takes.
 - Scenes 12,14A,27,33,41,56,78,102 are day-12 scenes fed by the real-clip ingest.
@@ -78,9 +78,9 @@ SELECT day_number,setups,takes,camera_minutes/60 cam_hours FROM slateiq.daily_pr
 SELECT t.take_id,a.emotion_intensity,a.performance_note FROM slateiq.take t
 JOIN slateiq.take_analysis a USING take_id
 WHERE t.scene_number='7' ORDER BY a.emotion_intensity DESC LIMIT 3;
--- 13 PRODUCER worst shooting ratios
-SELECT scene_number,slug,takes,circled,shooting_ratio FROM slateiq.scene_progress
-WHERE takes>0 ORDER BY shooting_ratio DESC LIMIT 10;
+-- 13 PRODUCER worst print ratios (takes per circled take)
+SELECT scene_number,slug,takes,circled,print_ratio FROM slateiq.scene_progress
+WHERE takes>0 ORDER BY print_ratio DESC LIMIT 10;
 -- 14 TELEMETRY sustained soft focus (>2s under 0.55), scans 3M rows
 SELECT take_id,countIf(focus_score<0.55)/25 soft_s,round(avg(focus_score),3) avg_focus
 FROM slateiq.frame_telemetry GROUP BY take_id HAVING soft_s>2 ORDER BY soft_s DESC LIMIT 10;
