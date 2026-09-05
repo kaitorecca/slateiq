@@ -25,6 +25,27 @@ export function fmtTime(s?: number | null): string {
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
 }
 
-export function takeLabel(t: { scene_number: number; shot: string; take_number: number }): string {
-  return `${t.scene_number}${t.shot ?? ''}-${t.take_number}`
+/** `TOS-D12-S14A-A-02-B` -> scene 14A, shot A, take 2, camera B. */
+export function parseTakeId(takeId?: string | null) {
+  const m = /-S([0-9]+[A-Z]?)-([A-Z]+)-([0-9]+)(?:-([A-Z]))?$/i.exec(takeId ?? '')
+  if (!m) return null
+  return { scene_number: m[1], shot: m[2], take_number: Number(m[3]), camera: m[4] }
+}
+
+/**
+ * Slate label, e.g. `14A/A/2`. Agents cite takes by `take_id` only, so fall
+ * back to parsing the id rather than rendering "undefined-undefined".
+ */
+export function takeLabel(t: {
+  scene_number?: string | number | null
+  shot?: string | null
+  take_number?: number | null
+  take_id?: string | null
+}): string {
+  const p = parseTakeId(t.take_id)
+  const scene = t.scene_number ?? p?.scene_number
+  const shot = t.shot ?? p?.shot
+  const take = t.take_number ?? p?.take_number
+  if (scene == null && shot == null && take == null) return t.take_id ?? '--'
+  return [scene, shot, take].filter((v) => v != null && v !== '').join('/')
 }

@@ -6,7 +6,7 @@ const MAP: Record<string, { label: string; cls: string }> = {
   hold: { label: 'Hold', cls: 'border-hold/50 bg-hold/12 text-hold' },
 }
 
-export function StatusBadge({ status, className = '' }: { status: TakeStatus; className?: string }) {
+export function StatusBadge({ status, className = '' }: { status?: TakeStatus; className?: string }) {
   const key = String(status ?? '').toLowerCase()
   const s = MAP[key] ?? { label: status || 'unknown', cls: 'border-line bg-raise text-dim' }
   return (

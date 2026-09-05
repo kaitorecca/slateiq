@@ -26,6 +26,7 @@ from google.genai import types
 
 from .agent import build_report_agent, root_agent
 from .config import APP_NAME, SESSION_DB_URI
+from .guardrails import friendly_error
 
 _FENCE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
 
@@ -81,25 +82,77 @@ async def ensure_session(
     return created.id
 
 
+def _unwrap_mcp(obj: Any, depth: int = 0) -> Any:
+    """Peel the FastMCP/ADK envelopes off a tool result.
+
+    mcp-clickhouse answers look like
+    ``{"meta":..., "content":[{"type":"text","text":"{\"columns\":[...],\"rows\":[...]}"}],
+       "structuredContent":{"result":"<same json string>"}}``
+    -- the payload we actually want is the JSON *inside* that text part.
+    """
+    if depth > 6:
+        return obj
+    if isinstance(obj, str):
+        stripped = obj.strip()
+        if stripped[:1] in "[{":
+            try:
+                return _unwrap_mcp(json.loads(stripped), depth + 1)
+            except Exception:
+                return obj
+        return obj
+    if isinstance(obj, dict):
+        content = obj.get("content")
+        if isinstance(content, list) and content:
+            texts = [
+                c.get("text")
+                for c in content
+                if isinstance(c, dict) and isinstance(c.get("text"), str)
+            ]
+            if len(texts) == 1:
+                return _unwrap_mcp(texts[0], depth + 1)
+        sc = obj.get("structuredContent")
+        if isinstance(sc, dict) and "result" in sc:
+            return _unwrap_mcp(sc["result"], depth + 1)
+        if "result" in obj and len(obj) <= 2:
+            return _unwrap_mcp(obj["result"], depth + 1)
+    return obj
+
+
 def _summarise_tool_result(payload: Any, limit: int = 900) -> tuple[str, int]:
-    """Human-readable one-liner + a best-effort row count."""
+    """Human-readable one-liner + a real row count.
+
+    Returns ``rows = -1`` when the tool is not a query (e.g. ADK's
+    ``transfer_to_agent``) so the UI can hide the row chip rather than
+    claim "1 row" for a hand-off.
+    """
     rows = -1
     try:
-        obj = payload
-        if isinstance(obj, dict) and "result" in obj and len(obj) <= 2:
-            obj = obj["result"]
-        if isinstance(obj, str):
-            try:
-                obj = json.loads(obj)
-            except Exception:
-                pass
+        obj = _unwrap_mcp(payload)
+        cols: list[Any] = []
         if isinstance(obj, list):
             rows = len(obj)
         elif isinstance(obj, dict):
-            for key in ("rows", "data", "result", "content"):
-                if isinstance(obj.get(key), list):
-                    rows = len(obj[key])
-                    break
+            if isinstance(obj.get("rows"), list):
+                rows = len(obj["rows"])
+                if isinstance(obj.get("columns"), list):
+                    cols = obj["columns"]
+            else:
+                for key in ("data", "result", "content"):
+                    if isinstance(obj.get(key), list):
+                        rows = len(obj[key])
+                        break
+        if rows >= 0 and cols:
+            head = ", ".join(str(c) for c in cols[:8])
+            if len(cols) > 8:
+                head += f", +{len(cols) - 8} more"
+            preview = json.dumps(obj.get("rows", [])[:3], default=str)
+            if len(preview) > limit - 80:
+                preview = preview[: limit - 80] + " ..."
+            noun = "row" if rows == 1 else "rows"
+            return (
+                f"{rows} {noun} x {len(cols)} cols ({head})\n{preview}",
+                rows,
+            )
         text = json.dumps(obj, default=str)
     except Exception:
         text = str(payload)
@@ -224,7 +277,24 @@ async def stream_agent(
                                 "agent": seen_agent,
                             }
     except Exception as exc:  # surface failures to the UI instead of hanging
-        yield {"type": "error", "message": f"{type(exc).__name__}: {exc}"}
+        # The raw ADK failure (e.g. "Tool 'run_query' not found" when the MCP
+        # server is down, followed by a developer checklist) is useless to an
+        # editor at 1 a.m. -- translate it, and still emit a `final` so the UI
+        # renders an answer bubble rather than an empty one.
+        friendly = friendly_error(exc)
+        yield {
+            "type": "error",
+            "message": friendly,
+            "detail": f"{type(exc).__name__}: {exc}",
+        }
+        yield {
+            "type": "final",
+            "text": friendly,
+            "session_id": sid,
+            "agent": seen_agent,
+            "sql": sql,
+            "takes": [],
+        }
         return
 
     if not final_text:
@@ -236,7 +306,10 @@ async def stream_agent(
         "text": final_text,
         "session_id": sid,
         "agent": seen_agent,
-        "sql": structured.get("sql") or sql,
+        # The SQL we actually watched go through mcp-clickhouse, not the
+        # list the model claims it ran -- the trace and the disclosure
+        # must agree, and the executed list is the evidence.
+        "sql": sql or structured.get("sql") or [],
         "takes": structured.get("takes") or [],
     }
 

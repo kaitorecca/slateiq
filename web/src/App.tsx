@@ -6,6 +6,7 @@ import { HealthDots } from './components/HealthDots'
 import { SlateMark } from './components/Brand'
 import { Ask } from './screens/Ask'
 import { Spinner } from './components/States'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 const Takes = lazy(() => import('./screens/Takes').then((m) => ({ default: m.Takes })))
 const Health = lazy(() => import('./screens/Health').then((m) => ({ default: m.Health })))
@@ -55,12 +56,14 @@ export default function App() {
         </header>
 
         <main id="main" className="min-h-0 flex-1">
-          <Suspense fallback={<ScreenFallback />}>
-            {current.id === 'ask' && <Ask />}
-            {current.id === 'takes' && <Takes />}
-            {current.id === 'health' && <Health />}
-            {current.id === 'about' && <About />}
-          </Suspense>
+          <ErrorBoundary label={current.id}>
+            <Suspense fallback={<ScreenFallback />}>
+              {current.id === 'ask' && <Ask />}
+              {current.id === 'takes' && <Takes />}
+              {current.id === 'health' && <Health />}
+              {current.id === 'about' && <About />}
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
     </div>

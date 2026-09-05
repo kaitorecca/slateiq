@@ -20,7 +20,7 @@ import { Empty, ErrorBox, Skeleton, Spinner } from '../components/States'
 
 const GRAFANA_URL = (import.meta.env.VITE_GRAFANA_URL as string | undefined)?.replace(/\/$/, '')
 const GRAFANA_DASH = (import.meta.env.VITE_GRAFANA_DASHBOARD as string | undefined) ?? 'slateiq/production-health'
-const GRAFANA_PANELS = ((import.meta.env.VITE_GRAFANA_PANELS as string | undefined) ?? '1:Shooting ratio by scene,2:Pages vs plan,3:Flag rate,4:Camera hours')
+const GRAFANA_PANELS = ((import.meta.env.VITE_GRAFANA_PANELS as string | undefined) ?? '1:Print ratio by scene,2:Pages vs plan,3:Flag rate,4:Camera hours')
   .split(',')
   .map((p) => p.trim())
   .filter(Boolean)
@@ -58,9 +58,9 @@ function Panel({ title, note, children }: { title: string; note?: string; childr
 
 function FallbackCharts({ takes }: { takes: Take[] }) {
   const byScene = useMemo(() => {
-    const m = new Map<number, { scene: string; circled: number; ng: number; hold: number; q: number; n: number }>()
+    const m = new Map<string, { scene: string; circled: number; ng: number; hold: number; q: number; n: number }>()
     for (const t of takes) {
-      const k = t.scene_number
+      const k = String(t.scene_number ?? '?')
       const row = m.get(k) ?? { scene: `Sc ${k}`, circled: 0, ng: 0, hold: 0, q: 0, n: 0 }
       const s = String(t.status).toLowerCase()
       if (s === 'circled') row.circled++
@@ -72,7 +72,7 @@ function FallbackCharts({ takes }: { takes: Take[] }) {
       }
       m.set(k, row)
     }
-    return [...m.entries()].sort((a, b) => a[0] - b[0]).map(([, v]) => ({ ...v, avgQuality: v.n ? Math.round(v.q / v.n) : 0 }))
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true })).map(([, v]) => ({ ...v, avgQuality: v.n ? Math.round(v.q / v.n) : 0 }))
   }, [takes])
 
   const flags = useMemo(() => {
@@ -141,7 +141,7 @@ function FallbackCharts({ takes }: { takes: Take[] }) {
         )}
       </Panel>
 
-      <Panel title="Shooting ratio by scene" note="Takes rolled per circled take — lower is tighter">
+      <Panel title="Print ratio by scene" note="Takes rolled per circled take — lower is tighter. (Not the shooting ratio, which compares footage shot to footage in the cut.)">
         <ResponsiveContainer width="100%" height={230}>
           <BarChart data={ratio} margin={{ top: 4, right: 8, bottom: 0, left: -18 }}>
             <CartesianGrid stroke="#1D2127" vertical={false} />
@@ -185,6 +185,8 @@ function DprCard() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [speaking, setSpeaking] = useState(false)
   const [ttsError, setTtsError] = useState<string | null>(null)
+  const [elapsed, setElapsed] = useState(0)
+  const [cached, setCached] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const generate = async () => {
@@ -192,12 +194,20 @@ function DprCard() {
     setError(null)
     setTtsError(null)
     setAudioUrl(null)
+    setElapsed(0)
+    setCached(false)
+    // A cold DPR is 15-20 MCP round trips; without a running clock the button
+    // just looks hung.
+    const t0 = Date.now()
+    const tick = window.setInterval(() => setElapsed(Math.round((Date.now() - t0) / 1000)), 1000)
     try {
       const r = await getDpr(day)
       setMarkdown(r.markdown)
+      setCached(!!r.cached)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
+      window.clearInterval(tick)
       setLoading(false)
     }
   }
@@ -245,7 +255,7 @@ function DprCard() {
           />
           <button className="btn btn-primary" onClick={() => void generate()} disabled={loading}>
             {loading && <Spinner className="h-3.5 w-3.5" />}
-            {loading ? 'Generating…' : 'Generate Daily Progress Report'}
+            {loading ? `Generating… ${elapsed}s` : 'Generate Daily Progress Report'}
           </button>
           <button className="btn" onClick={() => void readAloud()} disabled={!markdown || speaking}>
             {speaking ? <Spinner className="h-3.5 w-3.5" /> : <span aria-hidden="true">🔊</span>}
@@ -262,14 +272,26 @@ function DprCard() {
         )}
         {loading && !markdown ? (
           <div className="space-y-2">
+            <p className="mb-3 text-[12px] text-faint">
+              The report agent is querying ClickHouse through mcp-clickhouse and writing the
+              document — a full DPR is 15–20 round trips, so give it a couple of minutes. It is
+              cached afterwards.
+            </p>
             <Skeleton className="h-5 w-1/3" />
             <Skeleton className="h-3 w-full" />
             <Skeleton className="h-3 w-11/12" />
             <Skeleton className="h-3 w-3/4" />
           </div>
         ) : markdown ? (
-          <div className="max-h-[560px] overflow-y-auto rounded-lg border border-line bg-cell/60 p-5">
-            <Markdown>{markdown}</Markdown>
+          <div className="space-y-2">
+            {cached && (
+              <p className="text-[11px] text-faint">
+                Served from the on-disk report cache — add <code>?refresh=1</code> to regenerate.
+              </p>
+            )}
+            <div className="max-h-[560px] overflow-y-auto rounded-lg border border-line bg-cell/60 p-5">
+              <Markdown>{markdown}</Markdown>
+            </div>
           </div>
         ) : (
           !error && (

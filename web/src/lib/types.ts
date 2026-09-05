@@ -5,10 +5,14 @@ export interface TakeRef {
   take_id: string
   clip_uri: string
   thumb_uri?: string
-  scene_number: number
-  shot: string
-  take_number: number
-  status: TakeStatus
+  /** Scene numbers are strings in ClickHouse ("14A" is a real scene). */
+  scene_number?: string | number
+  shot?: string
+  take_number?: number
+  status?: TakeStatus
+  /** Agent-supplied slate label / reason for citing this take. */
+  label?: string
+  reason?: string
   /** seek offset in seconds */
   t?: number
   /** optional extras the agent may include */
@@ -44,7 +48,7 @@ export type StreamEvent =
   | { type: 'tool_call'; name: string; args?: { query?: string; [k: string]: unknown } }
   | { type: 'tool_result'; name: string; summary: string; rows?: number }
   | { type: 'agent'; name: string }
-  | { type: 'final'; text: string; session_id: string }
+  | { type: 'final'; text: string; session_id: string; takes?: TakeRef[]; sql?: string[] }
   | { type: 'error'; message: string }
 
 /** One entry in the live agent-trace panel. */

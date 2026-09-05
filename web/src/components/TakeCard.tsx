@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Take, TakeRef } from '../lib/types'
 import { fmtTime, takeLabel, thumbUrl } from '../lib/media'
 import { FlagChips, QualityBar, StatusBadge } from './StatusBadge'
@@ -7,6 +7,10 @@ import { ClipPlayer } from './ClipPlayer'
 function Thumb({ take, onPlay }: { take: TakeRef; onPlay: () => void }) {
   const [broken, setBroken] = useState(false)
   const src = thumbUrl(take.thumb_uri, take.clip_uri)
+  // While an answer streams, a cited take is first known only by id + clip_uri,
+  // so the poster guess 404s. The `final` event then supplies the real
+  // thumb_uri -- give the new URL a fresh chance instead of staying broken.
+  useEffect(() => setBroken(false), [src])
   return (
     <button
       type="button"

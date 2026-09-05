@@ -5,11 +5,20 @@ import { Empty } from './States'
 
 const AGENT_META: Record<string, { label: string; blurb: string; tone: string }> = {
   coordinator: { label: 'Coordinator', blurb: 'routes the question', tone: 'text-slate border-slate/50 bg-slate/10' },
+  // ADK reports the coordinator by its registered agent name.
+  slateiq_coordinator: {
+    label: 'Coordinator',
+    blurb: 'routes the question',
+    tone: 'text-slate border-slate/50 bg-slate/10',
+  },
   editor_agent: { label: 'Editor', blurb: 'take search & circled takes', tone: 'text-circled border-circled/50 bg-circled/10' },
   production_agent: { label: 'Production', blurb: 'schedule, pages, risk', tone: 'text-hold border-hold/50 bg-hold/10' },
   continuity_agent: { label: 'Continuity', blurb: 'cross-take conflicts', tone: 'text-[#D9A0F0] border-[#D9A0F0]/50 bg-[#D9A0F0]/10' },
   report_agent: { label: 'Report', blurb: 'DPR & editor log', tone: 'text-[#F09A6A] border-[#F09A6A]/50 bg-[#F09A6A]/10' },
 }
+
+/** Tools that really are served by the official mcp-clickhouse server. */
+const MCP_TOOLS = new Set(['run_query', 'list_tables', 'list_databases', 'describe_table'])
 
 function agentMeta(name: string) {
   return (
@@ -68,6 +77,12 @@ export function TraceRow({ item }: { item: TraceItem }) {
   }
 
   const isResult = item.kind === 'tool_result'
+  // `transfer_to_agent` is ADK's own routing call, not a ClickHouse MCP tool --
+  // labelling it "MCP call" would overstate the partner evidence.
+  const isMcp = MCP_TOOLS.has(item.name)
+  const rows = item.rows != null && item.rows >= 0 ? item.rows : null
+  // ADK's transfer_to_agent returns a bare `null` -- don't print it.
+  const summary = item.summary && item.summary.trim() !== 'null' ? item.summary : undefined
   return (
     <li className="animate-rise rounded-xl border border-line bg-panel/60">
       <div className="flex items-center gap-2 border-b border-line/70 px-3 py-2">
@@ -75,11 +90,11 @@ export function TraceRow({ item }: { item: TraceItem }) {
           <ToolIcon name={item.name} />
         </span>
         <span className="font-mono text-[11px] font-semibold text-ink">{item.name}</span>
-        <span className="label">{isResult ? 'result' : 'MCP call'}</span>
+        <span className="label">{isResult ? 'result' : isMcp ? 'MCP call' : 'ADK routing'}</span>
         <span className="ml-auto flex items-center gap-2">
-          {item.rows != null && (
+          {rows != null && (
             <span className="chip border-circled/30 bg-circled/10 px-2 py-[2px] font-mono text-[10px] text-circled">
-              {item.rows.toLocaleString()} rows
+              {rows.toLocaleString()} {rows === 1 ? 'row' : 'rows'}
             </span>
           )}
           {item.pending && (
@@ -97,7 +112,7 @@ export function TraceRow({ item }: { item: TraceItem }) {
             {JSON.stringify(item.args, null, 2)}
           </pre>
         ) : null}
-        {item.summary && <p className="px-1 pb-0.5 text-[11.5px] leading-relaxed text-dim">{item.summary}</p>}
+        {summary && <p className="px-1 pb-0.5 text-[11.5px] leading-relaxed text-dim">{summary}</p>}
       </div>
     </li>
   )
@@ -110,7 +125,7 @@ export function AgentTrace({ items, live }: { items: TraceItem[]; live?: boolean
   }, [items.length])
 
   const queries = items.filter((i) => i.kind === 'tool_call' && i.query).length
-  const rows = items.reduce((n, i) => n + (i.rows ?? 0), 0)
+  const rows = items.reduce((n, i) => n + (i.rows != null && i.rows > 0 ? i.rows : 0), 0)
 
   return (
     <section className="flex h-full min-h-0 flex-col" aria-label="Agent trace">

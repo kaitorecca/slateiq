@@ -32,17 +32,74 @@ _FORBIDDEN = re.compile(
     re.IGNORECASE,
 )
 
-_COMMENT = re.compile(r"(--[^\n]*|/\*.*?\*/)", re.DOTALL)
+_COMMENT = re.compile(r"(--[^\n]*|#[^\n]*|/\*.*?\*/)", re.DOTALL)
 _LIMIT = re.compile(r"\blimit\s+(\d+)", re.IGNORECASE)
 _AGGREGATE_ONLY = re.compile(
     r"^\s*select\b(?!.*\bfrom\b)", re.IGNORECASE | re.DOTALL
 )
 
+# A single-quoted SQL literal, honouring both '' and \' escaping.
+_STRING = re.compile(r"'(?:''|\\.|[^'\\])*'", re.DOTALL)
 
-def _strip(sql: str) -> str:
-    """Remove comments and trailing semicolons for analysis."""
-    s = _COMMENT.sub(" ", sql)
-    return s.strip().rstrip(";").strip()
+# ClickHouse's `system` database exposes query_log (every query anyone ran),
+# users, grants, settings, disks, zookeeper... None of it is production data,
+# all of it is information disclosure through a chat box. The MCP session runs
+# with readonly=1, which stops writes but NOT reads, so this has to be blocked
+# on our side.
+_SYSTEM_DB = re.compile(r"(?<![\w.])system\s*\.", re.IGNORECASE)
+
+# Table functions that read from outside ClickHouse: local files, arbitrary
+# URLs (SSRF -> cloud metadata endpoints), other databases. readonly=1 happens
+# to reject them today, but a hosted deployment with a differently configured
+# user must not depend on that.
+_TABLE_FUNCTIONS = re.compile(
+    r"\b("
+    r"url|urlCluster|file|fileCluster|remote|remoteSecure|cluster|"
+    r"clusterAllReplicas|s3|s3Cluster|gcs|azureBlobStorage|hdfs|hdfsCluster|"
+    r"mysql|postgresql|sqlite|mongodb|redis|jdbc|odbc|executable|"
+    r"deltaLake|iceberg|hudi|input"
+    r")\s*\(",
+    re.IGNORECASE,
+)
+
+# `groupArray(x)` over frame_telemetry collapses 3M rows into ONE row that
+# LIMIT cannot bound -- a 60 MB tool result. The sized form `groupArray(100)(x)`
+# is fine.
+_UNBOUNDED_ARRAY = re.compile(
+    r"\bgroup(?:Uniq)?Array(?:Array|Insert|Sample)?\s*\(\s*(?![0-9])",
+    re.IGNORECASE,
+)
+
+# A trailing FORMAT / SETTINGS clause must stay last -- LIMIT cannot follow it.
+_TAIL_CLAUSE = re.compile(r"\b(settings|format)\b", re.IGNORECASE)
+
+
+def _mask(sql: str) -> str:
+    """Blank out string literals, preserving length so offsets stay valid.
+
+    Keyword checks run against the masked text so that a scene slug like
+    "INT. SYSTEM CORE" or a dialogue search for "%drop%" cannot trip a rule,
+    and so that a `--` inside a literal is not mistaken for a comment.
+    """
+    return _STRING.sub(lambda m: "'" + ("x" * (len(m.group(0)) - 2)) + "'", sql)
+
+
+def _strip(sql: str) -> tuple[str, str]:
+    """Return ``(body, masked_body)`` with comments and trailing ``;`` removed.
+
+    Comments are located in the *masked* text so a literal containing ``--``
+    survives intact, then cut from the original at the same offsets.
+    """
+    masked = _mask(sql)
+    out: list[str] = []
+    last = 0
+    for m in _COMMENT.finditer(masked):
+        out.append(sql[last : m.start()])
+        out.append(" ")
+        last = m.end()
+    out.append(sql[last:])
+    body = "".join(out).strip().rstrip(";").strip()
+    return body, _mask(body)
 
 
 def _deny(reason: str, sql: str) -> dict[str, Any]:
@@ -51,11 +108,53 @@ def _deny(reason: str, sql: str) -> dict[str, Any]:
         "reason": reason,
         "rejected_sql": sql[:800],
         "hint": (
-            "Only a single read-only SELECT (or WITH ... SELECT) statement is "
-            f"allowed, and it must end with LIMIT <= {MAX_ROWS}. Rewrite the "
-            "query and try again."
+            "Only a single read-only SELECT (or WITH ... SELECT) over the "
+            f"`slateiq` database is allowed, capped at {MAX_ROWS} rows. Rewrite "
+            "the query against the production tables and try again. Tell the "
+            "user plainly what you cannot do -- do not retry the same query."
         ),
     }
+
+
+# --------------------------------------------------------------------------
+# Failure translation
+# --------------------------------------------------------------------------
+
+_MCP_HINTS = (
+    "tool 'run_query' not found",
+    "connect",
+    "connection",
+    "timeout",
+    "timed out",
+    "econnrefused",
+    "session",
+    "mcp",
+)
+
+_FRIENDLY_MCP = (
+    "I can't reach the production database right now (the ClickHouse MCP "
+    "server is not responding), so I won't guess at numbers. Give it a few "
+    "seconds and ask me again -- if it keeps failing, whoever is running the "
+    "stack needs to restart the MCP server."
+)
+
+
+def friendly_error(exc: BaseException | str) -> str:
+    """Turn a runtime failure into something a crew member can act on.
+
+    ADK raises a bare ``ValueError: Tool 'run_query' not found`` (plus a
+    developer checklist about hallucinated function names) when the MCP
+    toolset cannot list its tools -- i.e. whenever the MCP server is down.
+    Shipping that to the chat window is not an acceptable answer on set.
+    """
+    text = exc if isinstance(exc, str) else f"{type(exc).__name__}: {exc}"
+    low = text.lower()
+    if any(h in low for h in _MCP_HINTS):
+        return _FRIENDLY_MCP
+    return (
+        "Something went wrong answering that and I'd rather say so than make "
+        f"a number up. Try rephrasing, or ask a narrower question. ({text[:200]})"
+    )
 
 
 def enforce(sql: str) -> tuple[Optional[str], str]:
@@ -68,10 +167,10 @@ def enforce(sql: str) -> tuple[Optional[str], str]:
     """
     if not sql or not sql.strip():
         return "empty query", sql
-    body = _strip(sql)
-    lowered = body.lower()
+    body, masked = _strip(sql)
+    lowered = masked.lower()
 
-    if ";" in body:
+    if ";" in masked:
         return "multiple statements are not allowed", sql
 
     if not (lowered.startswith("select") or lowered.startswith("with")):
@@ -80,28 +179,58 @@ def enforce(sql: str) -> tuple[Optional[str], str]:
     if lowered.startswith("with") and not re.search(r"\bselect\b", lowered):
         return "WITH block does not contain a SELECT", sql
 
-    forbidden = _FORBIDDEN.search(body)
+    forbidden = _FORBIDDEN.search(masked)
     if forbidden:
         return f"forbidden statement '{forbidden.group(1).upper()}' in query", sql
+
+    if _SYSTEM_DB.search(masked):
+        return (
+            "the `system` database is out of bounds -- query the production "
+            "tables in `slateiq` instead"
+        ), sql
+
+    tf = _TABLE_FUNCTIONS.search(masked)
+    if tf:
+        return (
+            f"table function '{tf.group(1)}()' reads from outside ClickHouse "
+            "and is not allowed"
+        ), sql
+
+    if re.search(r"\bframe_telemetry\b", lowered) and _UNBOUNDED_ARRAY.search(
+        masked
+    ):
+        return (
+            "an unbounded groupArray over frame_telemetry returns millions of "
+            "values in a single row that LIMIT cannot bound -- use the sized "
+            "form groupArray(50)(col), or aggregate with avg/count/countIf"
+        ), sql
 
     if re.search(r"\binto\s+outfile\b", lowered) or re.search(
         r"\bformat\s+\w*file\b", lowered
     ):
         return "file output is not allowed", sql
 
-    return None, _apply_limit(body)
+    return None, _apply_limit(body, masked)
 
 
-def _apply_limit(body: str) -> str:
-    """Ensure the statement ends with LIMIT <= MAX_ROWS."""
-    # A SETTINGS clause must stay last, so split it off first.
-    settings = ""
-    m = re.search(r"\bsettings\b", body, re.IGNORECASE)
+def _apply_limit(body: str, masked: str = "") -> str:
+    """Ensure the statement ends with LIMIT <= MAX_ROWS.
+
+    ``masked`` is the same string with literals blanked out (and therefore the
+    same length), so a FORMAT/SETTINGS keyword inside a literal is not mistaken
+    for the real tail clause.
+    """
+    masked = masked or _mask(body)
+    # FORMAT and SETTINGS must stay last -- `... FORMAT CSV LIMIT 200` is a
+    # ClickHouse syntax error -- so split the tail off before touching LIMIT.
+    tail = ""
+    m = _TAIL_CLAUSE.search(masked)
     if m:
-        settings = " " + body[m.start():].strip()
+        tail = " " + body[m.start():].strip()
         body = body[: m.start()].rstrip()
+        masked = masked[: m.start()].rstrip()
 
-    limits = list(_LIMIT.finditer(body))
+    limits = list(_LIMIT.finditer(masked))
     if limits:
         last = limits[-1]
         # Only clamp a trailing LIMIT (a LIMIT inside a subquery is the
@@ -112,7 +241,7 @@ def _apply_limit(body: str) -> str:
             body = f"{body} LIMIT {MAX_ROWS}"
     elif not _AGGREGATE_ONLY.match(body):
         body = f"{body} LIMIT {MAX_ROWS}"
-    return body + settings
+    return body + tail
 
 
 def validate_sql(sql: str) -> Optional[str]:

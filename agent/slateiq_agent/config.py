@@ -33,7 +33,12 @@ TTS_VOICE = _env("SLATEIQ_TTS_VOICE", "Kore")
 MCP_URL = _env("CLICKHOUSE_MCP_URL", "http://localhost:8765/mcp")
 MCP_TOKEN = _env("CLICKHOUSE_MCP_TOKEN")
 MCP_TIMEOUT = float(_env("CLICKHOUSE_MCP_TIMEOUT", "30"))
-MCP_SSE_READ_TIMEOUT = float(_env("CLICKHOUSE_MCP_SSE_READ_TIMEOUT", "300"))
+# Read-gap timeout on the MCP stream. If the MCP server is restarted under a
+# live toolset the cached session goes quiet rather than erroring, and this
+# is what eventually unsticks it -- 300s meant the first request after an
+# MCP restart hung for five minutes. 120s is still far longer than any
+# single query takes (the slowest full-telemetry scan is ~2s).
+MCP_SSE_READ_TIMEOUT = float(_env("CLICKHOUSE_MCP_SSE_READ_TIMEOUT", "120"))
 
 # --- Database ---------------------------------------------------------------
 DB = _env("SLATEIQ_DB", "slateiq")

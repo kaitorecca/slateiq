@@ -163,3 +163,146 @@ questions:
     rubric: >
       Markdown editor's log grouped by scene, take table with TC in and
       duration, and a circled line per scene with the reason.
+
+  # --- QC#2 hard set (multi-hop, telemetry, forecasting, cross-day search) ---
+
+  - id: worst_ratio_on_latest_wrap
+    user: producer
+    question: "Which scene had the worst print ratio on the day we wrapped latest, and what flags were on its NG takes?"
+    expect_agent: editor_agent
+    must_query: true
+    rubric: >
+      Two hops. Identifies day 11 (2026-09-03, wrapped 19:37, 157 min of
+      overtime) as the latest wrap, names scene 13 as the worst print ratio
+      that day (46 takes / 7 circled = 6.6:1, ahead of scene 50 at 5.0:1), and
+      reports the flags on scene 13's NG takes: soft_focus on 4 takes,
+      line_flub on 2, crew_in_shot on 1 at severity 5. Should chain this in a
+      small number of queries, not one query per hop.
+
+  - id: days_over_forecast
+    user: producer
+    question: "At the current pace, how many days over will we finish?"
+    expect_agent: production_agent
+    must_query: true
+    rubric: >
+      Answers the question actually asked - we are NOT over. 48 4/8 pages shot
+      in 12 days = 4.04 pages/day; 66 7/8 pages of unshot scenes remain; that
+      is ~16.5 days against the 18 days left, so roughly 1 1/2 days of cushion.
+      Must state the assumption (pace holds, no more weather) and may note the
+      3 4/8 pages we are behind the plan to date as the caveat. Anything that
+      reports a number of days OVER is wrong.
+
+  - id: dialogue_across_days
+    user: editor
+    question: "Dr. Willem's line 'I warned the committee' - which days and scenes did we shoot it on, and how many takes have it?"
+    expect_agent: editor_agent
+    must_query: true
+    rubric: >
+      Case-insensitive search of take_event dialogue joined to take, AGGREGATED
+      (311 takes across 7 shooting days - 1, 2, 4, 5, 7, 9, 11 - and 13 scenes;
+      73 of those takes are circled). Must group rather than dump rows, since
+      the raw match list is larger than the row cap. Names the days and scenes.
+
+  - id: focus_compare_takes
+    user: director
+    question: "Compare take 1 versus take 2 of scene 41 shot A for focus, using the frame telemetry."
+    expect_agent: editor_agent
+    must_query: true
+    rubric: >
+      Aggregates frame_telemetry per take (never SELECT *). Take 1
+      (TOS-D12-S41-A-01-A) averages 0.879 focus, never drops below 0.82, zero
+      seconds soft. Take 2 (TOS-D12-S41-A-02-A) averages 0.586, bottoms out at
+      0.119 and is soft (<0.55) for about 5 1/2 seconds through the middle.
+      Reports seconds rather than raw frame counts and calls take 1 the keeper,
+      matching the director's note and the NG status on take 2.
+
+  - id: circled_but_soft
+    user: script_supervisor
+    question: "List every take that was circled but where telemetry shows more than 3 seconds of soft focus."
+    expect_agent: editor_agent
+    must_query: true
+    rubric: >
+      One aggregate over frame_telemetry joined to take with
+      status = 'circled' and HAVING soft seconds > 3 (focus_score < 0.55, 25
+      fps). Should find 13 takes, led by 12/B/2 (TOS-D12-S12-B-02-B) at 13.0s
+      soft with an average focus of 0.521 - by far the worst - then a cluster
+      around 3.1-4.0s. Flags the outlier explicitly rather than just listing.
+
+  - id: telemetry_vs_circled_scene
+    user: director
+    question: "For scene 12, does the frame telemetry back up which takes the director circled? Check focus and audio on every take."
+    expect_agent: editor_agent
+    must_query: true
+    rubric: >
+      Pulls per-take focus and audio aggregates for all four scene-12 takes in
+      few queries and gives a verdict per take. 12/A/1 (circled) is clean;
+      12/A/2 (NG) dips to ~0.15 focus matching the "focus puller lost her on
+      the turn" note and its severity-5 soft_focus flag. Must be willing to say
+      the telemetry disagrees where it does (12/B/2 is circled but soft).
+
+  - id: rain_scenes_still_unshot
+    user: ad
+    question: "Which scenes did we lose to rain on day 8, and do they still have no takes?"
+    expect_agent: production_agent
+    must_query: true
+    rubric: >
+      Day 8 was called for scenes 19, 23, 31 and 70; 19 and 23 were shot, 31
+      (INT. WORKSHOP - DAY, 4/8 page) and 70 (INT. LAB - DAY, 1 2/8 pages) were
+      lost and still have zero takes. Pages must be written in film form -
+      "1 2/8 pages", never "10/8 pages".
+
+  - id: audio_clipping_day
+    user: editor
+    question: "Which day had the most takes with audio clipping, and which takes were the worst?"
+    expect_agent: editor_agent
+    must_query: true
+    rubric: >
+      Day 12 by a wide margin on telemetry - 13 takes and 450 frames at or
+      above 0 dBFS, against at most 3 frames on any other day - led by
+      78/B/1 (TOS-D12-S78-B-01-B) and 78/C/1. A 5/5 answer distinguishes
+      telemetry clipping from the crew-logged audio_clip flags (days 2 and 7
+      lead those with 7 takes each) rather than silently mixing them.
+
+  - id: ratio_terminology
+    user: producer
+    question: "What is our shooting ratio? And is that the same thing as the print ratio?"
+    expect_agent: production_agent
+    must_query: true
+    rubric: >
+      Gives the true shooting ratio from durations (4.8:1) and the print ratio
+      from take counts (2503 takes / 524 circled, also 4.8:1), and explains
+      that they are different measures that happen to coincide across the whole
+      show. Naming the takes-per-circled figure "shooting ratio" is a fail.
+
+  - id: scene_burn_and_flags
+    user: editor
+    question: "Scene 6 burned 66 takes for 15 circled. Which shots are the worst offenders, and do the NG takes share a common flag?"
+    expect_agent: editor_agent
+    must_query: true
+    rubric: >
+      Per-shot breakdown of scene 6 (shot C is worst at 16 takes / 2 circled,
+      shot A next at 12 / 2 with 5 NG) plus the flags on its 13 NG takes -
+      line_flub x2, boom_in_shot, soft_focus, continuity and frame_edge once
+      each - and the honest conclusion that there is no single common cause.
+
+  - id: empty_day
+    user: ad
+    question: "How many takes did we get on day 20?"
+    expect_agent: production_agent
+    must_query: true
+    rubric: >
+      Queries and answers zero, and explains why - today is day 12, days 13-30
+      are scheduled but not shot. Must not treat the empty result as an error
+      or invent takes.
+
+  - id: worst_continuity
+    user: script_supervisor
+    question: "Which continuity notes would break the cut worst? Give me the severity 5 ones by category and which take pairs conflict."
+    expect_agent: continuity_agent
+    must_query: true
+    rubric: >
+      Pulls the 23 severity-5 continuity_note rows in one query and groups them
+      by category (set_dressing 6, props 4, hair_makeup 4, dialogue 3,
+      action_match 2, wardrobe 2, lighting 1, screen_direction 1), naming
+      take_id_a vs take_id_b for each and leading with the cut-breakers
+      (screen direction, eyelines, props).

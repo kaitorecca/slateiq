@@ -22,8 +22,12 @@ const uid = () => `${Date.now().toString(36)}-${(seq += 1)}`
 
 function AssistantBubble({ m }: { m: ChatMessage }) {
   const { visible, payload } = useMemo(() => extractPayload(m.text), [m.text])
-  const takes = payload?.takes ?? []
-  const sql = payload?.sql ?? []
+  // The `final` SSE event carries the same takes already enriched by the
+  // backend with scene / shot / take / status / thumbnail from ClickHouse --
+  // prefer it over re-parsing the model's own fenced block, which only ever
+  // carries take_id + clip_uri.
+  const takes = m.payload?.takes?.length ? m.payload.takes : payload?.takes ?? []
+  const sql = m.payload?.sql?.length ? m.payload.sql : payload?.sql ?? []
 
   return (
     <div className="flex gap-3">
@@ -158,7 +162,15 @@ export function Ask() {
             break
           case 'final':
             if (e.session_id) setSessionId(e.session_id)
-            patch((m) => ({ ...m, text: e.text || m.text, streaming: false }))
+            patch((m) => ({
+              ...m,
+              text: e.text || m.text,
+              payload: {
+                takes: Array.isArray(e.takes) && e.takes.length ? e.takes : m.payload?.takes,
+                sql: Array.isArray(e.sql) && e.sql.length ? e.sql : m.payload?.sql,
+              },
+              streaming: false,
+            }))
             break
           case 'error':
             patch((m) => ({ ...m, error: e.message, streaming: false }))

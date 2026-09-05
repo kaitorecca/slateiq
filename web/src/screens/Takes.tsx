@@ -110,7 +110,9 @@ function TakeDrawer({ take, onClose }: { take: Take | null; onClose: () => void 
     <Drawer
       open={!!take}
       onClose={onClose}
-      title={take ? `Scene ${take.scene_number}${take.shot ?? ''} — Take ${take.take_number}` : ''}
+      title={
+        take ? `Scene ${take.scene_number} · Shot ${take.shot ?? '--'} · Take ${take.take_number}` : ''
+      }
       subtitle={take?.take_id}
     >
       {take && (
@@ -165,18 +167,18 @@ function TakeDrawer({ take, onClose }: { take: Take | null; onClose: () => void 
 }
 
 export function Takes() {
-  const [scene, setScene] = useState<number | null>(null)
+  const [scene, setScene] = useState<string | null>(null)
   const [status, setStatus] = useState<StatusFilter>('all')
   const [selected, setSelected] = useState<Take | null>(null)
   const { data, error, loading, reload } = useAsync<Take[]>(() => getTakes(scene), [scene])
 
   const scenes = useMemo(() => {
-    const s = new Set<number>()
-    for (const t of data ?? []) if (t.scene_number != null) s.add(t.scene_number)
-    return [...s].sort((a, b) => a - b)
+    const s = new Set<string>()
+    for (const t of data ?? []) if (t.scene_number != null && t.scene_number !== '') s.add(String(t.scene_number))
+    return [...s].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
   }, [data])
 
-  const [allScenes, setAllScenes] = useState<number[]>([])
+  const [allScenes, setAllScenes] = useState<string[]>([])
   useEffect(() => {
     if (scene == null && scenes.length) setAllScenes(scenes)
   }, [scene, scenes])
@@ -221,7 +223,7 @@ export function Takes() {
             <select
               id="scene"
               value={scene ?? ''}
-              onChange={(e) => setScene(e.target.value === '' ? null : Number(e.target.value))}
+              onChange={(e) => setScene(e.target.value === '' ? null : e.target.value)}
               className="rounded-lg border border-line bg-raise px-2.5 py-1.5 text-[12.5px] text-ink focus:border-slate/60 focus:outline-none"
             >
               <option value="">All scenes</option>
