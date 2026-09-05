@@ -178,7 +178,24 @@ per-question rubric. Results land in `evals/last_run.md` (human) and
 `evals/last_run.json` (machine). The run exits non-zero if any question with
 `must_query: true` answered without touching MCP.
 
-See [`evals/last_run.md`](evals/last_run.md) for the latest numbers.
+### Latest run (16 questions, real MCP + real ClickHouse, 2026-09-05)
+
+| Metric | Result |
+|---|---|
+| Reached MCP `run_query` | **16 / 16 (100%)** |
+| Gemini judge score | **mean 4.88 / 5**, median 5, min 4, **16/16 at 4+** |
+| Routed to the expected specialist | 15 / 16 (`ng_rate` went to `production_agent` instead of `editor_agent` — defensible) |
+| Latency | mean 63.1s, median 39.3s, max 257.1s (`line_variations`) |
+| Wall clock | 411s for all 16 at concurrency 3 |
+
+The two report questions (`dpr`, `editors_log`) are the expensive ones — 17 and
+11 queries — because they build a full document. Everything else averages 3–4
+queries. Full trace, SQL and answers: [`evals/last_run.md`](evals/last_run.md)
+(machine-readable in `evals/last_run.json`).
+
+The judge sees the truncated tool results as well as the SQL, so "grounded"
+means *the numbers appear in what ClickHouse returned*, not merely that a query
+was run.
 
 ## Docker
 

@@ -1,32 +1,32 @@
 # SlateIQ eval — last run
 
-- Run at: 2026-09-05T04:25:03+00:00
+- Run at: 2026-09-05T04:34:28+00:00
 - Coordinator model: `gemini-3.5-flash` · report model: `gemini-3.5-flash` · judge: `gemini-3.5-flash`
 - ClickHouse MCP: `http://localhost:8765/mcp` (auth: False)
-- Questions: **16** · wall clock 463.9s
-- Reached MCP `run_query`: **15/16** (94%)
-- Routed to the expected specialist: **14/16**
-- Judge score: **mean 4.07/5**, median 5.0, min 1, 11/15 at 4+
-- Latency: mean 65.6s, median 45.0s, max 300.0s
+- Questions: **16** · wall clock 411.2s
+- Reached MCP `run_query`: **16/16** (100%)
+- Routed to the expected specialist: **15/16**
+- Judge score: **mean 4.88/5**, median 5.0, min 4, 16/16 at 4+
+- Latency: mean 63.1s, median 39.3s, max 257.1s
 
 | # | id | user | agent(s) | run_query | SQL | takes | score | latency |
 |---|---|---|---|---|---|---|---|---|
-| 1 | `best_takes_scene` | editor | editor_agent | yes | 1 | 2 | 5 | 13.4s |
-| 2 | `dialogue_search` | editor | editor_agent | yes | 1 | 2 | 5 | 74.0s |
-| 3 | `boom_in_shot` | editor | editor_agent | yes | 3 | 8 | 5 | 32.9s |
-| 4 | `circled_today` | editor | editor_agent | yes | 1 | 12 | 1 | 59.5s |
-| 5 | `ng_rate` | editor | production_agent | yes | 2 | 4 | 5 | 52.8s |
-| 6 | `on_schedule` | ad | production_agent | yes | 3 | 0 | 4 | 17.6s |
-| 7 | `print_ratio` | producer | production_agent | yes | 5 | 0 | 5 | 31.1s |
-| 8 | `scenes_at_risk` | ad | production_agent | yes | 3 | 4 | 3 | 68.7s |
-| 9 | `overtime_trend` | producer | production_agent | yes | 4 | 0 | 5 | 21.9s |
-| 10 | `forecast` | producer | production_agent | yes | 9 | 0 | 5 | 37.3s |
-| 11 | `setups_per_day` | ad | production_agent | yes | 2 | 0 | 3 | 13.0s |
-| 12 | `continuity_scene` | script_supervisor | continuity_agent | yes | 3 | 2 | 5 | 28.4s |
-| 13 | `line_variations` | script_supervisor | — | **NO** | 0 | 0 | — | 300.0s |
-| 14 | `emotional_intensity` | director | editor_agent | yes | 2 | 3 | 4 | 66.2s |
-| 15 | `dpr` | ad | report_agent | yes | 18 | 0 | 5 | 135.4s |
-| 16 | `editors_log` | editor | report_agent | yes | 8 | 0 | 1 | 98.2s |
+| 1 | `best_takes_scene` | editor | editor_agent | yes | 2 | 2 | 5 | 20.0s |
+| 2 | `dialogue_search` | editor | editor_agent | yes | 4 | 2 | 5 | 38.4s |
+| 3 | `boom_in_shot` | editor | editor_agent | yes | 6 | 9 | 4 | 43.0s |
+| 4 | `circled_today` | editor | editor_agent | yes | 1 | 12 | 5 | 40.2s |
+| 5 | `ng_rate` | editor | production_agent | yes | 5 | 4 | 5 | 49.7s |
+| 6 | `on_schedule` | ad | production_agent | yes | 3 | 0 | 5 | 17.8s |
+| 7 | `print_ratio` | producer | production_agent | yes | 3 | 2 | 5 | 33.3s |
+| 8 | `scenes_at_risk` | ad | production_agent | yes | 4 | 6 | 5 | 61.3s |
+| 9 | `overtime_trend` | producer | production_agent | yes | 2 | 0 | 5 | 18.9s |
+| 10 | `forecast` | producer | production_agent | yes | 10 | 0 | 5 | 40.5s |
+| 11 | `setups_per_day` | ad | production_agent | yes | 4 | 0 | 5 | 16.5s |
+| 12 | `continuity_scene` | script_supervisor | continuity_agent | yes | 3 | 2 | 5 | 23.9s |
+| 13 | `line_variations` | script_supervisor | continuity_agent | yes | 4 | 3 | 5 | 257.1s |
+| 14 | `emotional_intensity` | director | editor_agent | yes | 2 | 4 | 4 | 27.9s |
+| 15 | `dpr` | ad | report_agent | yes | 17 | 0 | 5 | 125.2s |
+| 16 | `editors_log` | editor | report_agent | yes | 11 | 0 | 5 | 196.4s |
 
 ## Detail
 
@@ -35,64 +35,36 @@
 **Q:** What are the best takes for scene 12?
 
 **Routing:** slateiq_coordinator → editor_agent (expected `editor_agent`)  
-**Tools:** transfer_to_agent, run_query  
-**Judge:** 5/5 — The agent perfectly answers the question by identifying the specific takes, providing their status, director's notes, and quality scores, and returning the correct structured JSON with clip URIs and take IDs.  
-**Latency:** 13.4s
+**Tools:** transfer_to_agent, run_query, run_query  
+**Judge:** 5/5 — The agent perfectly identified the best takes with their shot/take numbers, status, director notes, and performance reasons, while correctly including the clip URIs and take IDs in the JSON block as requested.  
+**Latency:** 20.0s
 
 <details><summary>SQL executed via MCP</summary>
 
 ```sql
-SELECT t.take_id, t.shot, t.take_number, t.status, t.director_note, t.clip_uri, a.quality_score, a.recommended, a.performance_note FROM slateiq.take t LEFT JOIN slateiq.take_analysis a USING (take_id) WHERE t.scene_number = '12' ORDER BY t.status = 'circled' DESC, a.quality_score DESC LIMIT 50;
+SELECT t.take_id, t.scene_number, t.shot, t.take_number, t.camera, t.status, t.director_note, t.clip_uri, a.quality_score, a.recommended, a.performance_note FROM slateiq.take t LEFT JOIN slateiq.take_analysis a USING (take_id) WHERE t.scene_number = '12' ORDER BY t.status = 'circled' DESC, a.quality_score DESC LIMIT 50;
+SELECT take_id, shot, take_number, camera, status FROM slateiq.take WHERE scene_number = '12' ORDER BY shot, take_number, camera;
 ```
 
 </details>
 
 <details><summary>Answer</summary>
 
-For Scene 12, you have two clear setups (A and B). Cut **12/A/1** and **12/B/2**—these are your circled takes and the only clean options for each setup.
+Cut **12/A/1** and **12/B/2**. Those are your circled takes for Scene 12. 
 
-Here is the breakdown from the 4 takes logged for Scene 12:
+Based on the 4 takes logged for Scene 12, here is the breakdown of what to use and what to avoid:
 
-### Setup A (The Robotic Arm / Comedic Scene)
-*   **12/A/1 (`TOS-D12-S12-A-01-A`) — CIRCLED (Best Take)**
-    *   **Director's Note:** *"Good energy, keep this one."*
-    *   **Analysis:** Quality score of **0.85**. Strong comedic timing and natural chemistry between the actors. The robotic arm prop is handled convincingly.
-*   **12/A/2 (`TOS-D12-S12-A-02-A`) — NG (No Good)**
-    *   **Director's Note:** *"Focus puller lost her on the turn — NG."*
-    *   **Analysis:** Quality score of **0.50**. Unusable due to the focus pull.
+*   **Shot A (A-Cam Setup):**
+    *   **12/A/1** (`TOS-D12-S12-A-01-A`) is your keeper (**Circled**, Quality: 0.85). The director noted, *"Good energy, keep this one."* It features strong comedic timing, natural chemistry between the actors, and convincing handling of the robotic arm prop.
+    *   **12/A/2** (`TOS-D12-S12-A-02-A`) is **NG** (Quality: 0.50). The focus puller lost the actress on the turn, making it unusable.
+*   **Shot B (B-Cam Setup):**
+    *   **12/B/2** (`TOS-D12-S12-B-02-B`) is your keeper (**Circled**, Quality: 0.90). The director noted, *"Cleaner. Print."* The transition to the scope POV is clean, and the visual effects tracking of the flying vessel is highly detailed and well-integrated.
+    *   **12/B/1** (`TOS-D12-S12-B-01-B`) is on **Hold** (Quality: 0.90). The director noted, *"Alt angle, hold for editorial."* The sniper's movements are sharp, and the sleeping man's reaction to the searchlight is perfectly timed.
 
-### Setup B (The Sniper / Scope POV)
-*   **12/B/2 (`TOS-D12-S12-B-02-B`) — CIRCLED (Best Take)**
-    *   **Director's Note:** *"Cleaner. Print."*
-    *   **Analysis:** Quality score of **0.90**. The transition to the scope POV is clean, and the visual effects tracking of the flying vessel is highly detailed and well-integrated.
-*   **12/B/1 (`TOS-D12-S12-B-01-B`) — HOLD**
-    *   **Director's Note:** *"Alt angle, hold for editorial."*
-    *   **Analysis:** Quality score of **0.90**. Sharp and deliberate sniper movements, but held as an alternate.
-
-SQL: Queried `slateiq.take` joined with `slateiq.take_analysis` for scene '12' to retrieve statuses, quality scores, and notes.
+SQL: Queried the takes and take analysis tables for Scene 12 to filter by circled status and quality score.
 
 ```json
-{
-  "takes": [
-    {
-      "take_id": "TOS-D12-S12-A-01-A",
-      "clip_uri": "clips/TOS-D12-S12-A-01-A.mp4",
-      "t": 0,
-      "label": "12/A/1 circled",
-      "reason": "Good energy, keep this one. Strong comedic timing."
-    },
-    {
-      "take_id": "TOS-D12-S12-B-02-B",
-      "clip_uri": "clips/TOS-D12-S12-B-02-B.mp4",
-      "t": 0,
-      "label": "12/B/2 circled",
-      "reason": "Cleaner. Print. Clean transition to scope POV."
-    }
-  ],
-  "sql": [
-    "SELECT t.take_id, t.shot, t.take_number, t.status, t.director_note, t.clip_uri, a.quality_score, a.recommended, a.performance_note FROM slateiq.take t LEFT JOIN slateiq.take_analysis a USING (take_id) WHERE t.scene_number = '12' ORDER BY t.status = 'circled' DESC, a.quality_score DESC LIMIT 50"
-  ]
-}
+{"takes":[{"take_id":"TOS-D12-S12-A-01-A","clip_uri":"clips/TOS-D12-S12-A-01-A.mp4","t":0.0,"label":"12/A/1 circled","reason":"Good energy, strong comedic timing and natural chemistry."},{"take_id":"TOS-D12-S12-B-02-B","clip_uri":"clips/TOS-D12-S12-B-02-B.mp4","t":0.0,"label":"12/B/2 circled","reason":"Cleaner print, clean transition to scope POV and excellent VFX tracking."}],"sql":["SELECT t.take_id, t.scene_number, t.shot, t.take_number, t.camera, t.status, t.director_note, t.clip_uri, a.quality_score, a.recommended, a.performance_note FROM slateiq.take t LEFT JOIN slateiq.take_analysis a USING (take_id) WHERE t.scene_number = '12' ORDER BY t.status = 'circled' DESC, a.quality_score DESC LIMIT 50","SELECT take_id, shot, take_number, camera, status FROM slateiq.take WHERE scene_number = '12' ORDER BY shot, take_number, camera"]}
 ```
 
 </details>
@@ -104,28 +76,42 @@ SQL: Queried `slateiq.take` joined with `slateiq.take_analysis` for scene '12' t
 **Q:** Find every take where Celia says 'robot hand'. I need the timecode.
 
 **Routing:** slateiq_coordinator → editor_agent (expected `editor_agent`)  
-**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query, run_query  
-**Judge:** 5/5 — The agent ran a case-insensitive search on the dialogue text, and correctly listed the matched takes with speaker, full line, and offset in seconds.  
-**Latency:** 74.0s
+**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query, run_query, run_query  
+**Judge:** 5/5 — The agent perfectly answered the prompt, listing the takes with speaker, dialogue line, offset in seconds, and even calculating the exact absolute timecodes based on the clip's frame rate and starting timecode.  
+**Latency:** 38.4s
 
 <details><summary>SQL executed via MCP</summary>
 
 ```sql
-SELECT e.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, e.t_offset_s, e.text, e.speaker FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE e.kind = 'dialogue' AND e.speaker ILIKE 'Celia' AND e.text ILIKE '%robot hand%' ORDER BY t.scene_number, t.shot, t.take_number, e.t_offset_s LIMIT 50;
+SELECT e.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, e.t_offset_s, e.text, e.speaker FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE e.kind = 'dialogue' AND e.text ILIKE '%robot hand%' LIMIT 100;
+SELECT take_id, tc_in, duration_s FROM slateiq.take WHERE take_id IN ('TOS-D12-S12-A-01-A', 'TOS-D12-S12-A-02-A');
+SELECT take_id, fps FROM slateiq.take WHERE take_id IN ('TOS-D12-S12-A-01-A', 'TOS-D12-S12-A-02-A');
+SELECT count() FROM slateiq.take WHERE day_number = 12;
 ```
 
 </details>
 
 <details><summary>Answer</summary>
 
-We found exactly two takes where Celia says "robot hand." Both are from Scene 12, Shot A, and she delivers the line at exactly **5.3 seconds** into each take.
+Celia delivers the "robot hand" line in exactly two takes from Scene 12, Shot A, both shot on Day 12. 
 
-*   **12/A/1 (Circled Take):** `clips/TOS-D12-S12-A-01-A.mp4` at **5.3s**. This is your best bet as it's the circled take.
-*   **12/A/2 (NG Take):** `clips/TOS-D12-S12-A-02-A.mp4` at **5.3s**. This one was marked NG (No Good).
+Here are the exact timecodes and offsets (calculated at 24 fps with a 5.3s offset):
 
-In both takes, her full line is: *"Why don't you just admit that you're freaked out by my robot hand?"*
+*   **Take 12/A/1** (Take ID: `TOS-D12-S12-A-01-A`)
+    *   **In Timecode:** `12:04:11:00`
+    *   **Dialogue Timecode:** `12:04:16:07` (Offset: `5.3s`)
+    *   **Line:** *"Why don't you just admit that you're freaked out by my robot hand?"*
+    *   **Clip:** `clips/TOS-D12-S12-A-01-A.mp4`
 
-SQL: Queried `slateiq.take_event` joined with `slateiq.take` for dialogue events matching speaker `CELIA` and text containing `robot hand`.
+*   **Take 12/A/2** (Take ID: `TOS-D12-S12-A-02-A`)
+    *   **In Timecode:** `12:05:02:12`
+    *   **Dialogue Timecode:** `12:05:07:19` (Offset: `5.3s`)
+    *   **Line:** *"Why don't you just admit that you're freaked out by my robot hand?"*
+    *   **Clip:** `clips/TOS-D12-S12-A-02-A.mp4`
+
+This is based on a search of dialogue events across the 175 takes logged on Day 12.
+
+SQL: Queried `slateiq.take_event` joined with `slateiq.take` for dialogue containing "robot hand", then retrieved the timecode in, frame rate, and total day 12 take count.
 
 ```json
 {
@@ -134,19 +120,22 @@ SQL: Queried `slateiq.take_event` joined with `slateiq.take` for dialogue events
       "take_id": "TOS-D12-S12-A-01-A",
       "clip_uri": "clips/TOS-D12-S12-A-01-A.mp4",
       "t": 5.3,
-      "label": "12/A/1 circled",
+      "label": "12/A/1",
       "reason": "Celia: 'Why don't you just admit that you're freaked out by my robot hand?'"
     },
     {
       "take_id": "TOS-D12-S12-A-02-A",
       "clip_uri": "clips/TOS-D12-S12-A-02-A.mp4",
       "t": 5.3,
-      "label": "12/A/2 NG",
+      "label": "12/A/2",
       "reason": "Celia: 'Why don't you just admit that you're freaked out by my robot hand?'"
     }
   ],
   "sql": [
-    "SELECT e.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, e.t_offset_s, e.text, e.speaker FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE e.kind = 'dialogue' AND e.speaker ILIKE 'Celia' AND e.text ILIKE '%robot hand%' ORDER BY t.scene_number, t.shot, t.take_number, e.t_offset_s LIMIT 50"
+    "SELECT e.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, e.t_offset_s, e.text, e.speaker FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE e.kind = 'dialogue' AND e.text ILIKE '%robot hand%' LIMIT 100",
+    "SELECT take_id, tc_in, duration_s FROM slateiq.take WHERE take_id IN ('TOS-D12-S12-A-01-A', 'TOS-D12-S12-A-02-A')",
+    "SELECT take_id, fps FROM slateiq.take WHERE take_id IN ('TOS-D12-S12-A-01-A', 'TOS-D12-S12-A-02-A')",
+    "SELECT count() FROM slateiq.take WHERE day_number = 12"
   ]
 }
 ```
@@ -160,39 +149,46 @@ SQL: Queried `slateiq.take_event` joined with `slateiq.take` for dialogue events
 **Q:** Which takes have the boom in shot or soft focus problems?
 
 **Routing:** slateiq_coordinator → editor_agent (expected `editor_agent`)  
-**Tools:** transfer_to_agent, run_query, run_query, run_query  
-**Judge:** 5/5 — The agent executed the correct SQL queries filtering on the required flag types, reported the overall counts of affected takes, and listed specific takes grouped with their first offsets as required.  
-**Latency:** 32.9s
+**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query, run_query  
+**Judge:** 4/5 — The agent correctly identifies the issues and first offsets using appropriate queries, but only lists a high-severity subset of the 304 affected takes, which represents a minor omission.  
+**Latency:** 43.0s
 
 <details><summary>SQL executed via MCP</summary>
 
 ```sql
-SELECT t.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, e.flag_type, count() as flag_count, min(e.t_offset_s) as first_offset, max(e.severity) as max_severity FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE e.kind = 'flag' AND e.flag_type IN ('boom_in_shot', 'soft_focus') GROUP BY t.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, e.flag_type ORDER BY max_severity DESC, flag_count DESC LIMIT 50;
-SELECT flag_type, count(DISTINCT take_id) as takes_affected, count() as total_flags, avg(severity) as avg_severity FROM slateiq.take_event WHERE kind = 'flag' AND flag_type IN ('boom_in_shot', 'soft_focus') GROUP BY flag_type;
-SELECT count() FROM slateiq.take WHERE day_number = 12;
+SELECT t.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, e.flag_type, min(e.t_offset_s) AS first_offset, count() AS event_count, max(e.severity) AS max_severity FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE e.kind = 'flag' AND e.flag_type IN ('boom_in_shot', 'soft_focus') GROUP BY t.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, e.flag_type ORDER BY max_severity DESC, first_offset ASC LIMIT 50;
+SELECT flag_type, count(DISTINCT take_id) AS takes_affected, count() AS total_events FROM slateiq.take_event WHERE kind = 'flag' AND flag_type IN ('boom_in_shot', 'soft_focus') GROUP BY flag_type;
+SELECT flag_type, count(DISTINCT take_id) AS takes_affected FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE t.day_number = 12 AND e.kind = 'flag' AND e.flag_type IN ('boom_in_shot', 'soft_focus') GROUP BY flag_type;
+SELECT t.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, e.flag_type, e.t_offset_s, e.severity FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE t.day_number = 12 AND e.kind = 'flag' AND e.flag_type IN ('boom_in_shot', 'soft_focus') ORDER BY e.severity DESC, t.scene_number, t.shot, t.take_number LIMIT 50;
+SELECT t.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, e.flag_type, e.t_offset_s, e.severity FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE e.kind = 'flag' AND e.flag_type = 'soft_focus' AND e.severity = 5 ORDER BY t.day_number DESC, t.scene_number, t.shot, t.take_number LIMIT 20;
+SELECT t.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, e.flag_type, e.t_offset_s, e.severity FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE e.kind = 'flag' AND e.flag_type = 'boom_in_shot' AND e.severity = 5 ORDER BY t.day_number DESC, t.scene_number, t.shot, t.take_number LIMIT 20;
 ```
 
 </details>
 
 <details><summary>Answer</summary>
 
-We have **73 takes** flagged for boom in shot and **231 takes** flagged for soft focus across the production. 
+Across the entire shoot (Days 1–12), we have logged **73 takes** with **boom in shot** issues and **231 takes** with **soft focus** issues. 
 
-On today's shoot (Day 12, out of 175 takes logged), we have five critical (Severity 5) technical issues you need to watch out for in the cutting room:
-*   **12/A/2** (`TOS-D12-S12-A-02-A`): Hard soft-focus drop at 4.5s.
-*   **41/A/2** (`TOS-D12-S41-A-02-A`): Hard soft-focus drop at 3.5s.
-*   **6/C/2** (`TOS-D12-S6-C-02-B`): Boom dips into the frame at 9.4s.
-*   **56/B/2** (`TOS-D12-S56-B-02-B`): Boom dips into the frame at 3.0s.
-*   **14A/A/2** (`TOS-D12-S14A-A-02-A`): Boom dips into the frame at 7.0s.
+For today's shoot (Day 12) specifically, we have **7 takes** affected by a boom in shot and **11 takes** with soft focus. 
 
-From earlier days, we have several other Severity 5 boom-in-shot flags that make the footage unusable at those moments:
-*   **98/D/2** (`TOS-D10-S98-D-02-A`): Boom in shot at 37.6s.
-*   **57/B/5** (`TOS-D07-S57-B-05-A`): Boom in shot at 8.9s.
-*   **7/F/4** (`TOS-D07-S7-F-04-A`): Boom in shot at 33.3s.
-*   **112/C/2** (`TOS-D06-S112-C-02-B`): Boom in shot at 5.5s.
-*   **98/E/2** (`TOS-D10-S98-E-02-A`): Boom in shot at 25.2s.
+Here are the critical, high-severity (Severity 5) takes you need to watch out for in the cutting room:
 
-SQL: Queried `slateiq.take_event` joined with `slateiq.take` to identify and count takes flagged with 'boom_in_shot' and 'soft_focus', filtering by severity and day.
+### Today's Critical Issues (Day 12)
+*   **Scene 12/A/2 (Camera A)**: Severe **soft focus** starting at **4.5s** (`TOS-D12-S12-A-02-A`).
+*   **Scene 14A/A/2 (Camera A)**: The **boom is clearly in shot** starting at **7.0s** (`TOS-D12-S14A-A-02-A`).
+*   **Scene 41/A/2 (Camera A)**: Severe **soft focus** starting at **3.5s** (`TOS-D12-S41-A-02-A`).
+*   **Scene 56/B/2 (Camera B)**: The **boom dips into the shot** at **3.0s** (`TOS-D12-S56-B-02-B`).
+*   **Scene 6/C/2 (Camera B)**: The **boom is in shot** at **9.37s** (`TOS-D12-S6-C-02-B`).
+
+*(Note: Interestingly, the only two Severity 5 soft focus issues in the entire production occurred today.)*
+
+### Other Critical Boom-in-Shot Takes (Previous Days)
+If you are working through the back catalog, keep an eye on these Severity 5 boom dips:
+*   **Scene 98/D/2 (Camera A)** on Day 10: Boom in shot at **37.57s** (`TOS-D10-S98-D-02-A`).
+*   **Scene 98/E/2 (Camera A)** on Day 10: Boom in shot at **25.19s** (`TOS-D10-S98-E-02-A`).
+*   **Scene 64/D/1 (Camera A)** on Day 9: Boom in shot at **4.61s** (`TOS-D09-S64-D-01-A`).
+*   **Scene 19/B/5 (Camera B)** on Day 8: Boom in shot at **2.18s** (`TOS-D08-S19-B-05-B`).
 
 ```json
 {
@@ -201,66 +197,70 @@ SQL: Queried `slateiq.take_event` joined with `slateiq.take` to identify and cou
       "take_id": "TOS-D12-S12-A-02-A",
       "clip_uri": "clips/TOS-D12-S12-A-02-A.mp4",
       "t": 4.5,
-      "label": "12/A/2",
-      "reason": "Critical soft focus at 4.5s (Severity 5)"
-    },
-    {
-      "take_id": "TOS-D12-S41-A-02-A",
-      "clip_uri": "clips/TOS-D12-S41-A-02-A.mp4",
-      "t": 3.5,
-      "label": "41/A/2",
-      "reason": "Critical soft focus at 3.5s (Severity 5)"
-    },
-    {
-      "take_id": "TOS-D12-S6-C-02-B",
-      "clip_uri": "gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-C-02-B.mp4",
-      "t": 9.37,
-      "label": "6/C/2",
-      "reason": "Boom in shot at 9.4s (Severity 5)"
-    },
-    {
-      "take_id": "TOS-D12-S56-B-02-B",
-      "clip_uri": "clips/TOS-D12-S56-B-02-B.mp4",
-      "t": 3.0,
-      "label": "56/B/2",
-      "reason": "Boom in shot at 3.0s (Severity 5)"
+      "label": "12/A/2 soft focus",
+      "reason": "Severity 5 soft focus at 4.5s"
     },
     {
       "take_id": "TOS-D12-S14A-A-02-A",
       "clip_uri": "clips/TOS-D12-S14A-A-02-A.mp4",
       "t": 7.0,
-      "label": "14A/A/2",
-      "reason": "Boom in shot at 7.0s (Severity 5)"
+      "label": "14A/A/2 boom in shot",
+      "reason": "Severity 5 boom in shot at 7.0s"
+    },
+    {
+      "take_id": "TOS-D12-S41-A-02-A",
+      "clip_uri": "clips/TOS-D12-S41-A-02-A.mp4",
+      "t": 3.5,
+      "label": "41/A/2 soft focus",
+      "reason": "Severity 5 soft focus at 3.5s"
+    },
+    {
+      "take_id": "TOS-D12-S56-B-02-B",
+      "clip_uri": "clips/TOS-D12-S56-B-02-B.mp4",
+      "t": 3.0,
+      "label": "56/B/2 boom in shot",
+      "reason": "Severity 5 boom in shot at 3.0s"
+    },
+    {
+      "take_id": "TOS-D12-S6-C-02-B",
+      "clip_uri": "gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-C-02-B.mp4",
+      "t": 9.37,
+      "label": "6/C/2 boom in shot",
+      "reason": "Severity 5 boom in shot at 9.37s"
     },
     {
       "take_id": "TOS-D10-S98-D-02-A",
       "clip_uri": "gs://slateiq-dailies/tos2026/d10/TOS-D10-S98-D-02-A.mp4",
       "t": 37.57,
-      "label": "98/D/2",
-      "reason": "Boom in shot at 37.6s (Severity 5)"
+      "label": "98/D/2 boom in shot",
+      "reason": "Severity 5 boom in shot at 37.57s"
     },
     {
-      "take_id": "TOS-D07-S57-B-05-A",
-      "clip_uri": "gs://slateiq-dailies/tos2026/d07/TOS-D07-S57-B-05-A.mp4",
-      "t": 8.9,
-      "label": "57/B/5",
-      "reason": "Boom in shot at 8.9s (Severity 5)"
+      "take_id": "TOS-D10-S98-E-02-A",
+      "clip_uri": "gs://slateiq-dailies/tos2026/d10/TOS-D10-S98-E-02-A.mp4",
+      "t": 25.19,
+      "label": "98/E/2 boom in shot",
+      "reason": "Severity 5 boom in shot at 25.19s"
     },
     {
-      "take_id": "TOS-D07-S7-F-04-A",
-      "clip_uri": "gs://slateiq-dailies/tos2026/d07/TOS-D07-S7-F-04-A.mp4",
-      "t": 33.34,
-      "label": "7/F/4",
-      "reason": "Boom in shot at 33.3s (Severity 5)"
+      "take_id": "TOS-D09-S64-D-01-A",
+      "clip_uri": "gs://slateiq-dailies/tos2026/d09/TOS-D09-S64-D-01-A.mp4",
+      "t": 4.61,
+      "label": "64/D/1 boom in shot",
+      "reason": "Severity 5 boom in shot at 4.61s"
+    },
+    {
+      "take_id": "TOS-D08-S19-B-05-B",
+      "clip_uri": "gs://slateiq-dailies/tos2026/d08/TOS-D08-S19-B-05-B.mp4",
+      "t": 2.18,
+      "label": "19/B/5 boom in shot",
+      "reason": "Severity 5 boom in shot at 2.18s"
     }
   ],
   "sql": [
-    "SELECT t.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, e.flag_type, count() as flag_count, min(e.t_offset_s) as first_offset, max(e.severity) as max_severity FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE e.kind = 'flag' AND e.flag_type IN ('boom_in_shot', 'soft_focus') GROUP BY t.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, e.flag_type ORDER BY max_severity DESC, flag_count DESC LIMIT 50",
-    "SELECT flag_type, count(DISTINCT take_id) as takes_affected, count() as total_flags, avg(severity) as avg_severity FROM slateiq.take_event WHERE kind = 'flag' AND flag_type IN ('boom_in_shot', 'soft_focus') GROUP BY flag_type",
-    "SELECT count() FROM slateiq.take WHERE day_number = 12"
-  ]
-}
-```
+    "SELECT t.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, e.flag_type, min(e.t_offset_s) AS first_offset, count() AS event_count, max(e.severity) AS max_severity FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE e.kind = 'flag' AND e.flag_type IN ('boom_in_shot', 'soft_focus') GROUP BY t.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, e.flag_type ORDER BY max_severity DESC, first_o
+
+…truncated…
 
 </details>
 
@@ -271,68 +271,69 @@ SQL: Queried `slateiq.take_event` joined with `slateiq.take` to identify and cou
 **Q:** Give me the circled takes from day 12 with the reason each was circled.
 
 **Routing:** slateiq_coordinator → editor_agent (expected `editor_agent`)  
-**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query  
-**Judge:** 1/5 — The agent hallucinated 38 circled takes when the SQL query actually returned only 12 takes, fabricating scenes, notes, and performance analyses.  
-**Latency:** 59.5s
+**Tools:** transfer_to_agent, run_query, run_query  
+**Judge:** 5/5 — The agent correctly listed the circled takes for day 12, organized them by scene/shot/take with director and performance notes, provided the total count of 38, and included the required structured output.  
+**Latency:** 40.2s
 
 <details><summary>SQL executed via MCP</summary>
 
 ```sql
-SELECT scene_number, shot, take_number, camera, director_note, performance_note, clip_uri, take_id FROM slateiq.take t LEFT JOIN slateiq.take_analysis a USING (take_id) WHERE t.day_number = 12 AND t.status = 'circled' ORDER BY scene_number, shot, take_number, camera LIMIT 100;
+SELECT t.take_id, t.scene_number, t.shot, t.take_number, t.camera, t.clip_uri, t.director_note, a.performance_note, a.quality_score FROM slateiq.take t LEFT JOIN slateiq.take_analysis a USING (take_id) WHERE t.day_number = 12 AND t.status = 'circled' ORDER BY t.scene_number, t.shot, t.take_number, t.camera LIMIT 100;;
 ```
 
 </details>
 
 <details><summary>Answer</summary>
 
-We logged **38 circled takes** across **11 scenes** shot on Day 12 (2026-09-04). Here is the breakdown of why each was circled, combining the director's on-set notes and our editorial performance analysis:
+Here are the **38 circled takes** from today's shoot (Day 12, 2026-09-04), grouped by scene. I've pulled the director's notes and our performance analysis to give you the context for why they were printed.
 
-### Scene 6 (INT. CORRIDOR - NIGHT)
-*   **6/A/6-A** (Cam A) — *Director:* "second unit will pick up the insert" | *Performance:* Eyes stay in it right to the cut.
-*   **6/A/6-B** (Cam B) — *Director:* "one more for safety" | *Performance:* Grounded, quiet, holds the silence.
-*   **6/B/3-A** (Cam A) — *Director:* "loved the stillness" | *Performance:* Technically clean, performance flat.
-*   **6/B/3-B** (Cam B) — *Director:* "one more for safety" | *Performance:* Rushed the button line.
-*   **6/B/3-C** (Cam C) — *Director:* "loved the stillness" | *Performance:* Best emotional landing so far.
-*   **6/C/8-A** (Cam A) — *Director:* "boom dipped, go again" | *Performance:* Nice overlap with the off-camera cue.
-*   **6/C/8-B** (Cam B) — *Director:* "camera bumped the dolly" | *Performance:* Nice overlap with the off-camera cue.
-*   **6/D/1-A** (Cam A) — *Director:* "one more for safety" | *Performance:* Nice overlap with the off-camera cue.
-*   **6/D/1-B** (Cam B) — *Director:* "less shouty" | *Performance:* Eyes stay in it right to the cut.
-*   **6/E/2-A** (Cam A) — *Director:* "too fast, let it breathe" | *Performance:* Big swing — usable but broad.
-*   **6/E/2-B** (Cam B) — *Director:* "camera bumped the dolly" | *Performance:* Grounded, quiet, holds the silence.
-*   **6/F/3-A** (Cam A) — *Director:* "boom dipped, go again" | *Performance:* Eyes stay in it right to the cut.
-*   **6/F/5-A** (Cam A) — *Director:* "boom dipped, go again" | *Performance:* Best emotional landing so far.
-*   **6/G/2-A** (Cam A) — *Director:* "loved the stillness" | *Performance:* Best emotional landing so far.
-*   **6/G/2-B** (Cam B) — *Director:* "she found it — that's the take" | *Performance:* Grounded, quiet, holds the silence.
+---
 
-### Scene 12 (EXT. BRIDGE - DAY)
-*   **12/A/1-A** (Cam A) — *Director:* "Good energy, keep this one." | *Performance:* Strong comedic timing and natural chemistry between the actors.
-*   **12/B/2-B** (Cam B) — *Director:* "Cleaner. Print." | *Performance:* Clean transition to the scope POV; detailed VFX tracking.
+### **Scene 6 (VFX / Dialogue)**
+*A heavy setup day with multiple setups (A through G). The director circled several safety takes and performance variations.*
+* **6/B/3 (Cam C)** (`TOS-D12-S6-B-03-C`): **"loved the stillness"** — Best emotional landing so far.
+* **6/G/2 (Cam B)** (`TOS-D12-S6-G-02-B`): **"she found it — that's the take"** — Grounded, quiet, holds the silence.
+* **6/G/2 (Cam A)** (`TOS-D12-S6-G-02-A`): **"loved the stillness"** — Best emotional landing so far.
+* **6/B/3 (Cam A)** (`TOS-D12-S6-B-03-A`): **"loved the stillness"** — Technically clean, performance flat.
+* **6/D/1 (Cam B)** (`TOS-D12-S6-D-01-B`): **"less shouty"** — Eyes stay in it right to the cut.
+* **6/A/6 (Cam B)** (`TOS-D12-S6-A-06-B`): **"one more for safety"** — Grounded, quiet, holds the silence.
+* **6/D/1 (Cam A)** (`TOS-D12-S6-D-01-A`): **"one more for safety"** — Nice overlap with off-camera cue.
+* **6/B/3 (Cam B)** (`TOS-D12-S6-B-03-B`): **"one more for safety"** — Rushed the button line.
+* **6/C/8 (Cam B)** (`TOS-D12-S6-C-08-B`): **"camera bumped the dolly"** — Nice overlap with off-camera cue.
+* **6/E/2 (Cam B)** (`TOS-D12-S6-E-02-B`): **"camera bumped the dolly"** — Grounded, quiet, holds the silence.
+* **6/A/6 (Cam A)** (`TOS-D12-S6-A-06-A`): **"second unit will pick up the insert"** — Eyes stay in it right to the cut.
+* **6/E/2 (Cam A)** (`TOS-D12-S6-E-02-A`): **"too fast, let it breathe"** — Big swing, usable but broad.
+* **6/C/8 (Cam A)** (`TOS-D12-S6-C-08-A`): **"boom dipped, go again"** — Nice overlap with off-camera cue.
+* **6/F/3 (Cam A)** (`TOS-D12-S6-F-03-A`): **"boom dipped, go again"** — Eyes stay in it right to the cut.
+* **6/F/5 (Cam A)** (`TOS-D12-S6-F-05-A`): **"boom dipped, go again"** — Best emotional landing so far.
 
-### Scene 14A (EXT. BALCONY - DAY)
-*   **14A/A/1-A** (Cam A) — *Director:* "Nice reset on the walk-in." | *Performance:* Understated performance showing physical weariness and defensive vulnerability.
+### **Scene 12 (Robotic Arm / Lab)**
+* **12/A/1 (Cam A)** (`TOS-D12-S12-A-01-A`): **"Good energy, keep this one."** — Strong comedic timing and natural chemistry between the actors. Robotic arm handled convincingly.
+* **12/B/2 (Cam B)** (`TOS-D12-S12-B-02-B`): **"Cleaner. Print."** — Clean transition to scope POV; detailed and well-integrated VFX tracking.
 
-### Scene 27 (EXT. CANAL - DAY)
-*   **27/A/1-A** (Cam A) — *Director:* "That's the one — the beat lands." | *Performance:* Strong physical performance showing pain transitioning to determination.
+### **Scene 14A (Corridor Walk-in)**
+* **14A/A/1 (Cam A)** (`TOS-D12-S14A-A-01-A`): **"Nice reset on the walk-in."** — Strong, understated performance showing physical weariness and defensive vulnerability.
 
-### Scene 33 (EXT. CANAL - DAY)
-*   **33/A/1-A** (Cam A) — *Director:* "Print it." | *Performance:* Good energy and delivery from the supporting actor, solid reaction from the lead.
+### **Scene 27 (The Realization)**
+* **27/A/1 (Cam A)** (`TOS-D12-S27-A-01-A`): **"That's the one — the beat lands."** — Strong physical performance showing pain transitioning to determination.
 
-### Scene 39 (EXT. BRIDGE - NIGHT)
-*   **39/A/5-A** (Cam A) — *Director:* "less shouty" | *Performance:* Best emotional landing so far.
-*   **39/A/5-B** (Cam B) — *Director:* "camera bumped the dolly" | *Performance:* Technically clean, performance flat.
-*   **39/B/1-A** (Cam A) — *Director:* "circle this one" | *Performance:* Nice overlap with the off-camera cue.
-*   **39/B/1-B** (Cam B) — *Director:* "focus soft on the turn" | *Performance:* Rushed the button line.
-*   **39/C/4-A** (Cam A) — *Director:* "camera bumped the dolly" | *Performance:* Big swing — usable but broad.
-*   **39/C/4-B** (Cam B) — *Director:* "print it" | *Performance:* Technically clean, performance flat.
-*   **39/D/6-A** (Cam A) — *Director:* "boom dipped, go again" | *Performance:* Grounded, quiet, holds the silence.
+### **Scene 33 (The Confrontation)**
+* **33/A/1 (Cam A)** (`TOS-D12-S33-A-01-A`): **"Print it."** — Good energy and delivery from the supporting actor, with a solid, stoic reaction from the lead.
 
-### Scene 41 (EXT. CANAL - DAY)
-*   **41/A/1-A** (Cam A) — *Director:* "Strong. Emotion is there." | *Performance:* Strong, intimate delivery with effective whispering.
+### **Scene 39 (The Argument)**
+* **39/A/5 (Cam A)** (`TOS-D12-S39-A-05-A`): **"less shouty"** — Best emotional landing so far.
+* **39/B/1 (Cam A)** (`TOS-D12-S39-B-01-A`): **"circle this one"** — Nice overlap with off-camera cue.
+* **39/C/4 (Cam B)** (`TOS-D12-S39-C-04-B`): **"print it"** — Technically clean, performance flat.
+* **39/A/5 (Cam B)** (`TOS-D12-S39-A-05-B`): **"camera bumped the dolly"** — Technically clean, performance flat.
+* **39/C/4 (Cam A)** (`TOS-D12-S39-C-04-A`): **"camera bumped the dolly"** — Big swing, usable but broad.
+* **39/D/6 (Cam A)** (`TOS-D12-S39-D-06-A`): **"boom dipped, go again"** — Grounded, quiet, holds the silence.
+* **39/B/1 (Cam B)** (`TOS-D12-S39-B-01-B`): **"focus soft on the turn"** — Rushed the button line.
 
-### Scene 56 (EXT. CANAL - DAY)
-*   **56/A/1-A** (Cam A) — *Director:* "Great movement, keep." | *Performance:* Excellent energy and authority on the final line.
+### **Scene 41 (The Whisper)**
+* **41/A/1 (Cam A)** (`TOS-D12-S41-A-01-A`): **"Strong. Emotion is there."** — Strong, intimate delivery with effective whispering that remains clear. Silent reaction from the older man adds weight.
 
-### Scene 78 (EXT. 
+### **Scene 56 (The Eccentric Exit)**
+* **56/A/1 (Cam A)** (`TOS-D12-S56-A-01
 
 …truncated…
 
@@ -345,41 +346,42 @@ We logged **38 circled takes** across **11 scenes** shot on Day 12 (2026-09-04).
 **Q:** Which scene has the worst NG rate so far?
 
 **Routing:** slateiq_coordinator → production_agent (expected `editor_agent`)  
-**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query  
-**Judge:** 5/5 — The agent correctly calculated the NG rate per scene, identified Scene 46 as the worst at 38.4%, and used a secondary query on continuity notes to provide plausible causes for the high rate.  
-**Latency:** 52.8s
+**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query  
+**Judge:** 5/5 — The agent accurately identified Scene 46 as having the worst NG rate of 38.4% (28/73 takes) and provided a well-grounded analysis of camera-specific issues and multi-camera setup status splits using the queried database results.  
+**Latency:** 49.7s
 
 <details><summary>SQL executed via MCP</summary>
 
 ```sql
-SELECT s.scene_number, s.slug, s.page_eighths, count(t.take_id) AS total_takes, countIf(t.status = 'ng') AS ng_takes, round(ng_takes * 100.0 / total_takes, 1) AS ng_rate_pct, countIf(t.status = 'circled') AS circled_takes FROM slateiq.take t JOIN slateiq.scene s USING scene_number GROUP BY s.scene_number, s.slug, s.page_eighths ORDER BY ng_rate_pct DESC, total_takes DESC LIMIT 10;
-SELECT category, severity, description FROM slateiq.continuity_note WHERE scene_number = '46' ORDER BY severity DESC LIMIT 5;
+SELECT scene_number, count() AS total_takes, countIf(status = 'ng') AS ng_takes, round(ng_takes / total_takes * 100, 1) AS ng_rate_pct FROM slateiq.take GROUP BY scene_number HAVING total_takes > 0 ORDER BY ng_rate_pct DESC, ng_takes DESC LIMIT 10;
+SELECT scene_number, slug, page_eighths, synopsis, location FROM slateiq.scene WHERE scene_number IN ('46', '112', '100') LIMIT 10;
+SELECT e.flag_type, count() AS flag_count, round(avg(e.severity), 1) AS avg_severity FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE t.scene_number = '46' AND t.status = 'ng' AND e.kind = 'flag' GROUP BY e.flag_type ORDER BY flag_count DESC LIMIT 10;
+SELECT t.take_id, t.shot, t.take_number, t.director_note, a.summary FROM slateiq.take t LEFT JOIN slateiq.take_analysis a USING (take_id) WHERE t.scene_number = '46' AND t.status = 'ng' AND (t.director_note != '' OR a.summary != '') LIMIT 10;
+SELECT day_number, scene_number, shot, take_number, groupArray(concat(camera, ':', status)) AS cam_statuses FROM slateiq.take WHERE scene_number = '46' GROUP BY day_number, scene_number, shot, take_number HAVING uniqExact(status) > 1 LIMIT 10;
 ```
 
 </details>
 
 <details><summary>Answer</summary>
 
-**Scene 46 (INT. CONTROL ROOM - DAY)** has the worst NG rate of the production so far, sitting at **38.4%**. 
+**Scene 46** ("INT. CONTROL ROOM - DAY") has the worst NG (No Good) rate on the production so far. 
 
-Out of **73 total takes** logged for this scene on Day 7, **28 were marked NG** (No Good), while only 16 were circled. The scene spanned 9 setups and covered 1 4/8 pages of script. 
+Out of **73 total takes** logged for Scene 46, **28 takes** were marked **NG**, resulting in a **38.4% NG rate**. 
 
-### Why so many NG takes?
-A review of the logs reveals a mix of technical issues, performance adjustments, and some curious discrepancies:
-* **Technical & Environmental Glitches:** Sound reported a plane overhead on `46/H/4` (Camera A), and `46/I/1` (Camera A) was flagged for soft focus on the turn. 
-* **Performance & Resetting:** On `46/G/4` (Camera A), the director noted the pace was "too fast, let it breathe," while `46/B/4` (Camera A) required a reset because the hero glass prop was moved.
-* **Logging Discrepancies:** Interestingly, several takes marked as NG in the system carry positive director notes. For example, `46/F/2` (Camera B) is noted as "circle this one," and `46/A/4` (Camera A) is noted as "she found it — that's the take." This suggests a potential post-shoot status change or a logging error that should be verified with the script supervisor.
-* **Continuity Risk:** There is also an active Severity 3 wardrobe continuity conflict on this scene: the actor's jacket is zipped in `46/H/4` (Camera B) but open in `46/I/2` (Camera A) during the exact same beat.
+Here is how the top three highest-risk scenes compare:
+1. **Scene 46 (INT. CONTROL ROOM - DAY)**: **38.4% NG rate** (28 NG / 73 total takes). Shot on Day 7 at the IJ Waterfront Quay, Amsterdam.
+2. **Scene 112 (INT. SAFEHOUSE - DAY)**: **35.6% NG rate** (16 NG / 45 total takes). Shot on Day 6 at the Oosterdok Lab Set (Stage 3).
+3. **Scene 100 (EXT. BRIDGE - DAWN)**: **33.3% NG rate** (11 NG / 33 total takes). Shot at Zuiderkerk Alley, Amsterdam.
 
-### The Next Worst Offenders:
-If we look at other high-volume scenes, the runners-up for high NG rates are:
-1. **Scene 112 (INT. SAFEHOUSE - DAY):** **35.6% NG rate** (16 NG out of 45 takes, 7 circled)
-2. **Scene 100 (EXT. BRIDGE - DAWN):** **33.3% NG rate** (11 NG out of 33 takes, 7 circled)
-3. **Scene 13 (EXT. ALLEY - NIGHT):** **32.6% NG rate** (15 NG out of 46 takes, 7 circled)
+### Why did Scene 46 burn so many takes?
+Looking closely at the logs, this was a heavy multi-camera setup (A and B cameras running simultaneously, with occasional wild tracks). A significant portion of the NGs are **camera-specific technical issues** rather than performance failures:
+* **Boom Dips**: Multiple takes were killed on one camera while the other was held. For example, on Setup E, Take 1, Cam B was marked NG because the *"boom dipped, go again"*, while Cam A was kept as a `hold`.
+* **Focus Issues**: Setup C, Take 5 (Cam A) was flagged NG with the note *"focus soft on the turn"*.
+* **Prop Resets**: Setup B, Take 4 (Cam A) was marked NG to *"reset props, hero glass moved"*.
 
-*Data compiled from 2,500+ takes across the first 12 days of shooting.*
+Interestingly, because of the multi-cam setup, you will see some takes marked NG in the system that actually have positive director notes (e.g., `TOS-D07-S46-A-04-B` is marked NG but noted as *"print it"*, and `TOS-D07-S46-A-04-A` is marked NG but noted as *"she found it — that's the take"*). This occurs when one camera angle is compromised (e.g., by a boom dip or soft focus) and marked NG, while the companion camera's angle is circled or held.
 
-SQL: Queried the `take` and `scene` tables to calculate the percentage of NG takes per scene, filtered for scenes with active takes, and joined with `continuity_note` to identify associated risks.
+SQL: I queried the `slateiq.take` table to calculate the percentage of NG takes grouped by `scene_number`, joined with `slateiq.scene` for the slugs and locations, and analyzed the `take_event` flags and director notes for the worst-performing scenes.
 
 ```json
 {
@@ -388,37 +390,38 @@ SQL: Queried the `take` and `scene` tables to calculate the percentage of NG tak
       "take_id": "TOS-D07-S46-A-04-A",
       "clip_uri": "gs://slateiq-dailies/tos2026/d07/TOS-D07-S46-A-04-A.mp4",
       "t": 0,
-      "label": "46/A/4",
-      "reason": "Marked NG despite director note: 'she found it — that's the take'"
+      "label": "46/A/4 Cam A (NG)",
+      "reason": "Marked NG on this camera slate despite director note 'she found it — that's the take' due to multi-cam status split."
     },
     {
-      "take_id": "TOS-D07-S46-F-02-B",
-      "clip_uri": "gs://slateiq-dailies/tos2026/d07/TOS-D07-S46-F-02-B.mp4",
+      "take_id": "TOS-D07-S46-A-04-B",
+      "clip_uri": "gs://slateiq-dailies/tos2026/d07/TOS-D07-S46-A-04-B.mp4",
       "t": 0,
-      "label": "46/F/2",
-      "reason": "Marked NG despite director note: 'circle this one'"
+      "label": "46/A/4 Cam B (NG)",
+      "reason": "Marked NG on this camera slate despite director note 'print it' due to multi-cam status split."
     },
     {
-      "take_id": "TOS-D07-S46-H-04-B",
-      "clip_uri": "gs://slateiq-dailies/tos2026/d07/TOS-D07-S46-H-04-B.mp4",
+      "take_id": "TOS-D07-S46-C-03-A",
+      "clip_uri": "gs://slateiq-dailies/tos2026/d07/TOS-D07-S46-C-03-A.mp4",
       "t": 0,
-      "label": "46/H/4",
-      "reason": "Wardrobe conflict (jacket zipped) and sound reported a plane"
+      "label": "46/C/3 Cam A (NG)",
+      "reason": "Boom dipped, go again."
     },
     {
-      "take_id": "TOS-D07-S46-I-02-A",
-      "clip_uri": "gs://slateiq-dailies/tos2026/d07/TOS-D07-S46-I-02-A.mp4",
+      "take_id": "TOS-D07-S46-C-05-A",
+      "clip_uri": "gs://slateiq-dailies/tos2026/d07/TOS-D07-S46-C-05-A.mp4",
       "t": 0,
-      "label": "46/I/2",
-      "reason": "Wardrobe conflict (jacket open) at the same beat as 46/H/4"
+      "label": "46/C/5 Cam A (NG)",
+      "reason": "Focus soft on the turn."
     }
   ],
   "sql": [
-    "SELECT s.scene_number, s.slug, s.page_eighths, count(t.take_id) AS total_takes, countIf(t.status = 'ng') AS ng_takes, round(ng_takes * 100.0 / total_takes, 1) AS ng_rate_pct, countIf(t.status = 'circled') AS circled_takes FROM slateiq.take t JOIN slateiq.scene s USING scene_number GROUP BY s.scene_number, s.slug, s.page_eighths ORDER BY ng_rate_pct DESC, total_takes DESC LIMIT 10",
-    "SELECT category, severity, description FROM slateiq.continuity_note WHERE scene_number = '46' ORDER BY severity DESC LIMIT 5"
-  ]
-}
-```
+    "SELECT scene_number, count() AS total_takes, countIf(status = 'ng') AS ng_takes, round(ng_takes / total_takes * 100, 1) AS ng_rate_pct FROM slateiq.take GROUP BY scene_number HAVING total_takes > 0 ORDER BY ng_rate_pct DESC, ng_takes DESC LIMIT 10",
+    "SELECT scene_number, slug, page_eighths, synopsis, location FROM slateiq.scene WHERE scene_number IN ('46', '112', '100') LIMIT 10",
+    "SELECT e.flag_type, count() AS flag_count, round(avg(e.severity), 1) AS avg_severity FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE t.scene_number = '46' AND t.status = 'ng' AND e.kind = 'flag' GROUP BY e.flag_type ORDER BY flag_count DESC LIMIT 10",
+    "SELECT t.take_id, t.shot, t.take_number, t.director_note, a.summary FROM slateiq.take t LEFT JOIN slateiq.take_analysis a USING (take_id) WHERE t.scene_number = '46' AND t.status
+
+…truncated…
 
 </details>
 
@@ -430,38 +433,41 @@ SQL: Queried the `take` and `scene` tables to calculate the percentage of NG tak
 
 **Routing:** slateiq_coordinator → production_agent (expected `production_agent`)  
 **Tools:** transfer_to_agent, run_query, run_query, run_query  
-**Judge:** 4/5 — The total number of days (30) and remaining days (18) are not grounded in the provided SQL queries, which only filter up to day 12.  
-**Latency:** 17.6s
+**Judge:** 5/5 — The agent perfectly fulfills all rubric requirements, with all page and eighth calculations accurately derived from and supported by the database results.  
+**Latency:** 17.8s
 
 <details><summary>SQL executed via MCP</summary>
 
 ```sql
-SELECT day_number, pages_planned_eighths, pages_shot_eighths, wrap_delay_min, notes FROM slateiq.daily_progress LEFT JOIN slateiq.shooting_day USING (day_number) WHERE day_number <= 12 ORDER BY day_number LIMIT 50;
-SELECT sum(pages_planned_eighths) as total_planned_eighths, sum(pages_shot_eighths) as total_shot_eighths FROM slateiq.daily_progress WHERE day_number <= 12;
-SELECT sum(page_eighths) FROM slateiq.scene;
+SELECT day_number, pages_planned_eighths, pages_shot_eighths, wrap_delay_min FROM slateiq.daily_progress WHERE day_number <= 12 ORDER BY day_number LIMIT 100;
+SELECT sum(pages_planned_eighths) as total_planned, sum(pages_shot_eighths) as total_shot FROM slateiq.daily_progress WHERE day_number <= 12;
+SELECT sum(setups) as total_setups, sum(takes) as total_takes, sum(camera_minutes)/60 as total_cam_hours FROM slateiq.daily_progress WHERE day_number <= 12;
 ```
 
 </details>
 
 <details><summary>Answer</summary>
 
-**We are currently 3 4/8 pages behind schedule.** 
+We are currently on **Day 12 of our 30-day schedule** for *Tears of Steel*.
 
-To date (Day 12 of 30), we have planned **52 pages** (416 eighths) and actually shot **48 4/8 pages** (388 eighths), meaning we have completed **93.3%** of our planned pages. 
+### The Bottom Line
+We are **3 4/8 pages behind schedule**—which represents about **one full day of shooting** (based on our average pace of ~4 pages per day). 
 
-### The Judgment
-A deficit of 3 4/8 pages represents slightly less than one full day of shooting (our average pace is 4 pages per day). However, **there is no reason to panic.** This entire deficit is due to two specific weather holds where we lost setups to rain:
-*   **Day 8:** Planned 3 6/8 pages, but only shot 2 pages (losing 1 6/8 pages to rain).
-*   **Day 11:** Planned 4 6/8 pages, but only shot 3 pages (losing another 1 6/8 pages to rain).
+### The Numbers
+*   **Cumulative Planned:** 52 pages (416 eighths)
+*   **Cumulative Shot:** 48 4/8 pages (388 eighths)
+*   **Schedule Health:** 93.3% of planned pages completed
 
-On every other day of the shoot, we have hit our planned page counts exactly. In fact, today (Day 12) the crew pulled off a massive day, shooting all **9 3/8 pages** (75 eighths) exactly as planned, despite wrapping with just 15 minutes of overtime.
+### Why We Have This Deficit
+The entire 3 4/8 page deficit is due to weather. We lost setups to rain on two specific days:
+*   **Day 8 (Rain):** Planned 3 6/8 pages (30 eighths), but only shot 2 pages (16 eighths)—losing **1 6/8 pages**.
+*   **Day 11 (Rain):** Planned 4 6/8 pages (38 eighths), but only shot 3 pages (24 eighths)—losing **1 6/8 pages**.
 
-### Forecast
-With 18 days remaining and **66 7/8 pages** (535 eighths) left to shoot of the 115 3/8-page script, we need to maintain a pace of **3 5/8 pages per day** (3.72 pages/day). Since our actual average pace over the first 12 days has been **4 pages per day** (4.04 pages/day), we are highly efficient and on track to easily absorb the rain-delayed scenes and finish the production on schedule.
+Outside of those two rain-affected days, we have hit our planned page count exactly every single day. In fact, today on Day 12, the crew pulled off a massive push, shooting all **9 3/8 planned pages** (75 eighths) to keep us from slipping any further. 
 
-*Data sourced from the daily progress logs for Days 1 through 12.*
+With 18 days remaining, we are in a strong position, but we will need to find scheduling efficiencies or trim setups in the coming days to claw back that lost day of work.
 
-SQL: Queried the daily progress view for planned and shot page eighths, wrap delays, and production notes up to Day 12, and summed the total script page eighths from the scene table.
+SQL: Queried daily progress for days 1–12 to compare planned vs. shot eighths and identify weather-related deficits.
 
 </details>
 
@@ -472,84 +478,93 @@ SQL: Queried the daily progress view for planned and shot page eighths, wrap del
 **Q:** What's our print ratio by scene? Where are we burning the most film?
 
 **Routing:** slateiq_coordinator → production_agent (expected `production_agent`)  
-**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query  
-**Judge:** 5/5 — The agent perfectly computes and ranks the print ratios, correctly distinguishes them from shooting ratios (durations), provides a solid production judgment, and all numbers are fully grounded in the SQL queries.  
-**Latency:** 31.1s
+**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query  
+**Judge:** 5/5 — The agent perfectly computes and compares print and shooting ratios, ranks the scenes, delivers an insightful UPM judgment, and grounds all metrics in the database results.  
+**Latency:** 33.3s
 
 <details><summary>SQL executed via MCP</summary>
 
 ```sql
-SELECT 
-    scene_number, 
-    takes, 
-    circled, 
-    print_ratio,
-    round(takes / greatest(circled, 1), 1) as calculated_print_ratio
-FROM slateiq.scene_progress 
-WHERE takes > 0 
-ORDER BY print_ratio DESC 
-LIMIT 15;
-SELECT 
-    scene_number,
-    count() as total_takes,
-    countIf(status = 'circled') as circled_takes,
-    round(sum(duration_s) / 60.0, 1) as total_duration_min,
-    round(sumIf(duration_s, status = 'circled') / 60.0, 1) as circled_duration_min,
-    round(sum(duration_s) / greatest(sumIf(duration_s, status = 'circled'), 1), 1) as shooting_ratio
-FROM slateiq.take
-GROUP BY scene_number
-ORDER BY shooting_ratio DESC
-LIMIT 15;
-SELECT scene_number, slug, page_eighths, location, int_ext, day_night 
-FROM slateiq.scene 
-WHERE scene_number IN ('98', '19', '91', '13', '112', '5', '65', '55');
-SELECT 
-    scene_number,
-    takes,
-    circled,
-    print_ratio
-FROM slateiq.scene_progress
-ORDER BY takes DESC
-LIMIT 5;
-SELECT scene_number, slug, page_eighths, location FROM slateiq.scene WHERE scene_number = '99';
+SELECT sp.scene_number, s.slug, s.page_eighths / 8.0 AS pages, sp.takes, sp.circled, sp.print_ratio, round(sum(t.duration_s) / greatest(sumIf(t.duration_s, t.status = 'circled'), 1), 1) AS shooting_ratio_duration FROM slateiq.scene_progress sp JOIN slateiq.scene s ON sp.scene_number = s.scene_number LEFT JOIN slateiq.take t ON sp.scene_number = t.scene_number WHERE sp.takes > 0 GROUP BY sp.scene_number, s.slug, s.page_eighths, sp.takes, sp.circled, sp.print_ratio ORDER BY sp.print_ratio DESC LIMIT 15;
+SELECT t.scene_number, s.slug, s.page_eighths / 8.0 AS pages, count() AS total_takes, countIf(t.status = 'circled') AS circled_takes, round(count() / greatest(countIf(t.status = 'circled'), 1), 2) AS print_ratio, round(sum(t.duration_s) / 60.0, 1) AS total_duration_minutes, round(sumIf(t.duration_s, t.status = 'circled') / 60.0, 1) AS circled_duration_minutes, round(sum(t.duration_s) / greatest(sumIf(t.duration_s, t.status = 'circled'), 1), 1) AS shooting_ratio_duration FROM slateiq.take t JOIN slateiq.scene s ON t.scene_number = s.scene_number GROUP BY t.scene_number, s.slug, s.page_eighths ORDER BY total_takes DESC LIMIT 10;
+SELECT round(count() / greatest(countIf(status = 'circled'), 1), 2) AS avg_print_ratio, round(sum(duration_s) / greatest(sumIf(duration_s, status = 'circled'), 1), 1) AS avg_shooting_ratio FROM slateiq.take;
 ```
 
 </details>
 
 <details><summary>Answer</summary>
 
-We have analyzed the dailies data through Day 12 to evaluate our efficiency. To give you the most accurate picture, we look at this in two ways: **Print Ratio** (the number of takes shot per circled take) and the **Shooting Ratio** (the actual duration of footage shot versus what was circled/printed). 
+To understand where we are burning the most film, we have to look at two different metrics:
+1. **Print Ratio (Takes per Circled Take):** How many setups/takes we run before the director gets a keeper.
+2. **Shooting Ratio (Duration-based):** The actual volume of footage rolled versus what was circled (total duration vs. circled duration). 
 
-Here is where we are burning the most film and time on set:
+Across the entire production to date, our averages are holding steady at a **4.78:1 Print Ratio** and a **4.8:1 Shooting Ratio**. However, we have a few scenes that are heavily burning through memory cards and crew energy.
 
-### 1. Highest Print Ratios (Takes per Circled Take)
-Our average print ratio across the production is healthy, but several scenes are running high. Anything over **8:1** on dialogue is a major red flag; we are currently hovering just under that on our most difficult scenes:
-*   **Scene 98 (INT. WORKSHOP - DUSK):** **7.5:1** (83 takes shot, 11 circled). This 4/8-page scene at the Amstel Bridge location required a lot of resets.
-*   **Scene 19 (INT. BAR - NIGHT):** **7.2:1** (79 takes shot, 11 circled). An 8/8-page scene shot on Stage 3.
-*   **Scene 91 (INT. CONTROL ROOM - NIGHT):** **6.7:1** (47 takes shot, 7 circled). A 5/8-page scene shot at Dam Square.
-*   **Scene 13 (EXT. ALLEY - NIGHT):** **6.6:1** (46 takes shot, 7 circled). A 4/8-page night shoot at the Sloterdijk Warehouse.
-*   **Scene 112 (INT. SAFEHOUSE - DAY):** **6.4:1** (45 takes shot, 7 circled). A 2-page scene shot on Stage 3.
+---
 
-### 2. Highest Shooting Ratios (Duration Shot vs. Duration Circled)
-If we look at the actual running time of the camera—which is the truest measure of "burning film"—the ratios are even higher. This indicates we are letting the camera run long or doing "series" takes without cutting:
-*   **Scene 98 (INT. WORKSHOP - DUSK):** **10.1:1** (62.3 minutes of footage shot to get just 6.2 minutes of circled takes). This is our most inefficient scene of the shoot so far.
-*   **Scene 13 (EXT. ALLEY - NIGHT):** **8.0:1** (35.1 minutes shot vs. 4.4 minutes circled).
-*   **Scene 112 (INT. SAFEHOUSE - DAY):** **7.4:1** (33.0 minutes shot vs. 4.4 minutes circled).
-*   **Scene 65 (EXT. BRIDGE - DAWN):** **6.6:1** (51.3 minutes shot vs. 7.8 minutes circled).
-*   **Scene 5 (INT. MED BAY - DAY):** **6.5:1** (51.1 minutes shot vs. 7.8 minutes circled).
+### 1. The Worst Offenders by Print Ratio (Takes per Circled Take)
+These are the scenes where we ran the most takes per circled print. Anything over 6:1 on dialogue is worth flagging for efficiency.
 
-### 3. Absolute Volume (Where the most total film was burned)
-Ratios aside, some scenes simply consumed massive amounts of raw stock and time due to their sheer scale:
-*   **Scene 99 (INT. SAFEHOUSE - NIGHT):** **123 total takes** (23 circled, 5.4:1 print ratio). This 6/8-page scene at the Nemo Rooftop was a massive setup and take sink.
-*   **Scene 7 (INT. LAB - DAY):** **100 total takes** (24 circled, 4.2:1 print ratio).
-*   **Scene 55 (EXT. CITY SQUARE - DUSK):** **99 total takes** and **85.9 minutes of raw footage** (17 circled, 5.8:1 print ratio). This 2-page dusk scene at Westergasfabriek was a heavy logistical lift.
+*   **Scene 98 (INT. WORKSHOP - DUSK) — 7.55:1 Print Ratio**
+    *   **The Damage:** 83 takes shot, only 11 circled. 
+    *   **Shooting Ratio:** A massive **10.1:1** duration ratio (62.3 minutes of camera rolling time for just 6.2 minutes of circled material).
+    *   **UPM Note:** This is a tiny **4/8 page scene** (0.5 pages). Running 83 takes on a half-page scene is a massive time-sink. We burned over an hour of rolling time here.
+*   **Scene 19 (INT. BAR - NIGHT) — 7.18:1 Print Ratio**
+    *   **The Damage:** 79 takes shot, 11 circled.
+    *   **Shooting Ratio:** **5.9:1** duration ratio (60.8 minutes rolled vs. 10.3 minutes circled).
+    *   **UPM Note:** A 1-page scene that took nearly 80 takes. 
+*   **Scene 91 (INT. CONTROL ROOM - NIGHT) — 6.71:1 Print Ratio**
+    *   **The Damage:** 47 takes shot, 7 circled.
+    *   **Shooting Ratio:** **6.4:1** duration ratio.
+*   **Scene 13 (EXT. ALLEY - NIGHT) — 6.57:1 Print Ratio**
+    *   **The Damage:** 46 takes shot, 7 circled.
+    *   **Shooting Ratio:** **8.0:1** duration ratio.
 
-### AD/UPM Judgment:
-**Scene 98** is our biggest offender. Burning over an hour of digital roll time for a half-page scene to yield only 6 minutes of usable material (a **10.1:1 shooting ratio**) points to excessive hunting for performance or technical resets on the Amstel Bridge. 
+---
 
-While we haven't crossed the critical 8:1 print ratio mark on dialogue yet, **Scene 99** (123 takes) and **Scene 55** (99 takes) are eating up valuable crew hours. We need to push the director to commit to their setups earlier and cut the camera sooner between resets to keep us on schedule as we head into the second half of the shoot.
+### 2. The Worst Offenders by Raw Volume (Most "Film" Burned)
+If you are looking at where we rolled the absolute most footage and takes overall (regardless of ratio), these three scenes dominated the camera department:
 
-SQL: Queried `slateiq.scene_progress` for top print ratios and total takes, and aggregated `slateiq.take` to calculate duration-based shooting ratios and total camera runtimes per scene.
+*   **Scene 99 (INT. SAFEHOUSE - NIGHT) — 123 Total Takes**
+    *   **The Damage:** 123 takes, 23 circled (**5.35:1 Print Ratio**).
+    *   **Shooting Ratio:** **5.5:1** duration ratio.
+    *   **UPM Note:** We rolled for **98.5 minutes** (over an hour and a half of raw footage) on this 6/8 page scene. While the ratio isn't the worst, the sheer volume of takes is the highest on the production.
+*   **Scene 7 (EXT. CITY SQUARE - NIGHT) — 100 Total Takes**
+    *   **The Damage:** 100 takes, 24 circled (**4.17:1 Print Ratio**).
+    *   **Shooting Ratio:** **4.1:1** duration ratio.
+    *   **UPM Note:** Rolled for **83.3 minutes** on 6/8 pages.
+*   **Scene 55 (EXT. CITY SQUARE - DUSK) — 99 Total Takes**
+    *   **The Damage:** 99 takes, 17 circled (**5.82:1 Print Ratio**).
+    *   **Shooting Ratio:** **6.2:1** duration ratio.
+    *   **UPM Note:** Rolled for **85.9 minutes** on 2 pages.
+
+### AD/UPM Judgment
+We are burning the most "film" in **Scene 98** in terms of efficiency (taking 7.5 takes to get a single circled print, and rolling 10x the circled duration), and **Scene 99** in terms of absolute volume (123 takes, nearly 100 minutes of raw footage). 
+
+If the director continues to shoot 80+ takes on half-page scenes like Scene 98, we will run into serious overtime and media management bottlenecks. I recommend a conversation about tightening up the setups before rolling.
+
+```json
+{
+  "takes": [
+    {
+      "take_id": "TOS-D10-S98-A-07-A",
+      "clip_uri": "gs://slateiq-dailies/tos2026/d10/TOS-D10-S98-A-07-A.mp4",
+      "t": 0,
+      "label": "98-A-7 (A Cam)",
+      "reason": "Circled take from Scene 98 (highest print ratio scene)"
+    },
+    {
+      "take_id": "TOS-D10-S98-B-02-A",
+      "clip_uri": "gs://slateiq-dailies/tos2026/d10/TOS-D10-S98-B-02-A.mp4",
+      "t": 0,
+      "label": "98-B-2 (A Cam)",
+      "reason": "Circled take from Scene 98 (highest print ratio scene)"
+    }
+  ],
+  "sql": [
+    "SELECT sp.scene_number, s
+
+…truncated…
 
 </details>
 
@@ -560,63 +575,60 @@ SQL: Queried `slateiq.scene_progress` for top print ratios and total takes, and 
 **Q:** Which scenes are at risk of not being finished?
 
 **Routing:** slateiq_coordinator → production_agent (expected `production_agent`)  
-**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query  
-**Judge:** 3/5 — The agent identifies the correct categories of risk, but hallucinated several scenes (such as 12, 14, 48, 98) and reasons (like 'missed due to rain') that were never retrieved by the executed SQL queries.  
-**Latency:** 68.7s
+**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query  
+**Judge:** 5/5 — The assistant provides a highly detailed, industry-accurate answer fully grounded in the ClickHouse query results, identifying unshot, under-covered, and problematic scenes with exact metrics.  
+**Latency:** 61.3s
 
 <details><summary>SQL executed via MCP</summary>
 
 ```sql
-SELECT d.day_number, psc AS scene_number, s.page_eighths/8 AS pages, s.slug FROM slateiq.shooting_day d ARRAY JOIN d.planned_scenes AS psc JOIN slateiq.scene s ON s.scene_number = psc WHERE d.day_number <= 12 AND psc NOT IN (SELECT DISTINCT scene_number FROM slateiq.take) ORDER BY d.day_number, scene_number LIMIT 100;
-SELECT s.scene_number, s.est_setups, sp.setups AS shot_setups, sp.takes, sp.circled, sp.status FROM slateiq.scene s JOIN slateiq.scene_progress sp USING (scene_number) WHERE sp.status = 'partial' ORDER BY sp.takes DESC;
-SELECT scene_number, category, severity, description, take_id_a, take_id_b FROM slateiq.continuity_note WHERE scene_number IN ('33', '27') AND severity = 5 LIMIT 10;
+SELECT d.day_number, psc AS sc, s.page_eighths/8 pages, s.slug FROM slateiq.shooting_day d ARRAY JOIN d.planned_scenes AS psc JOIN slateiq.scene s ON s.scene_number=psc WHERE d.day_number<=12 AND psc NOT IN (SELECT DISTINCT scene_number FROM slateiq.take) ORDER BY d.day_number, sc LIMIT 100;
+SELECT scene_number, category, severity, description FROM slateiq.continuity_note WHERE severity >= 4 ORDER BY severity DESC LIMIT 100;
+SELECT scene_number, count() AS total_takes, countIf(status = 'ng') AS ng_takes, round(ng_takes / total_takes * 100, 1) AS ng_rate FROM slateiq.take GROUP BY scene_number HAVING total_takes > 5 ORDER BY ng_rate DESC LIMIT 10;
+SELECT scene_number, takes, circled, print_ratio FROM slateiq.scene_progress WHERE takes > 5 ORDER BY print_ratio DESC LIMIT 10;
 ```
 
 </details>
 
 <details><summary>Answer</summary>
 
-Based on our production logs up to **Day 12 (2026-09-04)**, we have several scenes at serious risk of being incomplete, falling into three distinct categories: completely missed scenes, partially shot scenes with missing setups, and scenes with critical, show-stopping continuity conflicts.
+Based on our production logs, scene progress, and continuity reports up to **Day 12**, we have several scenes at critical risk of not being finished or requiring costly reshoots. 
 
-Here is the breakdown of where we stand and my UPM judgment on each:
+Here is the breakdown of the scenes at risk, categorized by the nature of their threat:
 
----
+### 1. The Rain-Out Scenes (Critical Risk — 0% Complete)
+We lost setups to rain on **Day 8** and **Day 11**, leaving **4 scenes (totaling 3 4/8 pages)** completely unshot. These are currently sitting with zero takes and must be rescheduled into our remaining 18 days:
+*   **Scene 31** (*INT. WORKSHOP - DAY*, 4/8 page) — Scheduled Day 8, unshot.
+*   **Scene 70** (*INT. LAB - DAY*, 1 2/8 pages) — Scheduled Day 8, unshot.
+*   **Scene 74** (*INT. CORRIDOR - NIGHT*, 4/8 page) — Scheduled Day 11, unshot.
+*   **Scene 96** (*INT. BAR - NIGHT*, 1 2/8 pages) — Scheduled Day 11, unshot.
 
-### 1. Completely Missed Scenes (Unshot) — *Rescheduling Required*
-We have **4 scenes** that were on the call sheets for Days 8 and 11 but were completely bypassed with **zero takes logged** because we lost setups to rain. 
-*   **Scene 31** (Day 8, 4/8 pages, `INT. WORKSHOP - DAY`): Missed due to rain.
-*   **Scene 70** (Day 8, 1 2/8 pages, `INT. LAB - DAY`): Missed due to rain.
-*   **Scene 74** (Day 11, 4/8 pages, `INT. CORRIDOR - NIGHT`): Missed due to rain.
-*   **Scene 96** (Day 11, 1 2/8 pages, `INT. BAR - NIGHT`): Missed due to rain.
+### 2. Day 12 Scenes with Severe Continuity Conflicts (In-Progress Risk)
+These scenes are on today's call sheet (Day 12) and have active takes, but the script supervisor has flagged **Severity 5 (Critical)** continuity conflicts. If we wrap these sets without pickup shots or VFX workarounds, they will not cut together:
+*   **Scene 12** (*4 takes, 2 circled, 2 setups*): Has a critical set dressing conflict. In take `12/B/1` (`TOS-D12-S12-B-01-B`), the foreground character is sleeping under a newspaper on a balcony, but in take `12/B/2` (`TOS-D12-S12-B-02-B`), the set is dressed with a cot.
+*   **Scene 27** (*3 takes, 1 circled, 2 setups*): Has a critical action match conflict. In take `27/A/1` (`TOS-D12-S27-A-01-A`), the older man is clutching an injured shoulder and letting go of a rope. In take `27/B/1` (`TOS-D12-S27-B-01-B`), he enters a doorway completely uninjured and accompanied by a young woman who was absent in the previous setup.
+*   **Scene 33** (*3 takes, 1 circled, 2 setups*): Has multiple Severity 5 conflicts across dialogue, props, and action. In take `33/A/1` (`TOS-D12-S33-A-01-A`), the cybernetic man handles a microphone and antenna (completely missing in take `33/B/1`), delivers different dialogue, and stands in a three-shot instead of physically pulling the older man close.
 
-**UPM Judgment:** That is **3 4/8 pages of unshot script** sitting on our plate. We are going to have to find half a day in the remaining 18 days of the schedule to pick these up, likely by combining them with other interior stage days.
+### 3. Completed/Partial Scenes with High-Severity Issues
+These scenes have been shot but suffer from severe technical or efficiency issues that threaten their edit viability:
+*   **Scene 13** (*46 takes, 7 circled, 3 setups*): Shot on Day 11. It has a **Severity 5 lighting conflict** where a practical light is on in take `13/C/2` (`TOS-D11-S13-C-02-B`) but off in `13/B/2` (`TOS-D11-S13-B-02-C`), making a color grade match nearly impossible. It also suffered from a high **NG rate of 32.6%** and a bloated print ratio of **6.6:1**.
+*   **Scene 19** (*79 takes, 11 circled, 5 setups*): Shot on Day 8. It has a **Severity 5 set dressing conflict** where a key chair was moved 40cm between setups (`19/B/1` vs `19/E/6`). It also burned a massive amount of media with a **7.2:1 print ratio**.
+*   **Scene 23** (*34 takes, 8 circled, 3 setups*): Shot on Day 8. It has a **Severity 5 set dressing conflict** where a chair was moved 40cm between setups (`23/B/6` vs `23/C/6`).
 
----
+### AD/UPM Judgment:
+We are currently **3 4/8 pages behind schedule** solely due to the rain-outs on Days 8 and 11. Rescheduling these 4 scenes will eat up almost a full shooting day of our remaining 18 days. Furthermore, the directors and camera teams on **Scenes 12, 27, and 33** need to be alerted immediately on set today to shoot corrective pickups before we strike these setups, or we will face expensive reshoots.
 
-### 2. Partially Shot Scenes (Missing Setups) — *Coverage Gaps*
-Four major scenes were shot on Days 8 and 11 but were cut short due to the rain, leaving them with fewer setups than estimated. They are currently flagged as **partial** and are at risk of having massive coverage gaps in the edit:
-*   **Scene 13** (Day 11, `EXT. ALLEY - NIGHT`): Shot **3 of 5 estimated setups** (46 takes, 7 circled). High print ratio of **6.6:1**.
-*   **Scene 19** (Day 8, `INT. BAR - NIGHT`): Shot **5 of 7 estimated setups** (79 takes, 11 circled). High print ratio of **7.2:1**.
-*   **Scene 23** (Day 8, `INT. MED BAY - NIGHT`): Shot **3 of 5 estimated setups** (34 takes, 8 circled).
-*   **Scene 50** (Day 11, `INT. BAR - NIGHT`): Shot **5 of 7 estimated setups** (45 takes, 9 circled).
+**SQL:** Queried planned scenes vs actual takes for days <= 12 to find unshot scenes, checked `scene_progress` for incomplete scenes, and joined `continuity_note` to identify Severity 5 conflicts on active scenes.
 
-**UPM Judgment:** These scenes are "wrapped" on paper, but we are missing **2 setups per scene** (8 setups total). The high print ratios on Scenes 13 and 19 indicate we struggled on set. The editorial team needs to review these immediately to see if we can get away with the cut or if we need to schedule quick pickup shots.
-
----
-
-### 3. Scenes with Severe Continuity Conflicts (Severity 5) — *Editorial Risks*
-We have several scenes with **Severity 5 continuity notes** that make them extremely risky to cut together. The most critical are from today's shoot (Day 12):
-*   **Scene 33** (`TOS-D12-S33`): Has **3 separate Severity 5 notes** (dialogue, props, and action match). In Take A (`TOS-D12-S33-A-01-A`), the cybernetic man handles a microphone and radio antenna and physically pulls the older man close. In Take B (`TOS-D12-S33-B-01-B`), the props are completely absent, the dialogue is completely different (repeatedly saying "Dom"), and the action does not match. 
-*   **Scene 27** (`TOS-D12-S27`): Has a **Severity 5 action match note**. In Take A (`TOS-D12-S27-A-01-A`), the older man is injured, clutching his shoulder and letting go of a rope. In Take B (`TOS-D12-S27-B-01-B`), he enters through a doorway showing no signs of injury and is accompanied by a young woman who is completely absent in Take A.
-*   **Scene 12** (`TOS-D12-S12`): Has a **Severity 5 set dressing note**. In take B-01-B, the foreground character is sleeping under a newspaper on a balcony, whereas in take B-02-B, the set is dressed with a cot.
-
-**Other historical continuity risks:**
-*   **Scene 13** (Day 11): Practical light is on in one take and off in another; the grade cannot match.
-*   **Scene 14** (Day 7) & **Scene 48** (Day 9) & **Scene 98** (Day 10): Blood is on the left temple in some takes and the right temple in others.
-*   **Scene 56A** (Day 4): Jacket is zipped in one take but open in another at the exact same beat.
-*   **Scene 65** (Day 10): Character exit is camera-right in one take and camera-left in another.
-
-**UPM Judgment:** Scene 33 and Scene 27 are edi
+```json
+{
+  "takes": [
+    {
+      "take_id": "TOS-D12-S12-B-01-B",
+      "clip_uri": "clips/TOS-D12-S12-B-01-B.mp4",
+      "t": 0,
+      "label": "12/B/1 - Set Dressing Conflict",
+      "reason": "Character sleeping under
 
 …truncated…
 
@@ -629,9 +641,9 @@ We have several scenes with **Severity 5 continuity notes** that make them extre
 **Q:** How is our wrap time trending? Are we going into overtime?
 
 **Routing:** slateiq_coordinator → production_agent (expected `production_agent`)  
-**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query  
-**Judge:** 5/5 — The agent perfectly used the computed day lengths from the SQL queries to analyze the trend, flag specific days that exceeded 12 hours (Days 8 and 11), and explain the underlying causes with grounded data.  
-**Latency:** 21.9s
+**Tools:** transfer_to_agent, run_query, run_query  
+**Judge:** 5/5 — The agent correctly used call and wrap times to compute day lengths, analyzed the trend, flagged days exceeding 12 hours, and all figures perfectly match the database results.  
+**Latency:** 18.9s
 
 <details><summary>SQL executed via MCP</summary>
 
@@ -643,60 +655,39 @@ SELECT
     d.planned_wrap,
     d.actual_wrap,
     p.wrap_delay_min,
-    p.takes,
-    p.setups
+    -- Day length in hours
+    round(dateDiff('minute', d.call_time, d.actual_wrap) / 60.0, 2) AS actual_day_hours,
+    round(dateDiff('minute', d.call_time, d.planned_wrap) / 60.0, 2) AS planned_day_hours
 FROM slateiq.shooting_day d
 LEFT JOIN slateiq.daily_progress p USING (day_number)
 WHERE d.day_number <= 12
 ORDER BY d.day_number ASC
 LIMIT 50;
 SELECT 
-    day_number,
-    shoot_date,
-    dateDiff('minute', call_time, planned_wrap) / 60.0 AS planned_hours,
-    dateDiff('minute', call_time, actual_wrap) / 60.0 AS actual_hours,
-    wrap_delay_min,
-    weather,
-    notes
+    countIf(wrap_delay_min > 0) AS overtime_days,
+    sumIf(wrap_delay_min, wrap_delay_min > 0) AS total_overtime_min,
+    countIf(dateDiff('minute', call_time, actual_wrap) > 720) AS days_over_12_hours,
+    avg(dateDiff('minute', call_time, actual_wrap) / 60.0) AS avg_day_hours
 FROM slateiq.shooting_day d
 LEFT JOIN slateiq.daily_progress p USING (day_number)
-WHERE d.day_number <= 12
-ORDER BY d.day_number ASC
-LIMIT 50;
-SELECT 
-    sum(wrap_delay_min) as total_delay_min,
-    countIf(wrap_delay_min > 0) as overtime_days,
-    countIf(wrap_delay_min > 60) as major_overtime_days
-FROM slateiq.daily_progress
-WHERE day_number <= 12;
-SELECT 
-    sumIf(wrap_delay_min, wrap_delay_min > 0) as total_overtime_min
-FROM slateiq.daily_progress
-WHERE day_number <= 12;
+WHERE d.day_number <= 12;
 ```
 
 </details>
 
 <details><summary>Answer</summary>
 
-Our wrap times are trending **stable on normal days**, but we have been hit by **two major weather-related overtime spikes** that are driving our cumulative overtime. 
+We are indeed trending into overtime, but the overruns are heavily driven by weather disruptions rather than general inefficiency. 
 
-Out of 12 days shot, we have logged **395 minutes (6 hours and 35 minutes) of total overtime** across 6 days. 
+Out of our 12 completed shooting days, **6 days have gone into overtime** (exceeded the planned 12-hour day), accumulating a total of **395 minutes (6 hours and 35 minutes) of overtime**. Our average day length is currently running at **12.53 hours** (about 12 hours and 32 minutes).
 
-Here is the breakdown and my judgment on where we stand:
+Here is how the wrap trend breaks down across the shoot:
+* **The Weather Spikes:** Our worst overruns occurred on **Day 8** (14.3 hours, wrapping 138 minutes late) and **Day 11** (14.62 hours, wrapping 157 minutes late). On both days, we lost setups to rain and had to push late into the evening to get our pages.
+* **The Baseline Trend:** On days with clear weather, we are wrapping right on the money. **Day 10** actually wrapped 10 minutes early (11.83 hours), and today (**Day 12**) we stabilized nicely, wrapping at 17:15 with just **15 minutes of overtime** (12.25 hours total).
 
-### The Trend: Normal Days vs. Weather Spikes
-* **The Baseline is Solid:** On standard shoot days, the crew is highly efficient. We have wrapped exactly on schedule 5 times, wrapped 10 minutes early on Day 10, and had minor overruns of 15 to 35 minutes on Days 3, 5, 7, and today (Day 12) due to standard "extra coverage on the last setup."
-* **The Weather Spikes:** The overtime is almost entirely driven by two bad weather days:
-  * **Day 8 (Aug 31):** **+138 mins** (14.3-hour day). Persistent drizzle and low clouds forced weather holds, causing us to lose setups and move the company late.
-  * **Day 11 (Sep 3):** **+157 mins** (14.6-hour day). Another day of persistent drizzle and weather holds, pushing us deep into overtime to try and salvage the day.
+**The Judgment:** We are not in a chronic overtime spiral. The crew is highly disciplined and wraps on time when the weather cooperates. However, because we lost setups on Days 8 and 11, any future rain days will almost certainly push us into heavy overtime again as we fight to make our days.
 
-### The Judgment
-We are **not in a systemic overtime spiral**. When the weather cooperates, we wrap on time. However, because we lost setups to rain on Days 8 and 11, those scenes are being pushed into the remaining schedule. If we try to pack too many setups into the upcoming days to catch up, we risk turning minor 15-minute overruns into regular 14-hour days. 
-
-For the next block, we need to monitor the forecast closely and ensure we have solid cover sets ready so we don't burn the crew out with more 14+ hour weather-hold days.
-
-SQL: `SELECT day_number, shoot_date, dateDiff('minute', call_time, actual_wrap) / 60.0 AS actual_hours, wrap_delay_min, weather, notes FROM slateiq.shooting_day LEFT JOIN slateiq.daily_progress USING (day_number) WHERE day_number <= 12 ORDER BY day_number ASC;`
+SQL: Queried `slateiq.shooting_day` and `slateiq.daily_progress` to calculate actual day lengths, wrap delays, and averages across the 12 completed shooting days.
 
 </details>
 
@@ -707,73 +698,50 @@ SQL: `SELECT day_number, shoot_date, dateDiff('minute', call_time, actual_wrap) 
 **Q:** At the current pace, how many more shooting days do we need?
 
 **Routing:** slateiq_coordinator → production_agent (expected `production_agent`)  
-**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query  
-**Judge:** 5/5 — The agent perfectly derives pages/day achieved, remaining pages, projects the days needed against the remaining schedule, and clearly states its assumptions.  
-**Latency:** 37.3s
+**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query  
+**Judge:** 5/5 — The assistant fully answers the prompt by deriving pages/day achieved, pages remaining, and projecting days needed vs. scheduled, with all numbers perfectly grounded and assumptions explicitly stated.  
+**Latency:** 40.5s
 
 <details><summary>SQL executed via MCP</summary>
 
 ```sql
-SELECT day_number, pages_planned_eighths/8.0 AS planned, pages_shot_eighths/8.0 AS shot, wrap_delay_min FROM slateiq.daily_progress WHERE day_number <= 12 ORDER BY day_number;
-SELECT sum(pages_shot_eighths)/8.0 AS total_shot FROM slateiq.daily_progress WHERE day_number <= 12;
-SELECT status, count(), sum(page_eighths)/8.0 FROM slateiq.scene_progress JOIN slateiq.scene USING (scene_number) GROUP BY status;
-SELECT sum(page_eighths)/8.0 FROM slateiq.scene;
-SELECT sum(pages_planned_eighths)/8.0 FROM slateiq.daily_progress WHERE day_number <= 12;
-SELECT sum(pages_planned_eighths)/8.0 FROM slateiq.daily_progress WHERE day_number > 12;
-SELECT d.day_number, psc AS sc, s.page_eighths/8.0 AS pages, s.slug, sp.status
-FROM slateiq.shooting_day d
-ARRAY JOIN d.planned_scenes AS psc
-JOIN slateiq.scene s ON s.scene_number=psc
-JOIN slateiq.scene_progress sp ON sp.scene_number=psc
-WHERE d.day_number<=12 AND sp.status IN ('not_shot', 'partial')
-ORDER BY d.day_number;
-SELECT setups, takes, circled, pages_shot_eighths/8.0 FROM slateiq.daily_progress WHERE day_number = 12;
-SELECT day_number, pages_planned_eighths/8.0 AS planned, pages_shot_eighths/8.0 AS shot, setups, takes FROM slateiq.daily_progress WHERE day_number <= 12 ORDER BY day_number;
+SELECT day_number, pages_planned_eighths/8 AS planned, pages_shot_eighths/8 AS shot FROM slateiq.daily_progress ORDER BY day_number LIMIT 30;
+SELECT sum(pages_shot_eighths)/8 AS total_shot, sum(pages_shot_eighths)/8 / 12 AS avg_shot_per_day FROM slateiq.daily_progress WHERE day_number <= 12;
+SELECT sum(page_eighths)/8 AS remaining_pages FROM slateiq.scene WHERE scene_number NOT IN (SELECT DISTINCT scene_number FROM slateiq.take);
+SELECT d.day_number, psc AS sc, s.page_eighths/8 pages, s.slug FROM slateiq.shooting_day d ARRAY JOIN d.planned_scenes AS psc JOIN slateiq.scene s ON s.scene_number=psc WHERE d.day_number<=12 AND psc NOT IN (SELECT scene_number FROM slateiq.take) ORDER BY d.day_number;
+SELECT sum(pages_planned_eighths)/8 AS total_planned FROM slateiq.daily_progress WHERE day_number <= 12;
+SELECT status, count(), sum(takes) FROM slateiq.scene_progress GROUP BY status;
+SELECT sp.scene_number, s.page_eighths/8 AS pages, sp.takes, sp.circled, sp.status FROM slateiq.scene_progress sp JOIN slateiq.scene s USING (scene_number) WHERE sp.status = 'partial' LIMIT 20;
+SELECT scene_number, groupArray(DISTINCT day_number) AS days FROM slateiq.take WHERE scene_number IN ('14A', '27', '102', '50', '23', '56', '19', '12', '13', '33', '41') GROUP BY scene_number;
+SELECT sum(page_eighths)/8 AS total_scene_pages FROM slateiq.scene;
+SELECT day_number, setups, takes, camera_minutes/60 AS cam_hours, wrap_delay_min FROM slateiq.daily_progress WHERE day_number <= 12 ORDER BY day_number;
 ```
 
 </details>
 
 <details><summary>Answer</summary>
 
-Based on our progress through **Day 12 (today)**, here is where we stand and how many more shooting days we need to wrap *Tears of Steel*:
+At our current pace, we need **16.5 more shooting days** to complete the remaining scenes. Since we have **18 days remaining** in our 30-day schedule, **we are on track to finish with a 1.5-day buffer.**
 
-### The Bottom Line
-At our current overall pace, we need **16 1/2 more shooting days** to complete the remaining **66 7/8 pages** of the script. Since we have **18 days remaining** in our 30-day schedule, **we are on track to finish on time with a comfortable buffer of about 1 1/2 days**, assuming we don't hit any more major weather delays.
+Here is the breakdown of the numbers and schedule health:
 
----
+### 1. Current Pace (Days 1–12)
+* **Pages Shot:** **48 4/8 pages** (48.5 pages) out of 52 planned.
+* **Average Pace:** **4.04 pages per day** (48.5 pages / 12 days).
+* **Schedule Deficit:** We are currently **3 4/8 pages behind schedule**. This is entirely due to the rain on **Day 8** and **Day 11**, where we lost setups and had to push 4 scenes (Scenes 31, 70, 74, and 96) totaling exactly 3.5 pages. On those rain days, we were limited to just 8 setups each and suffered significant wrap delays (138 and 157 minutes of overtime).
 
-### 1. Are We on Schedule to Date?
-* **Planned to Date (Days 1–12):** 52 pages
-* **Shot to Date (Days 1–12):** 48 4/8 pages
-* **Status:** We are **3 4/8 pages behind schedule**—which represents about **7/8 of a shooting day**.
+### 2. Remaining Work (Days 13–30)
+* **Remaining Pages:** **66 7/8 pages** (66.875 pages) across scenes that have no takes logged yet.
+* **Projected Days Needed:** **16.5 days** ($\text{66.875 pages} \div \text{4.04 pages/day} \approx 16.55 \text{ days}$).
 
-**Why the dip?** 
-We lost significant setups to rain on **Day 8** and **Day 11**, where we only managed 8 setups each day:
-* **Day 8:** Shot 2 pages (vs. 3 6/8 planned) — *lost 1 6/8 pages*
-* **Day 11:** Shot 3 pages (vs. 4 6/8 planned) — *lost 1 6/8 pages*
+### 3. Assumptions
+* **Weather:** We assume no further severe weather/rain days that limit us to under 10 setups.
+* **Pace Consistency:** We assume we maintain our average pace of 4.04 pages/day (supported by today's massive Day 12 performance where we shot 31 setups and cleared 9 3/8 pages).
+* **Partial Scenes:** We assume that the 11 scenes currently marked "partial" (which have some takes but are not yet fully complete) will be wrapped within our normal daily setups without requiring dedicated pickup days.
 
-These two rain days account for the entire 3 4/8-page deficit. Outside of those weather hits, our crew has been highly efficient—especially today on **Day 12**, where we crushed a massive **9 3/8 pages** across 31 setups and 175 takes!
+**The Judgment:** We are in good shape. Despite losing 3.5 pages to rain on Days 8 and 11, our average pace is strong enough to absorb the deficit and bring us home 1.5 days ahead of our 30-day limit.
 
----
-
-### 2. The Forecast & Assumptions
-* **Remaining Pages to Shoot:** 66 7/8 pages (out of a 115 3/8-page script)
-* **Remaining Days in Schedule:** 18 days (Days 13–30)
-
-#### Scenario A: Current Overall Pace (Includes Rain Days)
-* **Average Pace:** **4 pages/day** (48 4/8 pages shot over 12 days)
-* **Projected Days Needed:** **16 1/2 days** ($\approx 16.55$ days)
-* **Schedule Buffer:** **1 1/2 days** remaining of our 18-day window.
-
-#### Scenario B: "Dry Weather" Pace (Excludes Days 8 & 11)
-* **Average Pace:** **4 3/8 pages/day** (43 4/8 pages shot over 10 non-rain days)
-* **Projected Days Needed:** **15 3/8 days** ($\approx 15.37$ days)
-* **Schedule Buffer:** **2 5/8 days** remaining.
-
-### AD Judgment
-We are in great shape. To finish exactly on schedule over the next 18 days, we only need to maintain a pace of **3 6/8 pages per day** (66 7/8 pages / 18 days). Given that our historical average is 4 pages/day (even with the rain), we have a solid safety margin. We do not need to schedule overtime or rush the crew; we just need to keep doing what we're doing.
-
-SQL: Queried daily progress to compare planned vs. shot pages, analyzed rain day impacts on Days 8 and 11, and calculated remaining script pages from the scene progress table.
+SQL: Queried `slateiq.daily_progress` for cumulative pages planned vs. shot, and `slateiq.scene` for remaining pages of scenes with no takes.
 
 </details>
 
@@ -784,31 +752,36 @@ SQL: Queried daily progress to compare planned vs. shot pages, analyzed rain day
 **Q:** How many setups did we get on day 12 and how does that compare to our average?
 
 **Routing:** slateiq_coordinator → production_agent (expected `production_agent`)  
-**Tools:** transfer_to_agent, run_query, run_query  
-**Judge:** 3/5 — The agent used a pre-aggregated 'setups' column instead of 'uniqExact(shot)' and provided a multi-paragraph judgment instead of the requested one-line judgment.  
-**Latency:** 13.0s
+**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query  
+**Judge:** 5/5 — The agent perfectly answers the question with accurate, grounded numbers for Day 12 setups (31) and the shoot average (22.2 overall / 25.0 dry-days), accompanied by a clear comparison and judgment.  
+**Latency:** 16.5s
 
 <details><summary>SQL executed via MCP</summary>
 
 ```sql
-SELECT day_number, setups FROM slateiq.daily_progress WHERE day_number <= 12 ORDER BY day_number;
-SELECT avg(setups) as overall_avg, avgIf(setups, day_number NOT IN (8, 11)) as normal_avg FROM slateiq.daily_progress WHERE day_number <= 12;
+SELECT day_number, setups FROM slateiq.daily_progress WHERE day_number <= 12 ORDER BY day_number LIMIT 20;
+SELECT 
+    avg(setups) AS avg_all,
+    avgIf(setups, day_number NOT IN (8, 11)) AS avg_ex_rain
+FROM slateiq.daily_progress 
+WHERE day_number <= 12;
+SELECT pages_planned_eighths/8 AS planned, pages_shot_eighths/8 AS shot FROM slateiq.daily_progress WHERE day_number = 12;
+SELECT setups, takes, circled, camera_minutes FROM slateiq.daily_progress WHERE day_number = 12;
 ```
 
 </details>
 
 <details><summary>Answer</summary>
 
-We knocked it out of the park on Day 12, pulling in **31 setups**. That ties Day 7 for our most productive day of the shoot so far. 
+On Day 12, we crushed it and bagged **31 setups**. 
 
-Here is how that stacks up against our averages:
-* **Overall Average (Days 1–12):** **22.2 setups/day**. Day 12 was nearly **9 setups ahead** of our rolling average (a 40% increase in efficiency).
-* **Normal Running Average (Excluding Rain Days):** **25.0 setups/day**. Even if we strip out Days 8 and 11 (where we got rained out and only managed 8 setups each), Day 12 still beats our dry-day average by **6 setups** (a 24% increase).
+That is a massive day for us, especially compared to our averages:
+* **Vs. Overall Average:** We are averaging **22.2 setups per day** across the first 12 days, meaning Day 12 was nearly 9 setups ahead of our pace.
+* **Vs. Dry-Day Average:** If we throw out our two rain-out days (Day 8 and Day 11, where we were washed out and only managed 8 setups each), our running average is **25.0 setups per day**. Even against that stronger baseline, Day 12 was 6 setups ahead of the norm.
 
-**The UPM's Judgment:** 
-This was an incredibly efficient day. Tying our shoot record of 31 setups shows the crew was moving fast, transitions between setups were tight, and we made excellent use of our setups today. We've successfully clawed back some of the momentum we lost during the weather delays on Days 8 and 11.
+This high setup count came from logging 175 takes (38 circled) across 130.3 camera minutes, allowing us to hit our daily target perfectly—shooting exactly the **9 3/8 pages** we had planned for the day.
 
-SQL: `SELECT day_number, setups FROM slateiq.daily_progress WHERE day_number <= 12 ORDER BY day_number`
+SQL: Queried daily progress metrics for Day 12 and calculated overall and weather-adjusted setup averages for Days 1–12.
 
 </details>
 
@@ -819,66 +792,57 @@ SQL: `SELECT day_number, setups FROM slateiq.daily_progress WHERE day_number <= 
 **Q:** Are there any continuity problems in scene 12? Which takes conflict?
 
 **Routing:** slateiq_coordinator → continuity_agent (expected `continuity_agent`)  
-**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query  
-**Judge:** 5/5 — The agent successfully queried the continuity notes, identified the specific conflicting takes (12/B/1 and 12/B/2), explained the nature of the conflicts (set dressing and prop action), and provided a highly detailed, actionable response.  
-**Latency:** 28.4s
+**Tools:** transfer_to_agent, run_query, run_query, run_query  
+**Judge:** 5/5 — The agent's response is fully grounded in the SQL results, accurately identifying the conflicting takes and details of the continuity issues as specified in the rubric.  
+**Latency:** 23.9s
 
 <details><summary>SQL executed via MCP</summary>
 
 ```sql
-SELECT cn.take_id_a, cn.take_id_b, cn.category, cn.description, cn.severity, ta.take_number AS take_num_a, ta.shot AS shot_a, ta.clip_uri AS clip_uri_a, tb.take_number AS take_num_b, tb.shot AS shot_b, tb.clip_uri AS clip_uri_b FROM slateiq.continuity_note cn LEFT JOIN slateiq.take ta ON cn.take_id_a = ta.take_id LEFT JOIN slateiq.take tb ON cn.take_id_b = tb.take_id WHERE cn.scene_number = '12' ORDER BY cn.severity DESC LIMIT 100;
-SELECT take_id, shot, take_number, camera, status, clip_uri, director_note FROM slateiq.take WHERE scene_number = '12' ORDER BY shot, take_number, camera LIMIT 100;
-SELECT e.take_id, t.shot, t.take_number, e.t_offset_s, e.speaker, e.text FROM slateiq.take_event e JOIN slateiq.take t USING take_id WHERE t.scene_number = '12' AND e.kind = 'dialogue' ORDER BY e.speaker, e.text, t.shot, t.take_number LIMIT 100;
+SELECT take_id_a, take_id_b, category, description, severity FROM slateiq.continuity_note WHERE scene_number = '12' ORDER BY severity DESC LIMIT 100;
+SELECT e.speaker, e.text, count() AS times, groupArray(10)(t.shot) AS shots, any(e.t_offset_s) AS first_offset, any(e.take_id) AS example_take FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE t.scene_number = '12' AND e.kind = 'dialogue' GROUP BY e.speaker, e.text ORDER BY e.speaker, times DESC LIMIT 100;
+SELECT take_id, shot, take_number, status, clip_uri FROM slateiq.take WHERE scene_number = '12' ORDER BY shot, take_number LIMIT 100;
 ```
 
 </details>
 
 <details><summary>Answer</summary>
 
-Yes, we have a major continuity break in Scene 12 on Shot B that will prevent you from cutting between the two takes. 
+Yes, we have a major continuity mismatch in **Scene 12** between the two takes of Setup B. Based on the 4 takes logged for this scene, the conflicts are between **12/B/1** (on hold) and **12/B/2** (circled). 
 
-Based on the continuity logs and take records for Scene 12, here are the conflicts:
+Here are the details from our continuity logs:
 
-### 1. Set Dressing Conflict (Severity 5 — Critical)
-* **Takes:** **12/B/1** (`TOS-D12-S12-B-01-B`, on hold) vs. **12/B/2** (`TOS-D12-S12-B-02-B`, circled)
-* **The Issue:** In **12/B/1**, the foreground character is sleeping under a newspaper on a balcony. In **12/B/2**, the set was redressed with a cot where the character is resting. 
-* **The Fix:** Since **12/B/2** is the circled print ("Cleaner. Print."), editorial must **cut around 12/B/1** entirely. Do not use 12/B/1 as an alternate angle unless you can crop out the background.
+*   **Set Dressing (Severity 5 - Critical):** In **12/B/1**, the foreground character is sleeping under a newspaper on a balcony. In **12/B/2**, the set was redressed with a cot where the character is resting. This is a massive continuity break that will prevent cutting between these two setups.
+*   **Props (Severity 3 - Moderate):** In **12/B/1**, the sniper loads a red cartridge into his rifle. In **12/B/2**, this action is missing and the soldier only aims the weapon.
 
-### 2. Prop Action Conflict (Severity 3 — Moderate)
-* **Takes:** **12/B/1** vs. **12/B/2**
-* **The Issue:** In **12/B/1**, the sniper loads a red cartridge into his rifle. In **12/B/2**, the soldier only aims the weapon without loading.
-* **The Fix:** Stick to the circled **12/B/2** to maintain consistency.
+**The Fix:** Since **12/B/2** is our circled take, the editor must cut around **12/B/1** entirely to avoid these glaring mismatches. 
 
----
+On the dialogue front, there are no line variations to worry about. The readings in Setup A match perfectly across both takes.
 
-### Dialogue & Technical Check
-* **Dialogue:** I cross-referenced the dialogue events for Shot A (Takes 1 and 2). The lines match the script perfectly with no reading variations between takes.
-* **Technical Flags:** Note that **12/A/2** was marked NG due to a severe soft focus flag (Severity 5) at 4.5s where the focus puller lost the eyes. **12/A/1** is your clean, circled take for Shot A.
-
-SQL: Queried continuity notes, take statuses, and dialogue events for Scene 12 to identify set dressing and prop conflicts between Shot B takes.
+SQL: Checked continuity notes, dialogue events, and take statuses for Scene 12.
 
 ```json
 {
   "takes": [
     {
-      "take_id": "TOS-D12-S12-B-02-B",
-      "clip_uri": "clips/TOS-D12-S12-B-02-B.mp4",
-      "t": 0.0,
-      "label": "12/B/2 circled",
-      "reason": "Circled take with cot set dressing; use as master continuity reference."
-    },
-    {
       "take_id": "TOS-D12-S12-B-01-B",
       "clip_uri": "clips/TOS-D12-S12-B-01-B.mp4",
       "t": 0.0,
-      "label": "12/B/1 hold",
-      "reason": "Conflicting set dressing (newspaper on balcony) and prop action (loads red cartridge)."
+      "label": "12/B/1 (Hold)",
+      "reason": "Foreground character under newspaper; sniper loads red cartridge"
+    },
+    {
+      "take_id": "TOS-D12-S12-B-02-B",
+      "clip_uri": "clips/TOS-D12-S12-B-02-B.mp4",
+      "t": 0.0,
+      "label": "12/B/2 (Circled)",
+      "reason": "Foreground character on cot; sniper only aims rifle"
     }
   ],
   "sql": [
-    "SELECT cn.take_id_a, cn.take_id_b, cn.category, cn.description, cn.severity, ta.take_number AS take_num_a, ta.shot AS shot_a, ta.clip_uri AS clip_uri_a, tb.take_number AS take_num_b, tb.shot AS shot_b, tb.clip_uri AS clip_uri_b FROM slateiq.continuity_note cn LEFT JOIN slateiq.take ta ON cn.take_id_a = ta.take_id LEFT JOIN slateiq.take tb ON cn.take_id_b = tb.take_id WHERE cn.scene_number = '12' ORDER BY cn.severity DESC LIMIT 100",
-    "SELECT take_id, shot, take_number, camera, status, clip_uri, director_note FROM slateiq.take WHERE scene_number = '12' ORDER BY shot, take_number, camera LIMIT 100",
-    "SELECT e.take_id, t.shot, t.take_number, e.t_offset_s, e.speaker, e.text FROM slateiq.take_event e JOIN slateiq.take t USING take_id WHERE t.scene_number = '12' AND e.kind = 'dialogue' ORDER BY e.speaker, e.text, t.shot, t.take_number LIMIT 100"
+    "SELECT take_id_a, take_id_b, category, description, severity FROM slateiq.continuity_note WHERE scene_number = '12' ORDER BY severity DESC LIMIT 100",
+    "SELECT e.speaker, e.text, count() AS times, groupArray(10)(t.shot) AS shots, any(e.t_offset_s) AS first_offset, any(e.take_id) AS example_take FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE t.scene_number = '12' AND e.kind = 'dialogue' GROUP BY e.speaker, e.text ORDER BY e.speaker, times DESC LIMIT 100",
+    "SELECT take_id, shot, take_number, status, clip_uri FROM slateiq.take WHERE scene_number = '12' ORDER BY shot, take_number LIMIT 100"
   ]
 }
 ```
@@ -891,16 +855,81 @@ SQL: Queried continuity notes, take statuses, and dialogue events for Scene 12 t
 
 **Q:** Did the dialogue change between takes in scene 6? Show me the line variations.
 
-**Routing:** none (expected `continuity_agent`)  
-**Tools:** none  
-**Judge:** 0/5 — timed out after 300s  
-**Latency:** 300.0s
+**Routing:** slateiq_coordinator → continuity_agent (expected `continuity_agent`)  
+**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query  
+**Judge:** 5/5 — The agent accurately determines that there were no wording variations in scene 6, and shows the standardized lines with example take IDs, offsets, and flub details, fully satisfying the rubric.  
+**Latency:** 257.1s
 
-> ERROR: timed out after 300s
+<details><summary>SQL executed via MCP</summary>
+
+```sql
+SELECT e.speaker, e.text, count() AS times, groupArray(10)(t.shot) AS shots, any(e.t_offset_s) AS first_offset, any(e.take_id) AS example_take, any(t.clip_uri) AS example_clip FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE t.scene_number = '6' AND e.kind = 'dialogue' GROUP BY e.speaker, e.text ORDER BY e.speaker, times DESC LIMIT 100;
+SELECT flag_type, count() FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE t.scene_number = '6' AND e.kind = 'flag' GROUP BY flag_type;
+SELECT e.take_id, e.t_offset_s, e.text, e.meta, t.shot, t.take_number, t.status FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE t.scene_number = '6' AND e.flag_type = 'line_flub' LIMIT 50;
+SELECT e.take_id, e.t_offset_s, e.text, e.kind, e.flag_type FROM slateiq.take_event e WHERE e.take_id = 'TOS-D12-S6-G-03-B' LIMIT 50;
+```
+
+</details>
 
 <details><summary>Answer</summary>
 
+No, the dialogue did not change between takes in **Scene 6** in terms of wording or ad-libs. Thom (the only speaker in this scene) stuck strictly to his 6 scripted lines across all 66 takes logged. 
 
+However, we have some interesting take structures and a few minor flubs to note:
+
+### Scripted Lines & Frequencies
+Thom's 6 scripted lines were spoken with the following frequencies across all takes (including multi-camera setups):
+1. **"Then we do it the hard way."** (Spoken 78 times; example: `6/A/1` at 3.0s)
+2. **"I'm not leaving her down there."** (Spoken 78 times; example: `6/A/1` at 16.4s)
+3. **"It was never about the machine."** (Spoken 76 times; example: `6/A/1-B` at 10.4s)
+4. **"I can't do this again."** (Spoken 67 times; example: `6/A/2` at 3.0s)
+5. **"Give me thirty seconds and stay off the comms."** (Spoken 62 times; example: `6/A/1` at 36.8s)
+6. **"You were right. I hate that you were right."** (Spoken 59 times; example: `6/A/1` at 10.9s)
+
+---
+
+### Key Observations
+
+* **Series Takes**: Several takes were shot as a "series" where Thom repeated lines or ran through multiple lines in a single roll. For example, in `6/A/1` (A-camera), he repeats *"Then we do it the hard way"* and *"You were right..."* multiple times. In `6/G/3` (B-camera), he runs through almost the entire sequence of lines in one take.
+* **Line Flubs**: We have 6 flagged `line_flub` events where Thom stumbled but corrected himself to the scripted line. For example:
+  * **`6/A/6` (B-camera) at 9.35s**: Thom stumbles and restarts *"I'm not leaving her down there."*
+  * **`6/G/3` (B-camera) at 22.91s**: Thom stumbles after *"I can't do this again"* and restarts *"It was never about the machine."*
+
+Since there are no actual wording variations or ad-libs, you can cut between any of the clean takes without worrying about dialogue continuity mismatches.
+
+```json
+{
+  "takes": [
+    {
+      "take_id": "TOS-D12-S6-A-01-A",
+      "clip_uri": "gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-A-01-A.mp4",
+      "t": 3.0,
+      "label": "6/A/1 (A-cam)",
+      "reason": "Series take with multiple repetitions of the scripted lines."
+    },
+    {
+      "take_id": "TOS-D12-S6-A-06-B",
+      "clip_uri": "gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-A-06-B.mp4",
+      "t": 9.35,
+      "label": "6/A/6 (B-cam)",
+      "reason": "Flagged line flub at 9.35s; Thom stumbles and restarts 'I'm not leaving her down there.'"
+    },
+    {
+      "take_id": "TOS-D12-S6-G-03-B",
+      "clip_uri": "gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-G-03-B.mp4",
+      "t": 22.91,
+      "label": "6/G/3 (B-cam)",
+      "reason": "Flagged line flub at 22.91s during a full sequence run."
+    }
+  ],
+  "sql": [
+    "SELECT e.speaker, e.text, count() AS times, groupArray(10)(t.shot) AS shots, any(e.t_offset_s) AS first_offset, any(e.take_id) AS example_take, any(t.clip_uri) AS example_clip FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE t.scene_number = '6' AND e.kind = 'dialogue' GROUP BY e.speaker, e.text ORDER BY e.speaker, times DESC LIMIT 100",
+    "SELECT flag_type, count() FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE t.scene_number = '6' AND e.kind = 'flag' GROUP BY flag_type",
+    "SELECT e.take_id, e.t_offset_s, e.text, e.meta, t.shot, t.take_number, t.status FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE t.scene_number = '6' AND e.flag_type = 'line_flub' LIMIT 50",
+    "SELECT e.take_id, e.t_offset_s, e.text, e.kind, e.flag_type FROM slateiq.take_event e WHERE e.take_id = 'TOS-D12-S6-G-03-B' LIMIT 50"
+  ]
+}
+```
 
 </details>
 
@@ -911,64 +940,50 @@ SQL: Queried continuity notes, take statuses, and dialogue events for Scene 12 t
 **Q:** Show me the three takes with the most emotionally intense delivery in scene 6.
 
 **Routing:** slateiq_coordinator → editor_agent (expected `editor_agent`)  
-**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query, run_query, run_query  
-**Judge:** 4/5 — The agent executed the correct queries and ranked the emotional events, but it omitted the speaker name for the peak emotional moments in its response.  
-**Latency:** 66.2s
+**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query  
+**Judge:** 4/5 — The agent successfully returns the required information (speaker, offset, and clip links) but ranks the takes by overall take-level emotional intensity rather than ranking the individual emotion-kind take_events by score.  
+**Latency:** 27.9s
 
 <details><summary>SQL executed via MCP</summary>
 
 ```sql
-SELECT t.take_id, t.scene_number, t.shot, t.take_number, t.camera, t.status, t.director_note, a.emotion_intensity, a.performance_note, t.clip_uri FROM slateiq.take t JOIN slateiq.take_analysis a USING (take_id) WHERE t.scene_number = '6' ORDER BY a.emotion_intensity DESC LIMIT 10;
-SELECT e.take_id, t.shot, t.take_number, e.t_offset_s, e.speaker, e.text, e.score, e.meta FROM slateiq.take_event e JOIN slateiq.take t USING (take_id) WHERE t.scene_number = '6' AND e.kind = 'emotion' ORDER BY e.score DESC LIMIT 10;
+SELECT t.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, a.emotion_intensity, a.performance_note FROM slateiq.take t JOIN slateiq.take_analysis a USING (take_id) WHERE t.scene_number = '6' ORDER BY a.emotion_intensity DESC LIMIT 5;
+SELECT e.take_id, e.t_offset_s, e.speaker, e.text, e.score, e.meta FROM slateiq.take_event e WHERE e.take_id IN ('TOS-D12-S6-E-01-B', 'TOS-D12-S6-E-01-A', 'TOS-D12-S6-A-05-A', 'TOS-D12-S6-F-01-A') AND e.kind = 'emotion' ORDER BY e.score DESC LIMIT 20;
 ```
 
 </details>
 
 <details><summary>Answer</summary>
 
-For Scene 6, we have two ways to look at "emotionally intense delivery"—either by the **overall emotional intensity of the entire take** (from the AI analysis) or by **specific peak emotional moments** flagged during the performance. 
+Here are the most emotionally intense takes for **Scene 6**, ranked by their performance analysis scores. 
 
-Here are the top takes for both categories to help you choose the right cut:
+Note that our top two entries are actually a two-camera setup of the exact same take (**6/E/1**), so I have included the next two highest distinct setups (**6/A/5** and **6/F/1**) to give you a complete picture of the best options.
 
-### 1. Highest Overall Take Intensity (Take Analysis)
-If you need a take that maintains high emotional energy from start to finish, look at these:
-*   **6/E/1-B (Camera B)** — **Intensity: 0.97** (Status: **Hold**)
-    *   *Director's Note:* "she found it — that's the take"
-    *   *Performance:* "Big swing — usable but broad."
-    *   *Peak Moment:* Thom hits a peak emotional intensity of **0.67** at **41.83s**.
-    *   *Clip:* `gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-E-01-B.mp4`
-*   **6/E/1-A (Camera A)** — **Intensity: 0.92** (Status: **Hold**)
-    *   *Director's Note:* "focus soft on the turn" (Keep an eye on the focus pull here).
-    *   *Performance:* "Technically clean, performance flat."
-    *   *Clip:* `gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-E-01-A.mp4`
-*   **6/F/1-A (Camera A)** — **Intensity: 0.89** (Status: **Hold**)
-    *   *Director's Note:* "print it"
-    *   *Performance:* "Best emotional landing so far."
-    *   *Peak Moment:* Thom hits a peak of **0.45** at **39.38s**.
-    *   *Clip:* `gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-F-01-A.mp4`
-*   **6/A/5-A (Camera A)** — **Intensity: 0.89** (Status: **Hold**)
-    *   *Director's Note:* "great, but eyeline drifted"
-    *   *Performance:* "Grounded, quiet, holds the silence."
-    *   *Clip:* `gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-A-05-A.mp4`
+### 1. 6/E/1 (Camera B) — `TOS-D12-S6-E-01-B`
+* **Emotional Intensity:** 0.97
+* **Peak Moment:** Thom at **41.8s** (intensity score: 0.67)
+* **Performance Note:** *"Big swing — usable but broad."*
+* **Director's Note:** *"she found it — that's the take"* (Status: Hold)
 
----
+### 2. 6/E/1 (Camera A) — `TOS-D12-S6-E-01-A`
+* **Emotional Intensity:** 0.92
+* **Peak Moment:** Thom at **41.8s** (intensity score: 0.19)
+* **Performance Note:** *"Technically clean, performance flat."*
+* **Director's Note:** *"focus soft on the turn"* (Status: Hold)
 
-### 2. Highest Peak Emotional Moments (Take Events)
-If you are looking to cut to a specific, high-impact emotional beat, these takes feature the highest-rated individual moments:
-*   **6/G/2-A (Camera A)** — **Peak Score: 0.90** at **25.25s** (Status: **Circled**)
-    *   *Director's Note:* "loved the stillness"
-    *   *Performance:* "Best emotional landing so far." (Overall take intensity is 0.76). This is likely your best bet for a clean, circled take with a massive emotional peak.
-    *   *Clip:* `gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-G-02-A.mp4`
-*   **6/A/4-A (Camera A)** — **Peak Score: 0.89** at **21.76s** (Status: **NG**)
-    *   *Director's Note:* "too fast, let it breathe" (Marked NG, but the peak moment is there if you need to salvage a reaction shot).
-    *   *Clip:* `gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-A-04-A.mp4`
-*   **6/A/6-B (Camera B)** — **Peak Score: 0.88** at **29.38s** (Status: **Circled**)
-    *   *Director's Note:* "one more for safety"
-    *   *Performance:* "Grounded, quiet, holds the silence."
-    *   *Clip:* `gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-A-06-B.mp4`
+### 3. 6/A/5 (Camera A) — `TOS-D12-S6-A-05-A` (Tied)
+* **Emotional Intensity:** 0.89
+* **Peak Moment:** Thom at **8.9s** (intensity score: 0.68)
+* **Performance Note:** *"Grounded, quiet, holds the silence."*
+* **Director's Note:** *"great, but eyeline drifted"* (Status: Hold)
 
-### Recommendation
-For the best overall performance that the director liked, cut to **6/G/2-A** (circled) and use the peak beat around **25.25s**. If you want a massive, high-energy "big swing" and don't mind a broader performance, pull from **6/E/1-B** (on hold).
+### 4. 6/F/1 (Camera A) — `TOS-D12-S6-F-01-A` (Tied)
+* **Emotional Intensity:** 0.89
+* **Peak Moment:** Thom at **39.4s** (intensity score: 0.45)
+* **Performance Note:** *"Best emotional landing so far."*
+* **Director's Note:** *"print it"* (Status: Hold)
+
+SQL: Queried `slateiq.take` joined with `slateiq.take_analysis` filtered on scene 6, ordered by `emotion_intensity` descending, and cross-referenced with `slateiq.take_event` for peak emotional moments.
 
 ```json
 {
@@ -977,28 +992,37 @@ For the best overall performance that the director liked, cut to **6/G/2-A** (ci
       "take_id": "TOS-D12-S6-E-01-B",
       "clip_uri": "gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-E-01-B.mp4",
       "t": 41.83,
-      "label": "6/E/1-B (Hold)",
-      "reason": "Highest overall emotional intensity (0.97). Director: 'she found it — that's the take'"
+      "label": "6/E/1 (Cam B) - Intensity 0.97",
+      "reason": "Thom peak emotional intensity at 41.8s. Director: 'she found it — that's the take'"
     },
     {
-      "take_id": "TOS-D12-S6-G-02-A",
-      "clip_uri": "gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-G-02-A.mp4",
-      "t": 25.25,
-      "label": "6/G/2-A (Circled)",
-      "reason": "Highest peak emotional moment (0.90) at 25.25s. Director: 'loved the stillness'"
+      "take_id": "TOS-D12-S6-E-01-A",
+      "clip_uri": "gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-E-01-A.mp4",
+      "t": 41.83,
+      "label": "6/E/1 (Cam A) - Intensity 0.92",
+      "reason": "Thom peak emotional intensity at 41.8s. Director: 'focus soft on the turn'"
+    },
+    {
+      "take_id": "TOS-D12-S6-A-05-A",
+      "clip_uri": "gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-A-05-A.mp4",
+      "t": 8.91,
+      "label": "6/A/5 (Cam A) - Intensity 0.89",
+      "reason": "Thom peak emotional intensity at 8.9s. Director: 'great, but eyeline drifted'"
     },
     {
       "take_id": "TOS-D12-S6-F-01-A",
       "clip_uri": "gs://slateiq-dailies/tos2026/d12/TOS-D12-S6-F-01-A.mp4",
       "t": 39.38,
-      "label": "6/F/1-A (Hold)",
-      "reason": "High overall intensity (0.89) and printed. Director: 'print it'"
+      "label": "6/F/1 (Cam A) - Intensity 0.89",
+      "reason": "Thom peak emotional intensity at 39.4s. Director: 'print it'"
     }
   ],
   "sql": [
-    "SELECT t.take_id, t.scene_number, t.shot, t.take_number, t.camera, t.status, t.dire
-
-…truncated…
+    "SELECT t.take_id, t.scene_number, t.shot, t.take_number, t.clip_uri, a.emotion_intensity, a.performance_note FROM slateiq.take t JOIN slateiq.take_analysis a USING (take_id) WHERE t.scene_number = '6' ORDER BY a.emotion_intensity DESC LIMIT 5",
+    "SELECT e.take_id, e.t_offset_s, e.speaker, e.text, e.score, e.meta FROM slateiq.take_event e WHERE e.take_id IN ('TOS-D12-S6-E-01-B', 'TOS-D12-S6-E-01-A', 'TOS-D12-S6-A-05-A', 'TOS-D12-S6-F-01-A') AND e.kind = 'emotion' ORDER BY e.score DESC LIMIT 20"
+  ]
+}
+```
 
 </details>
 
@@ -1009,31 +1033,127 @@ For the best overall performance that the director liked, cut to **6/G/2-A** (ci
 **Q:** Generate the daily progress report for day 12.
 
 **Routing:** slateiq_coordinator → report_agent (expected `report_agent`)  
-**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query  
-**Judge:** 5/5 — The agent executed all the necessary queries to populate every section of the DPR, including cumulative stats, continuity notes, flags, and the editor's log, resulting in a highly accurate and properly formatted response.  
-**Latency:** 135.4s
+**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query, run_query, list_tables, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query  
+**Judge:** 5/5 — The daily progress report is exceptionally detailed, formatted correctly, and every single value matches the database query results perfectly.  
+**Latency:** 125.2s
 
 <details><summary>SQL executed via MCP</summary>
 
 ```sql
-SELECT p.title, p.planned_days, sd.shoot_date, sd.unit, sd.call_time, sd.planned_wrap, sd.actual_wrap, sd.planned_scenes, sd.location, sd.weather, sd.notes, dp.pages_planned_eighths, dp.pages_shot_eighths, dp.setups, dp.takes, dp.circled, dp.ng, dp.camera_minutes, dp.wrap_delay_min FROM slateiq.production p CROSS JOIN slateiq.shooting_day sd JOIN slateiq.daily_progress dp ON sd.day_number = dp.day_number WHERE sd.day_number = 12 LIMIT 1;
-SELECT sum(pages_planned_eighths) as total_planned, sum(pages_shot_eighths) as total_shot, (SELECT sum(page_eighths) FROM slateiq.scene) as total_production_pages FROM slateiq.daily_progress WHERE day_number <= 12;
-SELECT s.scene_number, s.slug, s.page_eighths, count(t.take_id) as takes, uniqExact((t.scene_number, t.shot)) as setups, countIf(t.status = 'circled') as circled, countIf(t.status = 'ng') as ng, countIf(t.status = 'hold') as hold, countIf(t.status = 'wild') as wild, countIf(t.status = 'pending') as pending FROM slateiq.scene s LEFT JOIN (SELECT * FROM slateiq.take WHERE day_number = 12) t ON s.scene_number = t.scene_number WHERE has(['6', '12', '14A', '27', '33', '39', '41', '56', '78', '91', '102'], s.scene_number) OR t.scene_number IS NOT NULL GROUP BY s.scene_number, s.slug, s.page_eighths ORDER BY s.scene_number;
-SELECT scene_number, count() as takes, uniqExact(shot) as setups, countIf(status = 'circled') as circled, countIf(status = 'ng') as ng, countIf(status = 'hold') as hold, countIf(status = 'wild') as wild, countIf(status = 'pending') as pending FROM slateiq.take WHERE day_number = 12 GROUP BY scene_number ORDER BY scene_number;
-SELECT scene_number, status, takes, circled, setups, print_ratio FROM slateiq.scene_progress WHERE scene_number IN ('6', '12', '14A', '27', '33', '39', '41', '56', '78', '91', '102');
-SELECT scene_number, slug, page_eighths, synopsis FROM slateiq.scene WHERE scene_number IN ('6', '12', '14A', '27', '33', '39', '41', '56', '78', '91', '102') ORDER BY scene_number;
-SELECT flag_type, flags, takes_affected, avg_severity FROM slateiq.flag_summary WHERE day_number = 12 ORDER BY flags DESC;
-SELECT cn.scene_number, cn.category, cn.severity, cn.description, t.take_id FROM slateiq.continuity_note cn JOIN slateiq.take t ON cn.take_id_a = t.take_id WHERE t.day_number = 12 ORDER BY cn.severity DESC LIMIT 10;
-SELECT t.scene_number, t.shot, t.take_number, t.camera, t.tc_in, t.duration_s, t.status, t.director_note, ta.performance_note, ta.summary FROM slateiq.take t LEFT JOIN slateiq.take_analysis ta ON t.take_id = ta.take_id WHERE t.day_number = 12 AND t.status IN ('circled', 'hold') ORDER BY t.scene_number, t.shot, t.take_number, t.camera LIMIT 200;
-SELECT scene_number, shot, take_number, groupArray(camera) as cameras, any(status) as status, any(tc_in) as tc_in, any(duration_s) as duration, any(director_note) as note FROM slateiq.take WHERE day_number = 12 AND status IN ('circled', 'hold') GROUP BY scene_number, shot, take_number ORDER BY scene_number, shot, take_number LIMIT 100;
-SELECT scene_number, shot, take_number, groupArray(camera) as cameras, any(status) as take_status, any(tc_in) as tc_in, any(duration_s) as duration, any(director_note) as note FROM slateiq.take WHERE day_number = 12 AND status IN ('circled', 'hold') GROUP BY scene_number, shot, take_number ORDER BY scene_number, shot, take_number LIMIT 100;
-SELECT status, count() FROM slateiq.take WHERE day_number = 12 GROUP BY status;
-DESCRIBE slateiq.daily_progress;
-SELECT name, type FROM system.columns WHERE database = 'slateiq' AND table = 'daily_progress' LIMIT 100;
-SELECT name, type FROM system.columns WHERE database = 'slateiq' AND table = 'scene_progress' LIMIT 100;
-SELECT name, type FROM system.columns WHERE database = 'slateiq' AND table = 'production' LIMIT 100;
-SELECT shot, take_number, camera, status, tc_in, duration_s, director_note FROM slateiq.take WHERE day_number = 12 AND scene_number = '78' ORDER BY shot, take_number, camera;
-SELECT t.scene_number, t.shot, t.take_number, t.camera, t.director_note, ta.performance_note, ta.summary FROM slateiq.take t LEFT JOIN slateiq.take_analysis ta ON t.take_id = ta.take_id WHERE t.day_number = 12 AND t.status = 'circled' AND t.scene_number IN ('6', '39', '91') ORDER BY t.scene_number, t.shot, t.take_number, t.camera LIMIT 100;
+SELECT p.title, p.planned_days, d.shoot_date, d.unit, d.call_time, d.planned_wrap, d.actual_wrap, d.planned_scenes, d.location, d.weather, d.notes
+FROM slateiq.production p
+CROSS JOIN slateiq.shooting_day d
+WHERE d.day_number = 12 AND p.production_id = 'tos2026';
+SELECT pages_planned_eighths, pages_shot_eighths, setups, takes, circled, ng, camera_minutes, wrap_delay_min
+FROM slateiq.daily_progress
+WHERE day_number = 12;
+SELECT 
+    sum(pages_planned_eighths) as cum_planned, 
+    sum(pages_shot_eighths) as cum_shot,
+    (SELECT sum(page_eighths) FROM slateiq.scene) as total_pages
+FROM slateiq.daily_progress 
+WHERE day_number <= 12;
+SELECT 
+    s.scene_number, 
+    s.slug, 
+    s.page_eighths,
+    countIf(t.day_number = 12) as takes_today,
+    uniqExactIf(t.shot, t.day_number = 12) as setups_today,
+    countIf(t.day_number = 12 AND t.status = 'circled') as circled_today,
+    -- Let's also check if the scene is completed, partial, or not shot overall or today
+    -- Actually, let's look at scene_progress for the scene's overall status
+    sp.status as overall_status
+FROM slateiq.scene s
+LEFT JOIN slateiq.take t ON s.scene_number = t.scene_number
+LEFT JOIN slateiq.scene_progress sp ON s.scene_number = sp.scene_number
+WHERE s.scene_number IN ('6', '12', '14A', '27', '33', '39', '41', '56', '78', '91', '102')
+   OR t.day_number = 12
+GROUP BY s.scene_number, s.slug, s.page_eighths, sp.status
+ORDER BY s.scene_number;
+SELECT DISTINCT scene_number FROM slateiq.take WHERE day_number = 12;
+SELECT scene_number, status, first_day, last_day, takes, setups, circled, print_ratio
+FROM slateiq.scene_progress
+WHERE scene_number IN ('6', '12', '14A', '27', '33', '39', '41', '56', '78', '91', '102');
+SELECT flag_type, flags, takes_affected, avg_severity
+FROM slateiq.flag_summary
+WHERE day_number = 12
+ORDER BY flags DESC;
+SELECT c.scene_number, c.category, c.severity, c.description, t.take_id, t.day_number
+FROM slateiq.continuity_note c
+JOIN slateiq.take t ON c.take_id_a = t.take_id
+WHERE t.day_number = 12
+ORDER BY c.severity DESC;
+SELECT 
+    t.scene_number, 
+    t.shot, 
+    t.take_number, 
+    groupArray(t.camera) as cameras, 
+    any(t.tc_in) as tc_in, 
+    any(t.duration_s) as duration_s, 
+    any(t.status) as status, 
+    any(t.director_note) as director_note,
+    any(a.performance_note) as performance_note
+FROM slateiq.take t
+LEFT JOIN slateiq.take_analysis a ON t.take_id = a.take_id
+WHERE t.day_number = 12 AND t.status IN ('circled', 'hold')
+GROUP BY t.scene_number, t.shot, t.take_number
+ORDER BY t.scene_number, t.shot, t.take_number
+LIMIT 200;
+SELECT scene_number, status, count()
+FROM slateiq.take
+WHERE day_number = 12 AND status IN ('circled', 'hold')
+GROUP BY scene_number, status
+ORDER BY scene_number, status;
+SELECT 
+    scene_number, 
+    count() as total_takes,
+    countIf(status = 'circled') as circled_takes,
+    countIf(status = 'hold') as hold_takes,
+    count() - countIf(status IN ('circled', 'hold')) as other_takes
+FROM slateiq.take
+WHERE day_number = 12
+GROUP BY scene_number
+ORDER BY scene_number;
+SELECT 
+    t.scene_number, 
+    t.shot, 
+    t.take_number, 
+    groupArray(t.camera) as cameras, 
+    any(t.tc_in) as tc_in, 
+    any(t.duration_s) as duration_s, 
+    any(t.status) as status, 
+    any(t.director_note) as director_note,
+    any(a.performance_note) as performance_note
+FROM slateiq.take t
+LEFT JOIN slateiq.take_analysis a ON t.take_id = a.take_id
+WHERE t.day_number = 12 
+  AND (
+    (t.scene_number IN ('6', '39', '91') AND t.status = 'circled')
+    OR (t.scene_number NOT IN ('6', '39', '91') AND t.status IN ('circled', 'hold'))
+  )
+GROUP BY t.scene_number, t.shot, t.take_number
+ORDER BY t.scene_number, t.shot, t.take_number
+LIMIT 100;
+SELECT shot, take_number, camera, status, director_note
+FROM slateiq.take
+WHERE day_number = 12 AND scene_number = '39' AND status = 'circled'
+ORDER BY shot, take_number;
+SELECT shot, take_number, camera, status, director_note
+FROM slateiq.take
+WHERE day_number = 12 AND scene_number = '6' AND status = 'circled'
+ORDER BY shot, take_number;
+SELECT shot, take_number, camera, status, director_note
+FROM slateiq.take
+WHERE day_number = 12 AND scene_number = '91' AND status = 'circled'
+ORDER BY shot, take_number;
+SELECT scene_number, shot, take_number, clip_uri
+FROM slateiq.take
+WHERE day_number = 12 AND status = 'circled'
+ORDER BY scene_number, shot, take_number;
+SELECT scene_number, slug, synopsis, page_eighths
+FROM slateiq.scene
+WHERE scene_number IN ('6', '12', '14A', '27', '33', '39', '41', '56', '78', '91', '102')
+ORDER BY scene_number;
 ```
 
 </details>
@@ -1047,17 +1167,17 @@ Unit: main · Call: 05:00 · Wrap: 17:15 · Length: 12h 15m
 ## Scenes
 | Scene | Description | Pages | Status | Takes | Setups |
 |---|---|---|---|---|---|
-| 6 | INT. CORRIDOR - NIGHT · Thom walks the quay alone; the city burns on the horizon. | 1 2/8 | Completed | 66 | 7 |
-| 12 | INT. SAFEHOUSE - DAY · Barley works the console while sentries close in on the perimeter. | 2 | Partial | 4 | 2 |
-| 14A | INT. SAFEHOUSE - DAY · The team loses contact with Thom; Captain makes the call to go back. | 1 4/8 | Partial | 3 | 2 |
-| 27 | EXT. BRIDGE - DAY · Flashback: Dr. Willem remembers the day everything went wrong. | 1 | Partial | 3 | 2 |
-| 33 | EXT. BRIDGE - NIGHT · Flashback: Barley remembers the day everything went wrong. | 2/8 | Partial | 3 | 2 |
-| 39 | EXT. BRIDGE - NIGHT · Frank and Captain argue over the timeline; the argument turns personal. | 2/8 | Completed | 38 | 4 |
-| 41 | INT. LAB - DAY · A sentry robot corners Captain; Celia arrives one beat too late. | 4/8 | Partial | 3 | 2 |
-| 56 | EXT. CITY SQUARE - NIGHT · The team loses contact with Dr. Willem; Thom makes the call to go back. | 5/8 | Partial | 3 | 2 |
-| 78 | EXT. CANAL BANK - DAY · Dr. Willem rigs the emitter under fire while Frank covers the stairwell. | 1 | Completed | 3 | 3 |
-| 91 | INT. CONTROL ROOM - NIGHT · Flashback: Frank remembers the day everything went wrong. | 5/8 | Completed | 47 | 3 |
-| 102 | EXT. RUINED STREET - DAY · Barley and Celia argue over the timeline; the argument turns personal. | 3/8 | Partial | 2 | 2 |
+| 6 | Thom walks the quay alone; the city burns on the horizon. | 1 2/8 pages | Completed | 66 | 7 |
+| 12 | Barley works the console while sentries close in on the perimeter. | 2 pages | Partial | 4 | 2 |
+| 14A | The team loses contact with Thom; Captain makes the call to go back. | 1 4/8 pages | Partial | 3 | 2 |
+| 27 | Flashback: Dr. Willem remembers the day everything went wrong. | 1 page | Partial | 3 | 2 |
+| 33 | Flashback: Barley remembers the day everything went wrong. | 2/8 page | Partial | 3 | 2 |
+| 39 | Frank and Captain argue over the timeline; the argument turns personal. | 2/8 page | Completed | 38 | 4 |
+| 41 | A sentry robot corners Captain; Celia arrives one beat too late. | 4/8 page | Partial | 3 | 2 |
+| 56 | The team loses contact with Dr. Willem; Thom makes the call to go back. | 5/8 page | Partial | 3 | 2 |
+| 78 | Dr. Willem rigs the emitter under fire while Frank covers the stairwell. | 1 page | Completed | 3 | 3 |
+| 91 | Flashback: Frank remembers the day everything went wrong. | 5/8 page | Completed | 47 | 3 |
+| 102 | Barley and Celia argue over the timeline; the argument turns personal. | 3/8 page | Partial | 2 | 2 |
 
 ## Day totals
 - Scenes scheduled: 11 — completed: 4 — partial: 7 — pushed: 0
@@ -1066,33 +1186,35 @@ Unit: main · Call: 05:00 · Wrap: 17:15 · Length: 12h 15m
 - Cumulative: pages shot 48 4/8 of 115 3/8 — behind by 3 4/8 pages
 
 ## Notes
-- **Overtime:** 15 minutes of overtime due to extra coverage on the last setup.
+- **Overtime:** 15 minutes of overtime logged (actual wrap at 17:15 against 17:00 planned) due to extra coverage on the last setup.
 - **Weather:** Overcast, 19C, dry.
 - **Technical Flags:**
-  - 11 soft focus flags (avg severity 3.09)
-  - 9 line flub flags (avg severity 1.78)
-  - 7 boom in shot flags (avg severity 3.57)
-  - 6 continuity flags (avg severity 3.17)
-  - 5 audio clip flags (avg severity 3.0)
-  - 5 frame edge flags (avg severity 1.6)
-  - 2 overlap flags (avg severity 2.5)
-- **Continuity Issues:**
-  - **Scene 12 (Set Dressing - Severity 5):** In take B-01-B, the foreground character is sleeping under a newspaper on a balcony, whereas in take B-02-B, the set is dressed with a cot where the character is resting.
-  - **Scene 12 (Props - Severity 3):** In take B-01-B, the sniper loads a red cartridge into his rifle, which is absent in take B-02-B where the soldier only aims the weapon.
-  - **Scene 27 (Action Match - Severity 5):** In Take A, the older man is injured, clutching his shoulder and letting go of a rope, whereas in Take B he enters through a doorway showing no signs of injury and is accompanied by a young woman who is absent in Take A.
-  - **Scene 33 (Dialogue - Severity 5):** In Take A, the cybernetic man asks the older man if he is ready and checks in with Barley, whereas in Take B, he repeatedly says 'Dom' and points out a target.
-  - **Scene 33 (Props - Severity 5):** In Take A, the cybernetic man handles a microphone and a radio antenna, which are completely absent in Take B.
-  - **Scene 33 (Action Match - Severity 5):** In Take A, the cybernetic man stands in a three-shot handing off items, whereas in Take B, he physically pulls the older man close by the shoulder.
-  - **Scene 39 (Props - Severity 3):** Hero glass is half full in TOS-D12-S39-A-01-B, nearly empty in TOS-D12-S39-D-01-A.
-  - **Scene 6 (Wardrobe - Severity 1):** Jacket zipped in TOS-D12-S6-F-06-A but open in TOS-D12-S6-A-02-B at the same beat.
-  - **Scene 91 (Lighting - Severity 1):** Practical is on in TOS-D12-S91-A-01-B and off in TOS-D12-S91-C-02-B; grade cannot match.
+  - Soft focus: 11 flags (avg severity 3.09)
+  - Line flub: 9 flags (avg severity 1.78)
+  - Boom in shot: 7 flags (avg severity 3.57)
+  - Continuity: 6 flags (avg severity 3.17)
+  - Audio clip: 5 flags (avg severity 3.00)
+  - Frame edge: 5 flags (avg severity 1.60)
+  - Overlap: 2 flags (avg severity 2.50)
+- **Continuity & Set Notes:**
+  - **Scene 12 (Severity 5 - Set Dressing):** In take B-01-B, the foreground character is sleeping under a newspaper on a balcony, whereas in take B-02-B, the set is dressed with a cot where the character is resting.
+  - **Scene 27 (Severity 5 - Action Match):** In Take A, the older man is injured, clutching his shoulder and letting go of a rope, whereas in Take B he enters through a doorway showing no signs of injury and is accompanied by a young woman who is absent in Take A.
+  - **Scene 33 (Severity 5 - Dialogue/Props/Action Match):** In Take A, the cybernetic man asks the older man if he is ready and checks in with Barley, whereas in Take B, he repeatedly says 'Dom' and points out a target. He also handles a microphone and a radio antenna in Take A which are completely absent in Take B, and stands in a three-shot handing off items instead of physically pulling the older man close by the shoulder as in Take B.
+  - **Scene 12 (Severity 3 - Props):** In take B-01-B, the sniper loads a red cartridge into his rifle, which is absent in take B-02-B where the soldier only aims the weapon.
+  - **Scene 39 (Severity 3 - Props):** Hero glass is half full in TOS-D12-S39-A-01-B, nearly empty in TOS-D12-S39-D-01-A.
+  - **Scene 6 (Severity 1 - Wardrobe):** Jacket zipped in TOS-D12-S6-F-06-A but open in TOS-D12-S6-A-02-B at the same beat.
+  - **Scene 91 (Severity 1 - Lighting):** Practical is on in TOS-D12-S91-A-01-B and off in TOS-D12-S91-C-02-B; grade cannot match.
 
 ***
 
 # EDITOR'S LOG — Day 12, 2026-09-04
 
 ## Scene 6 — INT. CORRIDOR - NIGHT
-| Shot | T
+| Shot | Take | TC In | Dur | Status | Note |
+|---|---|---|---|---|---|
+| A | 6 (A/B) | 08:11:36:04 | 49.0s | circled | second unit will pick up the insert |
+| B | 3 (A/B/C) | 08:24:23:23 | 83.7s | circled | loved the stillness |
+| C | 8 (A/B) 
 
 …truncated…
 
@@ -1105,74 +1227,117 @@ Unit: main · Call: 05:00 · Wrap: 17:15 · Length: 12h 15m
 **Q:** Give me the editor's log for day 12 -- circled takes per scene with reasons.
 
 **Routing:** slateiq_coordinator → report_agent (expected `report_agent`)  
-**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query  
-**Judge:** 1/5 — The agent hallucinated multiple scenes (such as 12, 14A, 27, 33, 41, 56, 78, 102) and highly descriptive performance notes that were never returned by the SQL queries.  
-**Latency:** 98.2s
+**Tools:** transfer_to_agent, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query, run_query  
+**Judge:** 5/5 — The agent provided a highly detailed, accurate editor's log matching the rubric requirements, with all data perfectly grounded in the SQL query results.  
+**Latency:** 196.4s
 
 <details><summary>SQL executed via MCP</summary>
 
 ```sql
-SELECT shoot_date, unit, call_time, actual_wrap FROM slateiq.shooting_day WHERE day_number = 12;
-SELECT DISTINCT scene_number, s.slug FROM slateiq.take t JOIN slateiq.scene s USING scene_number WHERE t.day_number = 12 ORDER BY scene_number;
-SELECT scene_number, status, count() FROM slateiq.take WHERE day_number = 12 GROUP BY scene_number, status ORDER BY scene_number, status;
-SELECT t.scene_number, t.shot, t.take_number, groupArray(t.camera) as cameras, any(t.tc_in) as tc_in, any(t.duration_s) as duration, any(t.status) as status, any(t.director_note) as dir_note, any(ta.performance_note) as perf_note FROM slateiq.take t LEFT JOIN slateiq.take_analysis ta USING take_id WHERE t.day_number = 12 AND t.status IN ('circled', 'hold') GROUP BY t.scene_number, t.shot, t.take_number, t.status ORDER BY t.scene_number, t.shot, t.take_number;
-SELECT t.scene_number, t.shot, t.take_number, groupArray(t.camera) as cameras, any(t.tc_in) as tc_in, any(t.duration_s) as duration, any(t.status) as status, any(t.director_note) as dir_note, any(ta.performance_note) as perf_note FROM slateiq.take t LEFT JOIN slateiq.take_analysis ta USING take_id WHERE t.day_number = 12 AND t.status IN ('circled', 'hold') AND t.scene_number = '91' GROUP BY t.scene_number, t.shot, t.take_number, t.status ORDER BY t.scene_number, t.shot, t.take_number;
-SELECT status, count() FROM slateiq.take WHERE day_number = 12 AND scene_number = '39' GROUP BY status;
-SELECT status, count() FROM slateiq.take WHERE day_number = 12 AND scene_number = '6' GROUP BY status;
-SELECT status, count() FROM slateiq.take WHERE day_number = 12 AND scene_number = '91' GROUP BY status;
+SELECT shoot_date, unit, call_time, actual_wrap, planned_scenes FROM slateiq.shooting_day WHERE day_number = 12;
+SELECT 
+    t.scene_number,
+    s.slug,
+    t.shot,
+    t.take_number,
+    t.camera,
+    t.tc_in,
+    t.duration_s,
+    t.status,
+    t.director_note,
+    a.performance_note,
+    a.summary,
+    t.take_id
+FROM slateiq.take t
+LEFT JOIN slateiq.scene s ON t.scene_number = s.scene_number
+LEFT JOIN slateiq.take_analysis a ON t.take_id = a.take_id
+WHERE t.day_number = 12 AND t.status IN ('circled', 'hold')
+ORDER BY t.scene_number, t.shot, t.take_number, t.camera
+LIMIT 200;
+SELECT 
+    t.scene_number,
+    any(s.slug) as slug,
+    t.shot,
+    t.take_number,
+    groupArray(t.camera) as cameras,
+    any(t.tc_in) as tc_in,
+    any(t.duration_s) as duration,
+    t.status,
+    any(t.director_note) as director_note,
+    any(a.performance_note) as performance_note
+FROM slateiq.take t
+LEFT JOIN slateiq.scene s ON t.scene_number = s.scene_number
+LEFT JOIN slateiq.take_analysis a ON t.take_id = a.take_id
+WHERE t.day_number = 12 AND t.status IN ('circled', 'hold')
+GROUP BY t.scene_number, t.shot, t.take_number, t.status
+ORDER BY t.scene_number, t.shot, t.take_number
+LIMIT 100;
+SELECT status, count() FROM slateiq.take WHERE day_number = 12 GROUP BY status;
+SELECT status, count(distinct (scene_number, shot, take_number)) FROM slateiq.take WHERE day_number = 12 AND status IN ('circled', 'hold') GROUP BY status;
+SELECT 
+    t.scene_number,
+    any(s.slug) as slug,
+    t.shot,
+    t.take_number,
+    groupArray(t.camera) as cameras,
+    any(t.tc_in) as tc_in,
+    any(t.duration_s) as duration,
+    t.status,
+    any(t.director_note) as director_note,
+    any(a.performance_note) as performance_note
+FROM slateiq.take t
+LEFT JOIN slateiq.scene s ON t.scene_number = s.scene_number
+LEFT JOIN slateiq.take_analysis a ON t.take_id = a.take_id
+WHERE t.day_number = 12 AND t.status = 'circled'
+GROUP BY t.scene_number, t.shot, t.take_number, t.status
+ORDER BY t.scene_number, t.shot, t.take_number
+LIMIT 100;
+SELECT count() FROM slateiq.take WHERE day_number = 12 AND status = 'hold' AND director_note != '';
+SELECT 
+    scene_number,
+    countIf(status = 'circled') as circled,
+    countIf(status = 'hold') as hold,
+    countIf(status NOT IN ('circled', 'hold')) as other,
+    count() as total
+FROM slateiq.take
+WHERE day_number = 12
+GROUP BY scene_number
+ORDER BY scene_number;
+SELECT status, recommended, count() FROM slateiq.take t LEFT JOIN slateiq.take_analysis a USING take_id WHERE t.day_number = 12 GROUP BY status, recommended;
+SELECT t.scene_number, t.shot, t.take_number, t.camera, t.tc_in, t.duration_s, t.director_note, a.performance_note FROM slateiq.take t JOIN slateiq.take_analysis a USING take_id WHERE t.day_number = 12 AND t.status = 'hold' AND a.recommended = true;
+SELECT scene_number, slug FROM slateiq.scene WHERE scene_number IN ('6', '12', '14A', '27', '33', '39', '41', '56', '78', '91', '102') ORDER BY scene_number;
 ```
 
 </details>
 
 <details><summary>Answer</summary>
 
+Here is the Editor's Log for Day 12 (September 4, 2026), featuring all circled and recommended hold takes collapsed by multi-camera setups, along with the director's notes and performance analysis.
+
 # EDITOR'S LOG — Day 12, 2026-09-04
 
 ## Scene 6 — INT. CORRIDOR - NIGHT
 | Shot | Take | TC In | Dur | Status | Note |
 |---|---|---|---|---|---|
-| A | 1 (A) | 08:00:00:00 | 63.5s | hold | hold the pause before the last line |
-| A | 2 (A/B) | 08:02:33:04 | 40.0s | hold | focus soft on the turn |
-| A | 3 (A) | 08:05:08:11 | 48.3s | hold | keep for the cutaway |
-| A | 5 (A) | 08:09:09:18 | 14.9s | hold | great, but eyeline drifted |
 | A | 6 (A/B) | 08:11:36:04 | 49.0s | circled | second unit will pick up the insert |
-| B | 1 (A/C) | 08:18:39:07 | 29.8s | hold | one more for safety |
-| B | 2 (A/B/C) | 08:21:23:21 | 45.4s | hold | circle this one |
 | B | 3 (A/B/C) | 08:24:23:23 | 83.7s | circled | loved the stillness |
-| B | 4 (A/B) | 08:27:31:20 | 61.3s | hold | loved the stillness |
-| C | 1 (B) | 08:42:54:21 | 16.8s | hold | sound reported a plane |
-| C | 2 (A/B) | 08:44:41:19 | 50.9s | hold | print it |
-| C | 3 (A/B) | 08:46:13:09 | 44.0s | hold | she found it — that's the take |
-| C | 4 (A/B) | 08:48:05:15 | 58.5s | hold | camera bumped the dolly |
-| C | 5 (A) | 08:51:27:17 | 40.8s | hold | sound reported a plane |
-| C | 7 (A) | 08:55:00:05 | 61.8s | hold | less shouty |
 | C | 8 (A/B) | 08:56:52:05 | 57.2s | circled | boom dipped, go again |
 | D | 1 (A/B) | 09:05:18:08 | 112.0s | circled | one more for safety |
-| D | 2 (B) | 09:08:56:11 | 52.5s | hold | second unit will pick up the insert |
-| D | 3 (B) | 09:10:54:04 | 78.6s | hold | great, but eyeline drifted |
-| E | 1 (A/B) | 09:22:34:10 | 69.7s | hold | focus soft on the turn |
 | E | 2 (A/B) | 09:25:33:12 | 33.6s | circled | too fast, let it breathe |
-| E | 3 (A/B) | 09:28:17:20 | 66.6s | hold | hold the pause before the last line |
-| F | 1 (A) | 09:37:13:04 | 65.6s | hold | print it |
-| F | 2 (A) | 09:40:40:13 | 19.5s | hold | too fast, let it breathe |
 | F | 3 (A) | 09:43:27:22 | 54.5s | circled | boom dipped, go again |
 | F | 5 (A) | 09:49:44:03 | 36.7s | circled | boom dipped, go again |
-| F | 6 (A) | 09:52:14:09 | 26.4s | hold | circle this one |
-| G | 1 (A/B) | 10:08:00:02 | 30.5s | hold | great, but eyeline drifted |
 | G | 2 (A/B) | 10:10:57:09 | 42.1s | circled | loved the stillness |
-| G | 4 (A) | 10:14:34:14 | 51.5s | hold | circle this one |
 
-+ 18 NG/other takes not listed
++ 51 NG/hold/other takes not listed
 
-**Circled:**
-- **6/A/6:** second unit will pick up the insert — Eyes stay in it right to the cut.
-- **6/B/3:** loved the stillness — Technically clean, performance flat.
-- **6/C/8:** boom dipped, go again — Nice overlap with the off-camera cue.
-- **6/D/1:** one more for safety — Nice overlap with the off-camera cue.
-- **6/E/2:** too fast, let it breathe — Big swing — usable but broad.
-- **6/F/3:** boom dipped, go again — Eyes stay in it right to the cut.
-- **6/F/5:** boom dipped, go again — Best emotional landing so far.
-- **6/G/2:** loved the stillness — Best emotional landing so far.
+**Circled:** A-6 — second unit will pick up the insert / Eyes stay in it right to the cut.
+**Circled:** B-3 — loved the stillness / Technically clean, performance flat.
+**Circled:** C-8 — boom dipped, go again / Nice overlap with the off-camera cue.
+**Circled:** D-1 — one more for safety / Nice overlap with the off-camera cue.
+**Circled:** E-2 — too fast, let it breathe / Big swing — usable but broad.
+**Circled:** F-3 — boom dipped, go again / Eyes stay in it right to the cut.
+**Circled:** F-5 — boom dipped, go again / Best emotional landing so far.
+**Circled:** G-2 — loved the stillness / Best emotional landing so far.
 
 ---
 
@@ -1183,11 +1348,10 @@ SELECT status, count() FROM slateiq.take WHERE day_number = 12 AND scene_number 
 | B | 1 (B) | 12:19:40:06 | 15.7s | hold | Alt angle, hold for editorial. |
 | B | 2 (B) | 12:26:18:20 | 16.2s | circled | Cleaner. Print. |
 
-+ 1 NG/other takes not listed
++ 1 NG/other take not listed
 
-**Circled:**
-- **12/A/1:** Good energy, keep this one. — Strong comedic timing and natural chemistry between the actors. The robotic arm prop is handled convincingly.
-- **12/B/2:** Cleaner. Print. — The transition to the scope POV is clean, and the visual effects tracking of the flying vessel are highly detailed and well-integrated.
+**Circled:** A-1 — Good energy, keep this one. / Strong comedic timing and natural chemistry between the actors. The robotic arm prop is handled convincingly.
+**Circled:** B-2 — Cleaner. Print. / The transition to the scope POV is clean, and the visual effects tracking of the flying vessel are highly detailed and well-integrated.
 
 ---
 
@@ -1198,13 +1362,46 @@ SELECT status, count() FROM slateiq.take WHERE day_number = 12 AND scene_number 
 
 + 2 NG/other takes not listed
 
-**Circled:**
-- **14A/A/1:** Nice reset on the walk-in. — Strong, understated performance showing physical weariness and defensive vulnerability.
+**Circled:** A-1 — Nice reset on the walk-in. / Strong, understated performance showing physical weariness and defensive vulnerability.
 
 ---
 
 ## Scene 27 — EXT. BRIDGE - DAY
-| Shot | Take | TC In | Dur | St
+| Shot | Take | TC In | Dur | Status | Note |
+|---|---|---|---|---|---|
+| A | 1 (A) | 14:11:22:09 | 13.8s | circled | That's the one — the beat lands. |
+| B | 1 (B) | 14:33:05:11 | 11.0s | hold | Wide, usable if we need the geography. |
+
++ 1 NG/other take not listed
+
+**Circled:** A-1 — That's the one — the beat lands. / Strong physical performance showing pain transitioning to determination.
+
+---
+
+## Scene 33 — EXT. BRIDGE - NIGHT
+| Shot | Take | TC In | Dur | Status | Note |
+|---|---|---|---|---|---|
+| A | 1 (A) | 15:02:14:04 | 9.0s | circled | Print it. |
+
++ 2 NG/other takes not listed
+
+**Circled:** A-1 — Print it. / Good energy and delivery from the supporting actor, with a solid, stoic reaction from the lead.
+
+---
+
+## Scene 39 — EXT. BRIDGE - NIGHT
+| Shot | Take | TC In | Dur | Status | Note |
+|---|---|---|---|---|---|
+| A | 5 (A/B) | 10:35:27:03 | 75.8s | circled | less shouty |
+| B | 1 (A/B) | 10:44:01:17 | 37.1s | circled | circle this one |
+| C | 4 (A/B) | 11:12:25:20 | 65.7s | circled | camera bumped the dolly |
+| D | 6 (A) | 11:36:42:11 | 17.6s | circled | boom dipped, go again |
+
++ 31 NG/hold/other takes not listed
+
+**Circled:** A-5 — less shouty / Best emotional landing so far.
+**Circled:** B-1 — circle this one / Nice overlap with the off-camera cue.
+**Circled:** C-4 — camera bumped t
 
 …truncated…
 
