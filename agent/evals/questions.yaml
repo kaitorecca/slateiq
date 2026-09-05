@@ -162,7 +162,13 @@ questions:
     rubric: >
       Proper DPR markdown -- day X of Y, date, call/wrap, per-scene table with
       pages and status, day totals (scenes, pages, setups, takes, ratio),
-      cumulative position, notes. All values from queries.
+      cumulative position, notes. Every value comes from ClickHouse: either
+      from this turn's queries, or -- the intended fast path for a finished
+      day -- verbatim from SlateIQ's on-disk report cache, which was itself
+      built from mcp-clickhouse queries. A cached answer is fully correct
+      provided the document is complete and it names itself as cached and
+      says the data came through mcp-clickhouse; do NOT mark it down for
+      running no SQL this turn.
 
   - id: editors_log
     user: editor

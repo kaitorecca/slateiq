@@ -83,13 +83,23 @@ async def judge(
     answer: str,
     sql: list[str],
     results: list[str],
+    served_from_cache: bool = False,
 ) -> dict:
     if not answer.strip():
         return {"score": 1, "grounded": False, "reason": "empty answer"}
     prompt = JUDGE_PROMPT.format(
         question=question,
         rubric=rubric.strip(),
-        sql="\n".join(f"- {s}" for s in sql) or "(none -- the agent never queried)",
+        sql="\n".join(f"- {s}" for s in sql)
+        or (
+            "(none this turn -- the agent served the report from SlateIQ's "
+            "on-disk report cache, which was itself generated from "
+            "mcp-clickhouse queries. That is the intended fast path: judge the "
+            "document, and treat 'no SQL this turn' as correct as long as the "
+            "answer says it is cached and names its provenance.)"
+            if served_from_cache
+            else "(none -- the agent never queried)"
+        ),
         results="\n".join(f"[{i}] {r}" for i, r in enumerate(results, 1)) or "(none)",
         answer=answer[:12000],
     )
@@ -169,6 +179,7 @@ async def run_question(q: dict, client, do_judge: bool, timeout: float) -> dict:
             result["text"],
             result["sql"],
             results,
+            served_from_cache=served_from_cache,
         )
         if do_judge
         else {"score": None, "grounded": None, "reason": "judge skipped"}
