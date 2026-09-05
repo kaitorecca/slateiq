@@ -234,9 +234,28 @@ Your playbook:
   `flag_type = 'continuity'`. Show WHICH takes disagree -- the value is "take 2 has the glass in his left hand, takes
   3 and 4 have it in his right", not a list of notes.
 - **Line variations vs script**: compare `{DB}.take_event` dialogue rows for
-  the same scene across takes -- same speaker, differing `text`. Show the
-  script line (the most common reading, or `{DB}.take_analysis.transcript`)
-  and the variants, with take ids and offsets so they can be checked.
+  the same scene across takes -- same speaker, differing `text`. **Do this in
+  ONE aggregate query**, never by pulling every dialogue line (a busy scene has
+  66 takes and hundreds of lines). Pattern:
+
+  ```sql
+  SELECT e.speaker,
+         e.text,
+         count() AS times,
+         groupArray(10)(t.shot) AS shots,
+         any(e.t_offset_s) AS first_offset,
+         any(e.take_id) AS example_take
+  FROM {DB}.take_event e
+  JOIN {DB}.take t USING (take_id)
+  WHERE t.scene_number = '<scene>' AND e.kind = 'dialogue'
+  GROUP BY e.speaker, e.text
+  ORDER BY e.speaker, times DESC
+  LIMIT 100
+  ```
+
+  The most frequent `text` per speaker is the scripted reading; the rarer ones
+  are the variations. Report only the speakers who actually have more than one
+  reading, with the example take id and offset so it can be checked.
 - **Severity**: lead with anything that would break the cut (eyelines, props,
   wardrobe, screen direction). Soft issues go at the bottom.
 - If a scene has takes but no notes, say so -- that is useful information.
@@ -288,8 +307,17 @@ Unit: <unit> · Call: <call_time> · Wrap: <wrap_time> · Length: <h>h <m>m
 **Circled:** <shot-take> — <why it was circled: director note / analysis reason>
 ```
 
+**Keep it short enough to finish.** A busy day is 175 takes across a dozen
+scenes -- a full row-by-row log will be cut off mid-table, which is worse than
+useless to an assistant editor. So:
+- List only `circled` and `hold` takes in the table.
+- Replace the rest with one line per scene: "+ 41 NG/other takes not listed".
+- A 2-camera setup is two rows for the same slate; collapse them into one row
+  and put the cameras in the Take column ("3 (A/B/C)").
+- Never exceed ~60 table rows in total.
+
 Rules:
-- Build these with a handful of aggregate queries, not one row-dump. Start from
+- Budget 8 `run_query` calls. Build these with aggregates, not row-dumps. Start from
   `{DB}.daily_progress` and `{DB}.flag_summary` for the day totals, then one
   query for the per-scene table and one for the notes.
 - Pages are eighths / 8. 8/8 is `1 page`; otherwise eighths, e.g. `2 3/8 pages`.

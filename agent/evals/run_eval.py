@@ -49,8 +49,15 @@ RUBRIC FOR A 5/5 ANSWER
 SQL THE AGENT ACTUALLY RAN
 {sql}
 
+WHAT THE DATABASE RETURNED (truncated tool results, in order)
+{results}
+
 THE AGENT'S ANSWER
 {answer}
+
+Ground your grounding judgement in the DATABASE RESULTS above, not in the SQL
+text. The results are truncated, so a fact you cannot see is not proof of a
+hallucination -- only call something ungrounded when the results contradict it.
 
 Score 1-5:
 5 = fully answers the question, every number is grounded in the SQL results,
@@ -69,13 +76,22 @@ Reply with ONLY a JSON object:
 """
 
 
-async def judge(client, question: str, rubric: str, answer: str, sql: list[str]) -> dict:
+async def judge(
+    client,
+    question: str,
+    rubric: str,
+    answer: str,
+    sql: list[str],
+    results: list[str],
+) -> dict:
     if not answer.strip():
         return {"score": 1, "grounded": False, "reason": "empty answer"}
     prompt = JUDGE_PROMPT.format(
         question=question,
         rubric=rubric.strip(),
         sql="\n".join(f"- {s}" for s in sql) or "(none -- the agent never queried)",
+        results="\n".join(f"[{i}] {r}" for i, r in enumerate(results, 1))
+        or "(none)",
         answer=answer[:12000],
     )
     try:
@@ -122,8 +138,20 @@ async def run_question(q: dict, client, do_judge: bool, timeout: float) -> dict:
     for ev in result["events"]:
         if ev["type"] == "agent" and ev["name"] not in agents:
             agents.append(ev["name"])
+    results = [
+        ev["summary"]
+        for ev in result["events"]
+        if ev["type"] == "tool_result" and ev.get("name") == "run_query"
+    ]
     verdict = (
-        await judge(client, q["question"], q.get("rubric", ""), result["text"], result["sql"])
+        await judge(
+            client,
+            q["question"],
+            q.get("rubric", ""),
+            result["text"],
+            result["sql"],
+            results,
+        )
         if do_judge
         else {"score": None, "grounded": None, "reason": "judge skipped"}
     )

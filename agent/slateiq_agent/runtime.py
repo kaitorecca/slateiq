@@ -24,7 +24,7 @@ from google.adk.runners import Runner
 from google.adk.sessions import DatabaseSessionService, InMemorySessionService
 from google.genai import types
 
-from .agent import build_report_agent, build_root_agent, root_agent
+from .agent import build_report_agent, root_agent
 from .config import APP_NAME, SESSION_DB_URI
 
 _FENCE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
@@ -144,6 +144,8 @@ async def stream_agent(
         max_llm_calls=max_llm_calls,
     )
     final_text = ""
+    last_complete_text = ""
+    streamed_text: list[str] = []
     sql: list[str] = []
     seen_agent: Optional[str] = None
     call_names: dict[str, str] = {}
@@ -200,6 +202,7 @@ async def stream_agent(
 
                 if part.text:
                     if event.partial:
+                        streamed_text.append(part.text)
                         yield {
                             "type": "text",
                             "delta": part.text,
@@ -208,16 +211,25 @@ async def stream_agent(
                     elif event.is_final_response():
                         # Complete turn: keep the last one as the answer.
                         final_text = part.text
-                    elif not stream_text:
-                        yield {
-                            "type": "text",
-                            "delta": part.text,
-                            "agent": seen_agent,
-                        }
+                        last_complete_text = part.text
+                    else:
+                        # Not the final response (e.g. the run was cut short by
+                        # max_llm_calls). Remember it so we never hand the UI an
+                        # empty answer.
+                        last_complete_text = part.text
+                        if not stream_text:
+                            yield {
+                                "type": "text",
+                                "delta": part.text,
+                                "agent": seen_agent,
+                            }
     except Exception as exc:  # surface failures to the UI instead of hanging
         yield {"type": "error", "message": f"{type(exc).__name__}: {exc}"}
         return
 
+    if not final_text:
+        # Fall back so a truncated or interrupted run still returns something.
+        final_text = last_complete_text or "".join(streamed_text)
     structured = parse_structured_block(final_text)
     yield {
         "type": "final",

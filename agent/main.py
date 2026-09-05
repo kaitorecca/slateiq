@@ -37,7 +37,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fastapi import HTTPException, Query, Request  # noqa: E402
 from fastapi.responses import (  # noqa: E402
-    FileResponse,
     JSONResponse,
     Response,
     StreamingResponse,
