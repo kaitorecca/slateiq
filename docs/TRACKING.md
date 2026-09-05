@@ -95,3 +95,4 @@
 | 21:10 | orchestrator | hung 'gcloud projects describe' killed; redeploy relaunched (two identical deploys may race, same commit); hosted 00013 healthy | in progress |
 | 21:25 | orchestrator | redeploy attempts hung inside gcloud CLI → killed; hosted rev 00013 healthy; editor_log bake documented as P2 follow-up in HANDOFF | done |
 | 21:25 | orchestrator | final pre-wrap check: hosted/MCP/Grafana/repo all OK, no secrets tracked, 100 commits, trailer v2 committed; awaiting 22:00 wrap-up | done |
+| 21:27 | orchestrator | tick: retrying redeploy (editor_log bake) under a 12-min timeout; no agents running | in progress |
