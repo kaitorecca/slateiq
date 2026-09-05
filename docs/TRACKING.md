@@ -6,3 +6,4 @@
 | 14:12 | data eng | db/: slateiq schema + 3.07M-row synthetic 30-day shoot, SCHEMA.md contract, verify.py 43/43 green | done |
 | 13:55 | data eng | db/ done: schema + 3.07M-row synthetic shoot, verify 43/43, SCHEMA.md contract (production_id=tos2026, day12=2026-09-04) | done |
 | 14:20 | frontend | web/ done: 4-screen React SPA (Ask+live MCP agent trace, Takes browser+player drawer, Production Health+DPR/TTS, About+arch SVG), mock API server, dist committed, build/typecheck green, README with API contract | done |
+| 14:10 | frontend | web/ done: 4 screens, agent trace panel, dist committed (dev :5188, API :8811) | done |
