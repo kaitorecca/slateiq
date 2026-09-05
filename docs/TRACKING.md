@@ -47,3 +47,4 @@
 | 17:05 | video producer | trailer done: 2:50.0 / 1920×1080 / 30fps / h264+aac / 24.2 MB master, 9.0 MB 720p committed; 7.5 s full-frame mcp-clickhouse trace hold; QC 7/7 + 5 checkpoints clean; **needs a human to upload to YouTube and paste the URL** | done |
 | 17:00 | video | trailer 2:50 rendered + QC'd (video/slateiq_trailer_720p.mp4 9MB, CAPTIONS.srt); needs human YouTube upload | done |
 | 17:02 | orchestrator | sprint 4 launched: judge review #3 (video+package), product eng (Editor's Log CSV/ALE export, MCP self-heal, JR2 P2s, pytest), infra hardening (least-privilege CH user, restart policies) | in progress |
+| 17:22 | orchestrator | sprint-4 agents hit session rate limit (reset 17:20) → relaunched all three (judge #3, product eng, infra hardening) | in progress |
