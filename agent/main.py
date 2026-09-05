@@ -79,7 +79,7 @@ def _probe_mcp() -> str:
         req = urllib.request.Request(base + "/health", method="GET")
         if config.MCP_TOKEN:
             req.add_header("Authorization", f"Bearer {config.MCP_TOKEN}")
-        with urllib.request.urlopen(req, timeout=3) as r:
+        with urllib.request.urlopen(req, timeout=10) as r:
             body = r.read(200).decode("utf-8", "replace").strip().lower()
             if r.status != 200 or "error" in body or "failed" in body:
                 return "down"
