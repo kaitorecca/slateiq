@@ -72,3 +72,4 @@
 | 19:27 | orchestrator | tick: all sprint-4 work landed (rev 00011); video v2 still rendering → asked to converge in 20 min | in progress |
 | 19:58 | orchestrator | video v2 agent hung after rendering → stopped; verified render myself (qc.py 7/7 PASS, 2:56.1, cold open + benchmark subtitle + truthful b05 frames OK) and committed video/ | done |
 | 20:05 | orchestrator | chip 'forty years' → 'robot hand' (real footage); redeploying Cloud Run; launched submission coordinator (HANDOFF.md, DEMO_SCRIPT sync, SUBMISSION status) | in progress |
+| 20:10 | orchestrator | Cloud Run rev 00012 live (chip fix verified in hosted bundle) | done |
