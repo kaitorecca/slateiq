@@ -55,3 +55,4 @@
 | 18:05 | infra hardening | agent_ro now `GRANT SELECT ON slateiq.*` + 3 system tables only (system.query_log/users → 497 ACCESS_DENIED), readonly=1 (kills url/file/remote), 30s/20k rows/300MB profile; systemd unit + reboot tested (103s); new deploy/vm/healthcheck.sh ALL GREEN (caught hosted continuity_note=0, re-seeded); AR cleanup policy added (repo was 657MB, no policy); cost.md month estimate ≈$0.02 → ≈$2.19 | done |
 | 17:50 | infra | deploy/ hardened: agent_ro least-privilege (SELECT slateiq.* only, readonly=1, 300MB/30s limits), systemd boot unit, healthcheck.sh (caught + fixed continuity_note drift), AR cleanup policy; cost to date ≈$0.02 | done |
 | 17:52 | orchestrator | tick: product eng + video v2 running; redeploying Grafana image (queryTimeout 25 for readonly=1 constraint) in background | in progress |
+| 18:01 | orchestrator | tick: Grafana redeployed OK; product eng + video v2 still running; next = final hosted QC after their redeploy | in progress |
