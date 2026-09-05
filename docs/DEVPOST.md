@@ -1,16 +1,18 @@
 # SlateIQ — Devpost submission text
 
-> **Fill before submitting:** `HOSTED_URL`, `VIDEO_URL`. Every number below is a live query against the
-> demo database — re-run `db/verify.py` if the dataset changes.
+> **Live now:** <https://slateiq-957930801789.us-central1.run.app> · **Fill before submitting:** `VIDEO_URL`.
+> Every number below is a live query against the demo database — re-run `db/verify.py` if the dataset
+> changes. Last verified against ClickHouse 25.6 on 5 Sep 2026.
 
 ---
 
 ## Tagline
 
 **A day of dailies, turned into a database you can ask questions of.** Gemini watches every take and
-writes what it sees into ClickHouse; a Google Cloud Agent Builder crew answers the questions the
-editor, the script supervisor, the 1st AD and the producer ask at 1 a.m. — through the official
-ClickHouse MCP server, in SQL you can read.
+writes what it sees into ClickHouse; an ADK agent crew answers the questions the editor, the script
+supervisor, the 1st AD and the producer ask at 1 a.m. — every one of them as SQL the agent wrote and
+ran through the **official ClickHouse MCP server**, shown to you as it happens. It caught a circled
+take that is soft for 13 seconds. Nobody on that set had noticed.
 
 ---
 
@@ -55,19 +57,23 @@ path: the agents have exactly one data tool.
 
 > *"Every take where Celia says 'forty years' — I need the timecode."* → the take, the line, the
 > offset in seconds, and a player that seeks straight to it.
-> *"Are we on schedule after day 12?"* → **48 4/8 pages shot of 52 planned. Three and a half pages
-> behind — about half a day.** Days 8 and 11 lost setups to rain; it says so.
+> *"Are we on schedule after day 12?"* → **48 4/8 pages shot of 52 planned — 3 4/8 pages behind, about
+> half a day.** It reconstructs the deficit itself: days 8 and 11 lost setups to rain, and at the
+> current 4.04 pages/day it forecasts 16.5 days needed against 18 remaining. Nobody typed that in; it
+> read the call sheets.
 
 **3 — It catches what the humans missed.** This is the part no dailies tool can do today, because it
 requires the semantic layer and the measured layer in the same query:
 
 > *"Which circled takes are measurably soft?"*
-> → **Scene 12, setup B, take 2 was circled — and it sits under the focus threshold for 13 seconds,
-> averaging 0.52.** The director printed a soft take and nobody caught it.
+> → **`TOS-D12-S12-B-02-B` — scene 12, setup B, take 2 — was circled ("Cleaner. Print."), and it sits
+> under the 0.55 focus threshold for 13.0 of its 16.2 seconds, averaging 0.521 and dipping to 0.424.**
+> The director printed a soft take and nobody caught it. Six more circled takes come back behind it.
 
-That query joins Gemini's judgement against 3,074,957 rows of telemetry and comes back in **147 ms**.
-That is why ClickHouse is in this product, and it is why the answer arrives before the producer has
-finished asking.
+That query joins Gemini's judgement against the telemetry table and comes back in **65 ms — 3.09
+million rows scanned, 1.14 GB/s**. That is why ClickHouse is in this product and not a warehouse: the
+answer arrives before the producer has finished asking. It is the first suggested prompt on the Ask
+screen, so it is one click from the front door.
 
 **4 — It writes the paperwork.** The Daily Progress Report (scenes, pages in eighths, setups, takes,
 circled, NG, print ratio, wrap and overtime) and the Editor's Log — the digital form of the script
@@ -114,10 +120,13 @@ That join is the whole product.
 doesn't burn a round trip on a fixable mistake — then records the executed SQL for the trace. An
 `after_tool_callback` truncates oversized results and tells the model to re-query more tightly.
 
-**Evidence, not assertion.** `agent/evals/` runs 16 real questions across all five agents against the
-real MCP server, records routing, every tool call, the SQL and the latency, and Gemini-judges each
-answer against a per-question rubric. **The harness fails the run if any question marked
-`must_query` produced an answer without touching MCP.** Results: [`agent/evals/last_run.md`](../agent/evals/last_run.md).
+**Evidence, not assertion.** `agent/evals/` runs **28 real questions** across all five agents against
+the real MCP server, records routing, every tool call, the SQL and the latency, and Gemini-judges each
+answer against a per-question rubric. **The harness fails the run if any question marked `must_query`
+produced an answer without touching MCP.** Latest run: **28/28 reached `run_query` on
+`mcp-clickhouse` (100%)**, **27/28 routed to the expected specialist**, judge **mean 4.82/5, median
+5.0**, median latency 27.3 s. Every SQL statement and every judge rationale is committed:
+[`agent/evals/last_run.md`](../agent/evals/last_run.md).
 
 ---
 
@@ -168,4 +177,11 @@ licensed [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). SlateIQ is n
 Blender Foundation. All schedule, scene and telemetry data for the 30-day shoot is synthetic.
 SlateIQ is open source under **Apache-2.0**.
 
-**Try it:** `HOSTED_URL` · **Code:** https://github.com/kaitorecca/slateiq · **Video:** `VIDEO_URL`
+**Try it:** <https://slateiq-957930801789.us-central1.run.app> — ask *"Which circled takes are
+measurably soft?"* and watch the trace panel · **Code:** <https://github.com/kaitorecca/slateiq> ·
+**Dashboard:** <https://slateiq-grafana-hbissixc2q-uc.a.run.app/d/slateiq-prod-health> (anonymous) ·
+**Video:** `VIDEO_URL`
+
+> Cloud Run runs at `min-instances 0`, so the first hit is a **~16 s cold start** (the ADK import, not
+> the database); warm requests are ~0.6 s. The Daily Progress Report and the spoken summary are
+> pre-warmed and return in well under a second.
