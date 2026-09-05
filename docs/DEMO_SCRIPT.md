@@ -1,0 +1,11 @@
+# 3-minute trailer — script (draft v1, refine after product is live)
+Format: 1920x1080, 30fps, English voiceover (Gemini TTS), captions burned in. Target 2:45.
+
+| t | Visual | VO |
+|---|---|---|
+| 0:00–0:15 | Black. Slate claps. Title "SlateIQ". Cut to a real dailies clip (Tears of Steel) with data overlays appearing. | "Every night, on every film set, someone sits down at 1 a.m. and types up what happened: which takes were circled, which pages got shot, why they wrapped late. SlateIQ does that work — and then answers the questions nobody had time to ask." |
+| 0:15–0:40 | Ingest pipeline: clips → Gemini analysis JSON scrolling → rows landing in ClickHouse (terminal counts). | "Gemini watches every take: dialogue, action, boom in shot, soft focus, a flubbed line. Everything becomes timestamped events in ClickHouse — millions of rows across a 30-day shoot, so the whole production is queryable." |
+| 0:40–1:25 | UI: Ask the Dailies. Prompt: "Best takes for scene 27 and why?" Agent trace shows editor_agent + `run_query` SQL through **mcp-clickhouse**. Take cards, click → video seeks to timestamp. | "Ask like an editor. The Google ADK coordinator hands off to the editor agent, which writes SQL and runs it through the official ClickHouse MCP server — you can see every query. Answers come back as takes you can play at the exact moment." |
+| 1:25–1:55 | Prompt: "Are we on schedule after day 12?" production_agent, chart in Grafana panel, risk list. | "Ask like a producer. Pages planned versus shot, shooting ratio by scene, which scenes are at risk — grounded in real numbers, not vibes." |
+| 1:55–2:20 | "Write today's Daily Progress Report" → markdown DPR renders → "Read it aloud" → Gemini TTS audio plays. Continuity alert example. | "And at wrap, SlateIQ writes the Daily Progress Report itself, flags continuity conflicts between takes, and can read the summary to the producer on the drive home." |
+| 2:20–2:45 | Architecture diagram: Gemini · ADK agents · mcp-clickhouse · ClickHouse · Cloud Run · GCS. Repo + URL. | "Built with Gemini and Google's Agent Development Kit on Cloud Run, with ClickHouse through its official MCP server as the production's memory. SlateIQ — your dailies, finally talking back." |
