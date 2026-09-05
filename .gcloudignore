@@ -1,0 +1,16 @@
+# Keep the Cloud Build upload small and secret-free.
+.git/
+.gitignore
+.secrets/
+.env
+.venv/
+.venv-mcp/
+__pycache__/
+*.pyc
+data/footage/
+data/clips/
+data/thumbs/
+data/cache/
+data/seed_export/
+web/node_modules/
+node_modules/
