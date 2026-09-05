@@ -45,7 +45,7 @@ export function SqlBlock({ sql, dense = false }: { sql: string; dense?: boolean 
         <button type="button" onClick={() => setWrap((w) => !w)} aria-pressed={wrap} className={btn}>
           {wrap ? 'No wrap' : 'Wrap'}
         </button>
-        <button type="button" onClick={copy} aria-label="Copy SQL" className={btn}>
+        <button type="button" onClick={copy} aria-label={copied ? 'Copied SQL' : 'Copy SQL'} className={btn}>
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>

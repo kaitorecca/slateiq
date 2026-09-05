@@ -1,0 +1,9 @@
+# SlateIQ — https://github.com/kaitorecca/slateiq
+User-agent: *
+Allow: /
+
+# Media and the agent API are not useful to crawlers.
+Disallow: /api/
+Disallow: /clips/
+Disallow: /thumbs/
+Disallow: /dev-ui/

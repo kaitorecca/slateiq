@@ -379,7 +379,7 @@ export function Ask() {
                   className="btn btn-primary h-9 px-3 py-0"
                   onClick={() => void send(input)}
                   disabled={!input.trim()}
-                  aria-label="Send question"
+                  aria-label="Ask question"
                 >
                   Ask
                   <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true">

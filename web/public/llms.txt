@@ -1,0 +1,25 @@
+# SlateIQ
+
+> Dailies intelligence for film production. Ask your dailies in plain English and get an
+> answer backed by SQL the agent wrote and ran itself. A Gemini multi-agent system built on
+> Google's Agent Development Kit reasons over a ClickHouse take index, reaching it only
+> through the official `mcp-clickhouse` MCP server — every query is shown in the trace panel.
+
+## Screens
+
+- [Ask the Dailies](/#/ask): the chat surface. Ask a question, watch the coordinator route to one of four specialists (editor, production, continuity, report), and read the live agent trace — each `run_query` call with its SQL and row count.
+- [Takes](/#/takes): the take browser. Filter by day, scene, status (circled / NG / hold) and play the clip with its Gemini analysis and 25 Hz telemetry.
+- [Production Health](/#/health): schedule and coverage dashboards (Grafana), plus the Daily Progress Report — generated, and readable aloud.
+- [About](/#/about): what the system is made of, what data it uses, and the footage credit.
+
+## API
+
+- `/api/health`: liveness plus the status of the MCP server and ClickHouse.
+- `/api/chat`: POST `{"message": "..."}`, server-sent events back — tokens, tool calls, SQL, and the final answer.
+- `/docs`: OpenAPI.
+
+## Notes
+
+- Source and full documentation: <https://github.com/kaitorecca/slateiq>
+- Demo dailies are cut from *Tears of Steel* © Blender Foundation, CC BY 3.0. SlateIQ is not affiliated with the Blender Foundation.
+- The production data is a deterministic 30-day synthetic shoot; only day 12 has real footage attached.

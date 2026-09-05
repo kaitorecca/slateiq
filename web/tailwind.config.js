@@ -11,7 +11,7 @@ export default {
         line: '#252A31',
         ink: '#E9E7E2',
         dim: '#9AA1AB',
-        faint: '#666D77',
+        faint: '#828A94',
         slate: { DEFAULT: '#F0B429', soft: '#8A6512' },
         circled: '#5FBF7F',
         ng: '#E0574F',

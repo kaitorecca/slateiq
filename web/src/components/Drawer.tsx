@@ -61,7 +61,7 @@ export function Drawer({
             <div className="text-[15px] font-semibold text-ink">{title}</div>
             {subtitle && <div className="mt-0.5 text-[11.5px] text-faint">{subtitle}</div>}
           </div>
-          <button className="btn h-8 px-2.5 py-0" onClick={onClose} aria-label="Close panel">
+          <button className="btn h-8 px-2.5 py-0" onClick={onClose} aria-label="Close panel (Esc)">
             Esc
           </button>
         </header>
