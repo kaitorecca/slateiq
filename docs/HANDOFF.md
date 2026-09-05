@@ -9,6 +9,9 @@ Judging window: **23 Sep – 7 Oct 2026** — the VM and Cloud Run must stay ali
 
 ---
 
+
+> **Ops already in place (5 Sep):** Cloud Scheduler `slateiq-keepwarm` pings `/api/health` every 5 min (warm instance), and a Cloud Monitoring uptime check emails the owner's Gmail if the hosted health stops saying `mcp:up`. Both are free-tier; see deploy/README.md.
+
 ## Tóm tắt tiếng Việt (đọc cái này trước)
 
 Sản phẩm đã xong hết: code, deploy, test, video. **Chỉ còn 2 việc cần bạn tự làm bằng tay:**

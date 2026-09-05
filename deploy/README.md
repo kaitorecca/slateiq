@@ -337,3 +337,8 @@ gcloud run services update slateiq --min-instances 0 --region us-central1   # al
 
 Do **not** delete the VM (deletion protection is on and it holds the demo dataset), and do not
 touch the unrelated `ai-magic-design-frontend` / `design-search-api` services in this project.
+
+## Judging-window operations (added 5 Sep, all free tier)
+- **Keep-warm ping:** Cloud Scheduler job `slateiq-keepwarm` (us-central1) GETs `/api/health` every 5 min so judges rarely hit the ~16 s cold start. Free tier: 3 jobs. Pause with `gcloud scheduler jobs pause slateiq-keepwarm --location us-central1`.
+- **Uptime check + alert:** Cloud Monitoring uptime check `SlateIQ hosted /api/health` (every 15 min, 3 regions, content must contain `"mcp":"up"`) with alert policy *SlateIQ hosted down* → email notification channel (owner's Gmail). Both free.
+- **Manual check:** `bash deploy/vm/healthcheck.sh` from the laptop.

@@ -111,3 +111,10 @@ To watch it: a **$10/month budget alert with 50/90/100/150% thresholds already e
 billing account `018053-F3C7B5-7FC636` (`gcloud billing budgets list
 --billing-account=018053-F3C7B5-7FC636`), alongside a second "Warning Extreme" $12 budget. At an
 expected ≈$2.19/month worst case there is a 4× margin before the first alert fires.
+
+### Added 5 Sep — still $0
+| Item | Free tier | Our usage |
+|---|---|---|
+| Cloud Scheduler `slateiq-keepwarm` | 3 jobs/month free | 1 job, 288 runs/day |
+| Cloud Monitoring uptime check + alert + email channel | uptime checks & alerting free; 1M external checks/month | 1 check × 3 regions / 15 min ≈ 8.6k/month |
+| Cloud Run requests from the ping | 2M req/month free; CPU billed only during the ~30 ms request | ≈ 8.6k req/month |
