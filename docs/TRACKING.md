@@ -94,3 +94,4 @@
 | 21:10 | orchestrator | redeploy (editor_log bake) still in Cloud Build — gcloud slow; hosted rev 00013 healthy, editor-log 0.66s on warm instance | in progress |
 | 21:10 | orchestrator | hung 'gcloud projects describe' killed; redeploy relaunched (two identical deploys may race, same commit); hosted 00013 healthy | in progress |
 | 21:25 | orchestrator | redeploy attempts hung inside gcloud CLI → killed; hosted rev 00013 healthy; editor_log bake documented as P2 follow-up in HANDOFF | done |
+| 21:25 | orchestrator | final pre-wrap check: hosted/MCP/Grafana/repo all OK, no secrets tracked, 100 commits, trailer v2 committed; awaiting 22:00 wrap-up | done |
