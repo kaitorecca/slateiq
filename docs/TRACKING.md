@@ -77,3 +77,4 @@
 
 | 20:20 | submission coord | docs/HANDOFF.md (VN summary + EN steps: YouTube, Devpost fields, verification, judging-window ops), DEMO_SCRIPT synced to v2, SUBMISSION status | done |
 | 20:21 | orchestrator | launched clean-clone reproducibility tester (isolated ports, .env.example, cache-only ingest replay) | in progress |
+| 20:26 | orchestrator | tick: repro tester running (isolated slateiq-ch-test); no further launches planned before 22:00 wrap-up | in progress |
