@@ -246,9 +246,9 @@ var; the script destroys superseded versions so the free 6-version budget is nev
 Everything else (`CLICKHOUSE_MCP_URL`, `CLICKHOUSE_MCP_TOKEN`, `CLIPS_BASE_URL`, `GRAFANA_URL`)
 is read from `.secrets/deploy.env` and set as plain env vars.
 
-If `agent/Dockerfile` is missing the script falls back to `deploy/cloudrun/placeholder/`
-(a two-route FastAPI app) so the build → registry → secret-mount → public-URL pipeline can be
-validated independently of the agent's readiness. It says loudly when it does this.
+The image is always `agent/Dockerfile` built with the **repo root** as the Cloud Build context
+(the agent package imports `db/SCHEMA.md` and serves `web/dist`), via
+`deploy/cloudrun/cloudbuild.agent.yaml`. The script exits early if that Dockerfile is missing.
 
 `deploy/cloudrun/gcloudignore.template` is copied to the repo root as `.gcloudignore` on first
 build so Cloud Build never uploads `.secrets/`, `data/footage/`, `node_modules/` or the venvs.

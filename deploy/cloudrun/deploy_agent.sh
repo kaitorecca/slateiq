@@ -109,18 +109,13 @@ gcloud secrets add-iam-policy-binding "$SECRET_NAME" \
   --member "serviceAccount:${RUNTIME_SA}" --role roles/secretmanager.secretAccessor \
   --project "$PROJECT" --quiet >/dev/null
 
-# ---------------------------------------------------------------- pick the build source
-# The real image is agent/Dockerfile built with the REPO ROOT as context (the agent package
-# imports db/SCHEMA.md and shared modules). Until that exists we deploy a placeholder that
-# proves the whole pipeline — build, registry, secret mount, public URL — end to end.
-if [ -f "$REPO_ROOT/agent/Dockerfile" ]; then
-  SRC="$REPO_ROOT"; DOCKERFILE="agent/Dockerfile"
-  echo "--- building agent/Dockerfile (context = repo root)"
-  [ -f "$REPO_ROOT/.gcloudignore" ] || cp gcloudignore.template "$REPO_ROOT/.gcloudignore"
-else
-  SRC="$PWD/placeholder"; DOCKERFILE="Dockerfile"
-  echo "--- agent/Dockerfile not found; building deploy/cloudrun/placeholder (PIPELINE TEST)"
-fi
+# ---------------------------------------------------------------- build source
+# The image is agent/Dockerfile built with the REPO ROOT as context (the agent package
+# imports db/SCHEMA.md and shared modules, and the built UI in web/dist).
+[ -f "$REPO_ROOT/agent/Dockerfile" ] || { echo "agent/Dockerfile not found" >&2; exit 1; }
+SRC="$REPO_ROOT"
+echo "--- building agent/Dockerfile (context = repo root)"
+[ -f "$REPO_ROOT/.gcloudignore" ] || cp gcloudignore.template "$REPO_ROOT/.gcloudignore"
 
 # ---------------------------------------------------------------- build
 # This project has no Compute Engine default service account, so Cloud Build must be told
@@ -128,14 +123,10 @@ fi
 BUILD_ARGS=(--project "$PROJECT" --region "$REGION"
             --service-account="projects/${PROJECT}/serviceAccounts/${RUNTIME_SA}"
             --default-buckets-behavior=REGIONAL_USER_OWNED_BUCKET --quiet)
-if [ "$DOCKERFILE" = "Dockerfile" ]; then
-  gcloud builds submit "$SRC" "${BUILD_ARGS[@]}" --tag "${IMAGE}:${TAG}"
-else
-  # agent/Dockerfile is not at the source root, which --tag requires; use an explicit config.
-  gcloud builds submit "$SRC" "${BUILD_ARGS[@]}" \
-    --config="$PWD/cloudbuild.agent.yaml" \
-    --substitutions="_IMAGE=${IMAGE},_TAG=${TAG}"
-fi
+# agent/Dockerfile is not at the source root, which --tag requires; use an explicit config.
+gcloud builds submit "$SRC" "${BUILD_ARGS[@]}" \
+  --config="$PWD/cloudbuild.agent.yaml" \
+  --substitutions="_IMAGE=${IMAGE},_TAG=${TAG}"
 
 # ---------------------------------------------------------------- deploy
 gcloud run deploy "$SERVICE" \
