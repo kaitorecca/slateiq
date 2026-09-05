@@ -41,7 +41,8 @@
   /* clapper-stripe rule used as a section divider / brand motif */
   .clapper {
     background-image: repeating-linear-gradient(115deg,
-      #E9E7E2 0 12px, #0E1013 12px 24px);
+      #E9E7E2 0 9px, #16191E 9px 18px);
+    border-radius: 2px;
   }
 }
 

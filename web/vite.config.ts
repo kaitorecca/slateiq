@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const target = process.env.VITE_API_TARGET || 'http://localhost:8080'
+// Dev-only proxy target: the FastAPI service from agent/ (or `npm run mock`).
+const target = process.env.VITE_API_TARGET || 'http://localhost:8811'
 
 export default defineConfig({
   base: '/',
@@ -13,15 +14,15 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          react: ['react', 'react-dom'],
-          charts: ['recharts'],
-          markdown: ['react-markdown', 'remark-gfm'],
+          react: ['react', 'react-dom', 'react/jsx-runtime'],
         },
       },
     },
+    chunkSizeWarningLimit: 700,
   },
   server: {
-    port: 5173,
+    port: Number(process.env.PORT) || 5188,
+    strictPort: false,
     proxy: {
       '/api': { target, changeOrigin: true },
       '/clips': { target, changeOrigin: true },
