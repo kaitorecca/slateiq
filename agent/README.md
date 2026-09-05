@@ -28,8 +28,14 @@ supervisor / AD department), not the 2nd AD's Daily Production Report.
                    mcp-clickhouse  →  ClickHouse `slateiq`
 ```
 
-Every specialist has exactly one data tool: the ClickHouse MCP toolset. There
-is no direct database driver on the reasoning path. The only
+Every specialist has exactly one **data** tool: the ClickHouse MCP toolset. There
+is no direct database driver on the reasoning path. The report agent carries one
+extra non-data tool, `get_cached_report`, which reads a report SlateIQ already
+generated from `data/cache/reports/` — a local file, no database, and the trace
+labels it as such rather than "via mcp-clickhouse". The markdown it returns was
+itself produced by `run_query` calls through the MCP server; a chat request for a
+day whose report is cached now answers in ~7 s instead of ~87 s (QC #4 issue 4),
+and "refresh" regenerates it live. The only
 `clickhouse-connect` calls in this service are the `/api/takes` gallery
 listing, `/api/take/{id}/events` and the Editor's Log export
 (`/api/export/editors-log`) — UI and file-export paths that run one fixed,
@@ -47,6 +53,7 @@ labelled as such in `main.py` and `slateiq_agent/export.py`.
 | `slateiq_agent/runtime.py` | Runner + event normalisation shared by API and evals |
 | `slateiq_agent/config.py` | all env-var configuration |
 | `slateiq_agent/export.py` | Editor's Log export — CSV / ALE / Markdown (non-reasoning path) |
+| `slateiq_agent/report_cache.py` | on-disk report cache + `get_cached_report` (local file read, non-MCP) |
 | `main.py` | FastAPI app (ADK app + SlateIQ routes + static) |
 | `tests/` | pytest unit tests for the guardrail and the export |
 | `evals/questions.yaml` | 16 questions across editor / script supervisor / AD / producer / director |
@@ -86,6 +93,7 @@ injects `$PORT`, which the Dockerfile honours.
 | `SLATEIQ_DB` | `slateiq` | database name used in the prompts |
 | `SLATEIQ_MAX_ROWS` | `200` | hard LIMIT ceiling enforced by the guardrail |
 | `SLATEIQ_MAX_TOOL_RESULT_CHARS` | `24000` | tool-result truncation |
+| `SLATEIQ_REPORT_CACHE` | `<repo>/data/cache/reports` | generated DPR / Editor's Log — shared by `/api/report/*` and the agent's `get_cached_report` tool |
 | `SLATEIQ_SCHEMA_MD` | `<repo>/db/SCHEMA.md` | schema contract injected into instructions |
 | `SLATEIQ_WEB_DIST` | `<repo>/web/dist` | static UI, skipped if absent |
 | `CLIPS_DIR` | `<repo>/data/clips` | mounted at `/clips` |

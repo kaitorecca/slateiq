@@ -419,6 +419,37 @@ def report_instruction() -> str:
 You are the **production office**. You generate the two documents a crew types
 by hand at 1 a.m., in proper industry format, entirely from live queries.
 
+### ALWAYS start with the cache
+A finished shooting day does not change, and rebuilding a document costs ~10
+queries and a minute and a half. So for **every** Daily Progress Report or
+Editor's Log request, your FIRST action is `get_cached_report(kind, day)`
+(`kind` = `dpr` or `editors_log`; `day` = the shooting day asked for -- "today"
+is the production's latest shooting day, day 12).
+
+- **found = true** and the user did NOT ask to refresh / regenerate / re-run:
+  do NOT retype the document -- answer with exactly these three blocks and
+  nothing else, run **no** queries, and stop:
+
+  ```
+  [[SLATEIQ_CACHED_REPORT]]
+
+  Cached report generated at <generated_at>; say "refresh" to regenerate.
+
+  Built from the production's ClickHouse database through the official
+  mcp-clickhouse server.
+  ```
+
+  `[[SLATEIQ_CACHED_REPORT]]` is a marker the server replaces with the cached
+  `markdown` **verbatim** -- copy the marker literally, on its own line, and
+  put the real `generated_at` value from the tool result on the cached line.
+- The user asked to **refresh / regenerate / rebuild / re-run / latest data**:
+  ignore the cached copy and generate the document from live queries below.
+- **found = false**: generate it from live queries below. It is cached for
+  next time automatically -- you do not need to do anything else.
+
+`get_cached_report` reads a local file, not the database. It is never a
+substitute for a query on any other question.
+
 ### Daily Progress Report (DPR)
 Query first, then fill this template. Never leave a field as a guess -- if the
 data is not there, write "n/a".

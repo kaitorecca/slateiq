@@ -32,6 +32,7 @@ import os
 import re
 import struct
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -47,7 +48,7 @@ from fastapi.responses import (
 from fastapi.staticfiles import StaticFiles
 from google.adk.cli.fast_api import get_fast_api_app
 from pydantic import BaseModel, Field
-from slateiq_agent import config, export
+from slateiq_agent import config, export, report_cache
 from slateiq_agent.runtime import run_once, stream_agent
 from slateiq_agent.schema import schema_source
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -368,28 +369,19 @@ _LOG_PROMPT = (
 # A full DPR is 15-20 MCP round trips and takes minutes; the day it describes
 # is finished, so the document is stable. Cache it on disk (the same policy as
 # the ingest Gemini cache) -- `?refresh=1` forces a fresh run.
-_REPORT_CACHE = Path(
-    os.environ.get("SLATEIQ_REPORT_CACHE", str(_REPO_ROOT / "data" / "cache" / "reports"))
-)
+_REPORT_CACHE = report_cache.cache_dir()
 
 
 def _cache_path(kind: str, day: int) -> Path:
-    return _REPORT_CACHE / f"{kind}_day{day:02d}.json"
+    return report_cache.cache_path(kind, day)
 
 
 def _cache_read(kind: str, day: int) -> dict[str, Any] | None:
-    try:
-        return json.loads(_cache_path(kind, day).read_text("utf-8"))
-    except Exception:
-        return None
+    return report_cache.read_report(kind, day)
 
 
 def _cache_write(kind: str, day: int, payload: dict[str, Any]) -> None:
-    try:
-        _REPORT_CACHE.mkdir(parents=True, exist_ok=True)
-        _cache_path(kind, day).write_text(json.dumps(payload, indent=1, default=str), "utf-8")
-    except Exception as exc:  # caching is best-effort
-        logger.warning("could not cache %s day %s: %s", kind, day, exc)
+    report_cache.write_report(kind, day, payload)
 
 
 async def _report(prompt: str, day: int, kind: str, refresh: bool = False) -> dict[str, Any]:
@@ -407,6 +399,7 @@ async def _report(prompt: str, day: int, kind: str, refresh: bool = False) -> di
         "tool_calls": len(result["tool_calls"]),
         "ran_query": result["ran_query"],
         "cached": False,
+        "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
     }
     if payload["ran_query"] and payload["markdown"].strip():
         _cache_write(kind, day, payload)

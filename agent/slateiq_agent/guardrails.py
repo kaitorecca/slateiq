@@ -351,6 +351,11 @@ def after_tool_truncate(
     tool_response: Any,
 ) -> dict[str, Any] | None:
     """Clamp huge tool results so they cannot exhaust the context window."""
+    # The report cache returns one finished document that the model must repeat
+    # verbatim -- clipping it would publish a half-written report. It is a
+    # bounded local file, not an unbounded query result, so it is exempt.
+    if tool.name == "get_cached_report":
+        return None
     try:
         raw = (
             tool_response

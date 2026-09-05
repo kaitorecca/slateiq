@@ -155,6 +155,10 @@ questions:
     question: "Generate the daily progress report for day 12."
     expect_agent: report_agent
     must_query: true
+    # QC#4 #4: a finished day's report is cached on disk (the same file the
+    # Production Health button reads). Answering from it is correct product
+    # behaviour, so `get_cached_report` satisfies must_query for this one.
+    cache_eligible: true
     rubric: >
       Proper DPR markdown -- day X of Y, date, call/wrap, per-scene table with
       pages and status, day totals (scenes, pages, setups, takes, ratio),
@@ -165,6 +169,7 @@ questions:
     question: "Give me the editor's log for day 12 -- circled takes per scene with reasons."
     expect_agent: report_agent
     must_query: true
+    cache_eligible: true
     rubric: >
       Markdown editor's log grouped by scene, take table with TC in and
       duration, and a circled line per scene with the reason.

@@ -25,11 +25,17 @@ from google.adk.runners import Runner
 from google.adk.sessions import DatabaseSessionService, InMemorySessionService
 from google.genai import types
 
+from . import report_cache
 from .agent import build_report_agent, root_agent
 from .config import APP_NAME, SESSION_DB_URI
 from .guardrails import friendly_error
 
 _FENCE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
+
+# The report agent answers a cache hit with this marker instead of retyping a
+# 10 000-character document; we splice the cached markdown in here, byte for
+# byte. If the model does not use it, whatever it wrote is passed through.
+CACHED_REPORT_MARKER = report_cache.CACHED_REPORT_MARKER
 
 _session_service = None
 _runners: dict[str, Runner] = {}
@@ -204,6 +210,7 @@ async def stream_agent(
     # In SSE streaming mode ADK emits each function call twice (once on the
     # partial event, once on the aggregated one) -- emit it to the UI once.
     emitted_calls: set[str] = set()
+    cached_markdown = ""
 
     try:
         async for event in runner.run_async(
@@ -241,6 +248,10 @@ async def stream_agent(
 
                 fr = getattr(part, "function_response", None)
                 if fr is not None:
+                    if (fr.name or call_names.get(fr.id or "", "")) == "get_cached_report":
+                        payload = _unwrap_mcp(fr.response)
+                        if isinstance(payload, dict) and payload.get("found"):
+                            cached_markdown = payload.get("markdown") or ""
                     summary, rows = _summarise_tool_result(fr.response)
                     yield {
                         "type": "tool_result",
@@ -255,6 +266,12 @@ async def stream_agent(
                 if part.text:
                     if event.partial:
                         streamed_text.append(part.text)
+                        # While a cached report is in play the answer is a
+                        # marker, not prose -- hold the stream back and emit
+                        # the spliced document once, rather than typing
+                        # "[[SLATEIQ_CACHED_REPORT]]" at the user.
+                        if cached_markdown:
+                            continue
                         yield {
                             "type": "text",
                             "delta": part.text,
@@ -299,6 +316,12 @@ async def stream_agent(
     if not final_text:
         # Fall back so a truncated or interrupted run still returns something.
         final_text = last_complete_text or "".join(streamed_text)
+    if cached_markdown:
+        if CACHED_REPORT_MARKER in final_text:
+            final_text = final_text.replace(CACHED_REPORT_MARKER, cached_markdown.strip())
+        if stream_text:
+            # The stream was held back above; deliver the finished answer.
+            yield {"type": "text", "delta": final_text, "agent": seen_agent}
     structured = parse_structured_block(final_text)
     yield {
         "type": "final",

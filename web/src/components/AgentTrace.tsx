@@ -20,6 +20,14 @@ const AGENT_META: Record<string, { label: string; blurb: string; tone: string }>
 /** Tools that really are served by the official mcp-clickhouse server. */
 const MCP_TOOLS = new Set(['run_query', 'list_tables', 'list_databases', 'describe_table'])
 
+/** Local (non-MCP, non-routing) function tools, and how the trace names them. */
+const LOCAL_TOOLS: Record<string, { label: string; title: string }> = {
+  get_cached_report: {
+    label: 'report cache · local file',
+    title: 'Reads the report SlateIQ already generated — a local file, not a ClickHouse call',
+  },
+}
+
 function agentMeta(name: string) {
   return (
     AGENT_META[name] ?? {
@@ -100,9 +108,10 @@ export function TraceRow({ item }: { item: TraceItem }) {
         ) : (
           <span
             className="chip px-1.5 py-[1px] text-[9.5px] leading-none text-faint"
-            title="The coordinator's own sub-agent routing — not a ClickHouse call"
+            title={LOCAL_TOOLS[item.name]?.title ?? "The coordinator's own sub-agent routing — not a ClickHouse call"}
           >
-            {item.name === 'transfer_to_agent' ? 'hand-off · coordinator' : 'hand-off'}
+            {LOCAL_TOOLS[item.name]?.label ??
+              (item.name === 'transfer_to_agent' ? 'hand-off · coordinator' : 'hand-off')}
           </span>
         )}
         {isResult && <span className="label">result</span>}

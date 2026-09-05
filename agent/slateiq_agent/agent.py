@@ -15,14 +15,18 @@ import logging
 from typing import Any
 
 from google.adk.agents import LlmAgent
+from google.adk.agents.callback_context import CallbackContext
 from google.adk.agents.readonly_context import ReadonlyContext
+from google.adk.models import LlmResponse
+from google.adk.tools.function_tool import FunctionTool
 from google.adk.tools.mcp_tool.mcp_session_manager import (
     StreamableHTTPConnectionParams,
 )
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
+from google.adk.tools.tool_context import ToolContext
 from google.genai import types
 
-from . import prompts
+from . import prompts, report_cache
 from .config import (
     MCP_SSE_READ_TIMEOUT,
     MCP_TIMEOUT,
@@ -36,6 +40,7 @@ from .guardrails import after_tool_truncate, before_tool_guardrail
 logger = logging.getLogger(__name__)
 
 __all__ = [
+    "REPORT_REQUEST_KEY",
     "SUB_AGENT_NAMES",
     "SelfHealingMcpToolset",
     "build_clickhouse_toolset",
@@ -197,15 +202,18 @@ def _specialist(
     instruction_fn,
     model: str = MODEL,
     toolset: McpToolset | None = None,
+    extra_tools: list[Any] | None = None,
+    after_model_callback=None,
 ) -> LlmAgent:
     return LlmAgent(
         name=name,
         model=model,
         description=description,
         instruction=instruction_fn(),
-        tools=[toolset or clickhouse_toolset],
+        tools=[toolset or clickhouse_toolset, *(extra_tools or [])],
         before_tool_callback=before_tool_guardrail,
         after_tool_callback=after_tool_truncate,
+        after_model_callback=after_model_callback,
         generate_content_config=_GEN_CONFIG,
     )
 
@@ -242,6 +250,84 @@ def build_continuity_agent(toolset: McpToolset | None = None) -> LlmAgent:
     )
 
 
+# ---------------------------------------------------------------------------
+# Report cache tool (local file read -- NOT an MCP call)
+# ---------------------------------------------------------------------------
+# QC #4 issue #4: the DPR *button* is 0.5 s (it reads the on-disk cache that
+# `/api/report/dpr` writes) while the same request typed into the chat cost
+# 87 s and 13 `run_query` calls to rebuild a document that was already on
+# disk. This tool gives the report agent the same cache. It reads a local
+# JSON file and touches no database, so the trace shows it as an ordinary
+# function tool -- never "via mcp-clickhouse". The markdown it returns was
+# itself produced by MCP queries, and the prompt requires the answer to say so.
+
+REPORT_REQUEST_KEY = "slateiq_report_request"
+
+
+def get_cached_report(kind: str, day: int, tool_context: ToolContext) -> dict[str, Any]:
+    """Fetch an already-generated report for a shooting day from the SlateIQ cache.
+
+    Call this FIRST for any Daily Progress Report or Editor's Log request.
+
+    Args:
+        kind: 'dpr' for the Daily Progress Report, 'editors_log' for the Editor's Log.
+        day: shooting day number, e.g. 12.
+
+    Returns:
+        found=True with the finished `markdown` and `generated_at` when the
+        document is already on disk; found=False with a `reason` when it is
+        not, in which case generate it from live queries as usual.
+    """
+    result = report_cache.get_cached_report(kind, day)
+    try:
+        tool_context.state[REPORT_REQUEST_KEY] = {
+            "kind": result.get("kind") or report_cache.normalise_kind(kind),
+            "day": result.get("day"),
+            "found": bool(result.get("found")),
+        }
+    except Exception:  # pragma: no cover - state is best-effort
+        logger.debug("could not record the report request on state")
+    return result
+
+
+def _cache_fresh_report(
+    callback_context: CallbackContext, llm_response: LlmResponse
+) -> LlmResponse | None:
+    """Write a freshly generated report to the same cache the button reads.
+
+    The model never has to hand the markdown back a second time: when
+    `get_cached_report` missed, we know the kind and day it asked for, so the
+    final (non-partial, no-tool-call) answer of that turn *is* the report.
+    Always returns None -- the response itself is untouched.
+    """
+    try:
+        if getattr(llm_response, "partial", False):
+            return None
+        req = callback_context.state.get(REPORT_REQUEST_KEY) or {}
+        if not req or not req.get("kind"):
+            return None
+        content = getattr(llm_response, "content", None)
+        parts = list(getattr(content, "parts", None) or [])
+        if any(getattr(p, "function_call", None) for p in parts):
+            return None
+        text = "".join(p.text for p in parts if getattr(p, "text", None))
+        # The marker means this answer IS the cached document -- nothing to
+        # write back. Anything else is freshly generated, including a
+        # "refresh" that deliberately ignored the cache, and replaces it.
+        if report_cache.CACHED_REPORT_MARKER in text:
+            return None
+        # A real DPR / Editor's Log is a long Markdown document with tables;
+        # a one-line "which day?" clarification must never poison the cache.
+        if len(text.strip()) < 600 or "|" not in text:
+            return None
+        if report_cache.save_cached_report(req["kind"], req["day"], text):
+            logger.info("cached fresh %s for day %s", req["kind"], req["day"])
+            callback_context.state[REPORT_REQUEST_KEY] = {**req, "found": True}
+    except Exception as exc:  # pragma: no cover - caching is best-effort
+        logger.warning("could not cache the generated report: %s", exc)
+    return None
+
+
 def build_report_agent(toolset: McpToolset | None = None) -> LlmAgent:
     return _specialist(
         "report_agent",
@@ -250,6 +336,8 @@ def build_report_agent(toolset: McpToolset | None = None) -> LlmAgent:
         prompts.report_instruction,
         model=REPORT_MODEL,
         toolset=toolset,
+        extra_tools=[FunctionTool(get_cached_report)],
+        after_model_callback=_cache_fresh_report,
     )
 
 
