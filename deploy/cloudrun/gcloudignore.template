@@ -7,10 +7,20 @@
 .venv-mcp/
 __pycache__/
 *.pyc
-data/footage/
-data/clips/
-data/thumbs/
-data/cache/
-data/seed_export/
 web/node_modules/
 node_modules/
+
+# Big media stays out of the image -- clips are served from the public GCS
+# bucket via CLIPS_BASE_URL (42 MB of mp4 would double the image for nothing).
+data/footage/
+data/clips/
+data/seed_export/
+video/
+
+# The ingest Gemini cache is only useful when re-ingesting footage.
+data/cache/*.json
+
+# NOT ignored, on purpose (small, and the hosted demo depends on them):
+#   data/thumbs/        376 KB -- poster frames for the takes gallery
+#   data/cache/reports/  24 KB -- pre-warmed DPR / editor's log (instant day 12)
+#   data/cache/tts/     3.7 MB -- pre-warmed Gemini TTS read-alouds

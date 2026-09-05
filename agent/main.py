@@ -5,6 +5,7 @@ Built on ADK's `get_fast_api_app` (so the ADK dev UI and the standard
 UI-facing routes:
 
   GET  /api/health          -- liveness + MCP/model config
+  GET  /api/config          -- runtime config for the SPA (URLs, Grafana panels)
   POST /api/chat            -- SSE stream: text, tool_call, tool_result, final
   GET  /api/report/dpr      -- Daily Progress Report markdown for a day
   GET  /api/report/editor-log
@@ -27,6 +28,7 @@ import io
 import json
 import logging
 import os
+import re
 import struct
 import sys
 from pathlib import Path
@@ -117,6 +119,108 @@ async def health() -> dict[str, Any]:
         "schema_source": schema_source(),
         "web_dist": Path(config.WEB_DIST).is_dir(),
         "clips_dir": Path(config.CLIPS_DIR).is_dir(),
+        "clips_base_url": CLIPS_BASE_URL,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Media URL rewriting
+#
+# `take.clip_uri` / `take.thumb_uri` are stored repo-relative ("clips/x.mp4",
+# "thumbs/x.jpg") because that is what the local dev server mounts at /clips and
+# /thumbs. On Cloud Run the clips are NOT in the image -- they live in a public
+# GCS bucket -- so relative paths 404. When `CLIPS_BASE_URL` is set we rewrite
+# them to absolute URLs at response time, which keeps the database rows portable
+# and leaves local behaviour (env var unset) completely unchanged.
+# ---------------------------------------------------------------------------
+CLIPS_BASE_URL = (os.environ.get("CLIPS_BASE_URL") or "").rstrip("/")
+_ABSOLUTE = re.compile(r"^(?:https?|gs)://", re.IGNORECASE)
+_MEDIA_KEYS = ("clip_uri", "thumb_uri")
+
+
+def _media_url(uri: Any) -> Any:
+    """Relative ``clips/x.mp4`` -> ``${CLIPS_BASE_URL}/clips/x.mp4``.
+
+    Absolute URIs (https / gs) and everything else pass through untouched, as
+    does every value when `CLIPS_BASE_URL` is unset (local dev).
+    """
+    if not CLIPS_BASE_URL or not isinstance(uri, str):
+        return uri
+    u = uri.strip()
+    if not u or _ABSOLUTE.match(u):
+        return uri
+    return f"{CLIPS_BASE_URL}/{u.lstrip('/').removeprefix('./')}"
+
+
+def _rewrite_media(rows: Any) -> Any:
+    """In-place rewrite of the media keys on a dict or a list of dicts."""
+    if not CLIPS_BASE_URL:
+        return rows
+    for row in rows if isinstance(rows, list) else [rows]:
+        if isinstance(row, dict):
+            for k in _MEDIA_KEYS:
+                if k in row:
+                    row[k] = _media_url(row[k])
+    return rows
+
+
+# ---------------------------------------------------------------------------
+# Runtime config for the SPA
+#
+# `web/` is a static Vite build: `import.meta.env.VITE_*` is frozen at build
+# time, so server env vars never reach the browser. This endpoint hands the
+# same values to the app at boot; the built-in VITE_* defaults remain the
+# fallback if it is unreachable.
+# ---------------------------------------------------------------------------
+_DEFAULT_APP_URL = "https://slateiq-957930801789.us-central1.run.app"
+_DEFAULT_GRAFANA_URL = "https://slateiq-grafana-hbissixc2q-uc.a.run.app"
+_DEFAULT_PANELS = (
+    "2:Schedule position,"
+    "1:Pages planned vs shot per day,"
+    "3:Print ratio (takes per circled take) by scene,"
+    "8:Scenes at risk"
+)
+
+
+def _mcp_health_url() -> str:
+    explicit = (os.environ.get("MCP_HEALTH_URL") or "").strip()
+    if explicit:
+        return explicit
+    base = config.MCP_URL.rstrip("/")
+    if base.endswith("/mcp"):
+        base = base[: -len("/mcp")]
+    return base + "/health"
+
+
+def _grafana_panels() -> list[dict[str, str]]:
+    raw = (os.environ.get("GRAFANA_PANELS") or _DEFAULT_PANELS).split(",")
+    out: list[dict[str, str]] = []
+    for spec in raw:
+        spec = spec.strip()
+        if not spec:
+            continue
+        pid, _, title = spec.partition(":")
+        pid = pid.strip()
+        if pid:
+            out.append({"id": pid, "title": title.strip() or f"Panel {pid}"})
+    return out
+
+
+@app.get("/api/config")
+async def app_config() -> dict[str, Any]:
+    """Runtime configuration the SPA reads at boot."""
+    return {
+        "app_url": (os.environ.get("APP_URL") or _DEFAULT_APP_URL).rstrip("/"),
+        "grafana_url": (
+            os.environ.get("GRAFANA_URL") or _DEFAULT_GRAFANA_URL
+        ).rstrip("/"),
+        "grafana_dash_uid": os.environ.get("GRAFANA_DASH_UID") or "slateiq-prod-health",
+        "grafana_panels": _grafana_panels(),
+        "mcp_health_url": _mcp_health_url(),
+        "repo_url": (
+            os.environ.get("REPO_URL") or "https://github.com/kaitorecca/slateiq"
+        ).rstrip("/"),
+        "clips_base_url": CLIPS_BASE_URL,
     }
 
 
@@ -163,7 +267,7 @@ def _enrich_takes(refs: list[Any]) -> list[dict[str, Any]]:
         clean.append(r)
         ids.append(tid)
     if not ids:
-        return [r for r in refs if isinstance(r, dict)]
+        return _rewrite_media([r for r in refs if isinstance(r, dict)])
     try:
         res = _ch_client().query(
             f"""SELECT {_TAKE_CARD_COLS}
@@ -178,7 +282,7 @@ def _enrich_takes(refs: list[Any]) -> list[dict[str, Any]]:
         }
     except Exception as exc:  # never fail the answer because of the gallery
         logger.warning("take enrichment failed: %s", exc)
-        return clean
+        return _rewrite_media(clean)
 
     out = []
     for r in clean:
@@ -197,7 +301,7 @@ def _enrich_takes(refs: list[Any]) -> list[dict[str, Any]]:
             out.append(merged)
         else:
             out.append(r)
-    return json.loads(json.dumps(out, default=str))
+    return _rewrite_media(json.loads(json.dumps(out, default=str)))
 
 
 @app.post("/api/chat")
@@ -538,6 +642,7 @@ async def takes(
         r["quality_score"] = (
             float(r["quality_score"]) if r.get("quality_score") is not None else None
         )
+    _rewrite_media(rows)
     return JSONResponse(
         {
             "count": len(rows),
@@ -565,7 +670,7 @@ async def take_events(take_id: str, limit: int = Query(500, ge=1, le=2000)) -> J
         )
         if not head.result_rows:
             raise HTTPException(404, f"take '{take_id}' not found")
-        take = dict(zip(head.column_names, head.result_rows[0]))
+        take = _rewrite_media(dict(zip(head.column_names, head.result_rows[0])))
         ev = client.query(
             f"""SELECT event_id, t_offset_s, t_end_s, kind, speaker, text,
                        flag_type, severity, score
@@ -622,7 +727,12 @@ if _dist.is_dir():
             try:
                 return await super().get_response(path, scope)
             except StarletteHTTPException as exc:
-                if exc.status_code == 404 and not path.startswith("assets/"):
+                # Media and build assets must 404 honestly -- silently handing
+                # back index.html made every missing thumbnail look like a
+                # successful load with no console error to notice.
+                if exc.status_code == 404 and not path.startswith(
+                    ("assets/", "clips/", "thumbs/")
+                ):
                     return await super().get_response("index.html", scope)
                 raise
 

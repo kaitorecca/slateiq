@@ -31,8 +31,18 @@ COPY db/ /app/db/
 # Built web UI, if the frontend has been built. Optional.
 COPY web/ /app/web/
 
-# Clips are normally served from GCS in production; mount or COPY if local.
-ENV CLIPS_DIR=/app/data/clips
+# Small demo data that the hosted product depends on (see .gcloudignore):
+#   data/thumbs         376 KB  poster frames, so the takes gallery is never empty
+#   data/cache/reports   24 KB  pre-warmed DPR -> day 12 is instant, not 3.5 min
+#   data/cache/tts      3.7 MB  pre-warmed Gemini TTS read-alouds
+# Clips (42 MB) deliberately stay out: they are served from the public GCS
+# bucket, and CLIPS_BASE_URL rewrites clip_uri/thumb_uri at response time.
+COPY data/thumbs/ /app/data/thumbs/
+COPY data/cache/reports/ /app/data/cache/reports/
+COPY data/cache/tts/ /app/data/cache/tts/
+
+ENV CLIPS_DIR=/app/data/clips \
+    THUMBS_DIR=/app/data/thumbs
 RUN mkdir -p /app/data/clips
 
 WORKDIR /app/agent

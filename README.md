@@ -49,10 +49,11 @@ circled) against **3.07 M rows of independently measured frame telemetry** (this
 
 | | |
 |---|---|
-| **App (Cloud Run)** | `<<PENDING: see deploy/OUTPUT.md>>` |
-| **Video (≤3 min, YouTube)** | `<<PENDING: see deploy/OUTPUT.md>>` |
-| **Grafana — Production Health** | `<<PENDING: see deploy/OUTPUT.md>>` |
-| **ClickHouse MCP endpoint** (bearer-token protected) | `<<PENDING: see deploy/OUTPUT.md>>` |
+| **App (Cloud Run)** | <https://slateiq-957930801789.us-central1.run.app> |
+| **Video (≤3 min, YouTube)** | _uploading — the link lands here and in [`deploy/OUTPUT.md`](deploy/OUTPUT.md) before submission_ |
+| **Grafana — Production Health** | <https://slateiq-grafana-hbissixc2q-uc.a.run.app/d/slateiq-prod-health> (anonymous, read-only) |
+| **ClickHouse MCP endpoint** (bearer-token protected) | `https://35.239.36.85.sslip.io/mcp` · health: <https://35.239.36.85.sslip.io/health> |
+| **Clips + poster frames (GCS)** | `https://storage.googleapis.com/slateiq-media-gke-hackathon-472816` |
 | **Repo** | <https://github.com/kaitorecca/slateiq> |
 
 > Cloud Run runs at `min-instances 0` on the free tier — **if the first request takes 3–5 seconds,
@@ -62,7 +63,7 @@ Reproduce the partner call in ten seconds — the SSE stream emits the `run_quer
 generated SQL and the row count as they happen:
 
 ```bash
-curl -N -X POST <HOSTED_URL>/api/chat \
+curl -N -X POST https://slateiq-957930801789.us-central1.run.app/api/chat \
   -H 'Content-Type: application/json' \
   -d '{"message":"Which takes have boom in shot on day 12?"}'
 ```
@@ -311,18 +312,18 @@ Every script is idempotent. Live URLs and row-count assertions land in `deploy/O
 
 ## Evals
 
-16 real questions across all five agents and all four personas — editor, script supervisor, 1st AD,
+28 real questions across all five agents and all four personas — editor, script supervisor, 1st AD,
 producer, director — run through the **real coordinator against the real MCP server**, recording
 routing, every tool call, the SQL, the latency, and whether `run_query` was actually reached. A
 Gemini judge then scores each answer 1–5 against a per-question rubric. **The harness exits non-zero
 if any question marked `must_query` produced an answer without touching MCP.**
 
-Latest run: **15/16 reached `mcp-clickhouse` `run_query`** · **14/16 routed to the expected
-specialist** · judge **mean 4.07/5, median 5.0** · median latency 45 s.
+Latest run: **28/28 reached `mcp-clickhouse` `run_query`** · **27/28 routed to the expected
+specialist** · judge **mean 4.82/5, median 5.0** (27/28 at 4+) · median latency **27.3 s**.
 
 ```bash
 source .venv/bin/activate && set -a && source .env && set +a
-python agent/evals/run_eval.py                       # all 16, judged
+python agent/evals/run_eval.py                       # all 28, judged
 python agent/evals/run_eval.py --only dpr forecast   # a subset
 ```
 

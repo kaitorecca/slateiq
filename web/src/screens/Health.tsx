@@ -13,21 +13,12 @@ import {
   YAxis,
 } from 'recharts'
 import { getDpr, getTakes, tts } from '../lib/api'
+import { GRAFANA_DASH_UID, GRAFANA_PANELS, GRAFANA_URL } from '../config'
 import type { Take } from '../lib/types'
 import { useAsync } from '../lib/hooks'
 import { Markdown } from '../components/Markdown'
 import { Empty, ErrorBox, Skeleton, Spinner } from '../components/States'
 
-const GRAFANA_URL = (import.meta.env.VITE_GRAFANA_URL as string | undefined)?.replace(/\/$/, '')
-const GRAFANA_DASH = (import.meta.env.VITE_GRAFANA_DASHBOARD as string | undefined) ?? 'slateiq/production-health'
-const GRAFANA_PANELS = ((import.meta.env.VITE_GRAFANA_PANELS as string | undefined) ?? '1:Print ratio by scene,2:Pages vs plan,3:Flag rate,4:Camera hours')
-  .split(',')
-  .map((p) => p.trim())
-  .filter(Boolean)
-  .map((p) => {
-    const [id, ...rest] = p.split(':')
-    return { id: id.trim(), title: rest.join(':').trim() || `Panel ${id}` }
-  })
 
 /** Muted, filmic chart palette that sits on the dark ground without glaring. */
 const C = { circled: '#4E9E6B', hold: '#4C82BD', ng: '#B8514A', slate: '#D2A03A', dim: '#7A5F1E' }
@@ -156,7 +147,18 @@ function FallbackCharts({ takes }: { takes: Take[] }) {
   )
 }
 
+/**
+ * `d-solo` renders a single panel chrome-free. The dashboard UID and the panel
+ * ids/titles come from `config.ts` (runtime `/api/config`, falling back to the
+ * build-time defaults) and must track
+ * `deploy/grafana/dashboards/slateiq-production-health.json`.
+ */
 function GrafanaPanels() {
+  // The shoot is a fixed historical window, so the panels are pinned to the
+  // dashboard's own saved range and template variables rather than inheriting
+  // Grafana's "last 6 hours" default, which would render every panel empty.
+  const range =
+    'from=2026-08-18T00:00:00.000Z&to=2026-10-02T00:00:00.000Z&var-production=tos2026&var-day=12'
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
       {GRAFANA_PANELS.map((p) => (
@@ -167,7 +169,7 @@ function GrafanaPanels() {
           </div>
           <iframe
             title={p.title}
-            src={`${GRAFANA_URL}/d-solo/${GRAFANA_DASH}?orgId=1&panelId=${p.id}&theme=dark&kiosk`}
+            src={`${GRAFANA_URL}/d-solo/${GRAFANA_DASH_UID}?orgId=1&panelId=${p.id}&${range}&theme=dark&kiosk`}
             className="h-[260px] w-full border-0 bg-cell"
             loading="lazy"
           />
@@ -318,7 +320,7 @@ export function Health() {
           <p className="mt-1 text-[13px] text-dim">
             {GRAFANA_URL
               ? 'Grafana panels served straight off the ClickHouse datasource.'
-              : 'In-app charts derived from the take index. Set VITE_GRAFANA_URL to embed the Grafana dashboard instead.'}
+              : 'In-app charts derived from the take index.'}
           </p>
         </header>
 

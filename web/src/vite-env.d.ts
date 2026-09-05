@@ -4,6 +4,8 @@ interface ImportMetaEnv {
   readonly VITE_GRAFANA_URL?: string
   readonly VITE_GRAFANA_DASHBOARD?: string
   readonly VITE_GRAFANA_PANELS?: string
+  /** Public source repository. */
+  readonly VITE_REPO_URL?: string
   /** Hosted SlateIQ agent + UI (Cloud Run). */
   readonly VITE_APP_URL?: string
   /** Unauthenticated health route of the official mcp-clickhouse server. */

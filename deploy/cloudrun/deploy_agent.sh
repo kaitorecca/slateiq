@@ -32,6 +32,14 @@ CLICKHOUSE_MCP_URL="${CLICKHOUSE_MCP_URL:-}"
 CLICKHOUSE_MCP_TOKEN="${CLICKHOUSE_MCP_TOKEN:-}"
 CLIPS_BASE_URL="${CLIPS_BASE_URL:-}"
 GRAFANA_URL="${GRAFANA_URL:-}"
+# Served to the browser by GET /api/config: web/ is a static Vite build, so
+# VITE_* is frozen at build time and only this path gets server env to the SPA.
+GRAFANA_DASH_UID="${GRAFANA_DASH_UID:-slateiq-prod-health}"
+# id:title, matching deploy/grafana/dashboards/slateiq-production-health.json.
+GRAFANA_PANELS="${GRAFANA_PANELS:-2:Schedule position,1:Pages planned vs shot per day,3:Print ratio (takes per circled take) by scene,8:Scenes at risk}"
+REPO_URL="${REPO_URL:-https://github.com/kaitorecca/slateiq}"
+# Own URL, for the About page's "Live" table. Reuses the existing service URL.
+APP_URL="${APP_URL:-$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)' 2>/dev/null || true)}"
 # Direct read-only ClickHouse, for the UI's takes-gallery passthrough only (all agent
 # reasoning goes through MCP). Port 8443 is Caddy serving ClickHouse HTTP at the root path,
 # because clickhouse-connect cannot address a server mounted under /ch/.
@@ -140,7 +148,7 @@ gcloud run deploy "$SERVICE" \
   --service-account "$RUNTIME_SA" \
   --labels app=slateiq,tier=agent \
   --set-secrets "GOOGLE_API_KEY=${SECRET_NAME}:latest" \
-  --set-env-vars "^@^GOOGLE_GENAI_USE_VERTEXAI=FALSE@GOOGLE_CLOUD_PROJECT=${PROJECT}@GOOGLE_CLOUD_LOCATION=${REGION}@CLICKHOUSE_MCP_URL=${CLICKHOUSE_MCP_URL}@CLICKHOUSE_MCP_TOKEN=${CLICKHOUSE_MCP_TOKEN}@CLIPS_BASE_URL=${CLIPS_BASE_URL}@GRAFANA_URL=${GRAFANA_URL}@CLICKHOUSE_HOST=${CH_DIRECT_HOST}@CLICKHOUSE_PORT=8443@CLICKHOUSE_SECURE=true@CLICKHOUSE_USER=agent_ro@CLICKHOUSE_PASSWORD=${CH_DIRECT_PASSWORD}@CLICKHOUSE_DATABASE=slateiq" \
+  --set-env-vars "^@^GOOGLE_GENAI_USE_VERTEXAI=FALSE@GOOGLE_CLOUD_PROJECT=${PROJECT}@GOOGLE_CLOUD_LOCATION=${REGION}@CLICKHOUSE_MCP_URL=${CLICKHOUSE_MCP_URL}@CLICKHOUSE_MCP_TOKEN=${CLICKHOUSE_MCP_TOKEN}@CLIPS_BASE_URL=${CLIPS_BASE_URL}@GRAFANA_URL=${GRAFANA_URL}@GRAFANA_DASH_UID=${GRAFANA_DASH_UID}@GRAFANA_PANELS=${GRAFANA_PANELS}@APP_URL=${APP_URL}@REPO_URL=${REPO_URL}@CLICKHOUSE_HOST=${CH_DIRECT_HOST}@CLICKHOUSE_PORT=8443@CLICKHOUSE_SECURE=true@CLICKHOUSE_USER=agent_ro@CLICKHOUSE_PASSWORD=${CH_DIRECT_PASSWORD}@CLICKHOUSE_DATABASE=slateiq" \
   --quiet
 
 URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)')
