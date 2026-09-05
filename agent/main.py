@@ -9,6 +9,7 @@ UI-facing routes:
   POST /api/chat            -- SSE stream: text, tool_call, tool_result, final
   GET  /api/report/dpr      -- Daily Progress Report markdown for a day
   GET  /api/report/editor-log
+  GET  /api/export/editors-log -- circled takes as CSV / ALE / Markdown
   POST /api/tts             -- Gemini TTS wav of a <=90 word spoken summary
   GET  /api/takes           -- convenience passthrough for the takes gallery
   GET  /api/take/{id}/events -- transcript + flag timeline for one take
@@ -48,7 +49,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException  # noqa
 from google.adk.cli.fast_api import get_fast_api_app  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 
-from slateiq_agent import config  # noqa: E402
+from slateiq_agent import config, export  # noqa: E402
 from slateiq_agent.runtime import run_once, stream_agent  # noqa: E402
 from slateiq_agent.schema import schema_source  # noqa: E402
 
@@ -351,8 +352,17 @@ _DPR_PROMPT = (
     "Generate the DAILY PROGRESS REPORT for shooting day {day}. Query the "
     "database for the production title and total days, the shooting day's "
     "call/wrap times and planned scenes, every scene shot that day with its "
-    "pages, takes, setups and status, and the day + cumulative totals. Output "
-    "the finished Markdown document only."
+    "pages, takes, setups and status, and the day + cumulative totals. "
+    "The cumulative line MUST compare pages shot to date against pages "
+    "PLANNED to date -- one query over slateiq.daily_progress WHERE "
+    "day_number <= {day} gives you sum(pages_shot_eighths)/8.0 and "
+    "sum(pages_planned_eighths)/8.0 -- and the ahead/behind figure must be "
+    "the difference between those two numbers. The whole-script page count "
+    "is context printed after them, never the denominator. Give both ratios: "
+    "print ratio = takes/circled, shooting ratio = sum(duration_s) / "
+    "sumIf(duration_s, status='circled') -- query the durations, never write "
+    "n/a for it. Every page figure in eighths (48 4/8, not 48.5 or 48 1/2). "
+    "Output the finished Markdown document only -- no preamble."
 )
 
 _LOG_PROMPT = (
@@ -693,6 +703,50 @@ async def take_events(take_id: str, limit: int = Query(500, ge=1, le=2000)) -> J
         "source": "direct clickhouse-connect (UI detail only)",
     }
     return JSONResponse(json.loads(json.dumps(payload, default=str)))
+
+
+# ---------------------------------------------------------------------------
+# Editor's Log export -- CSV / ALE / Markdown
+#
+# NON-REASONING PATH. Like /api/takes above this is a fixed, parameterised
+# SELECT executed through clickhouse-connect so the UI can hand an assistant
+# editor a file in one click. No LLM is involved and no SQL is generated;
+# every *analytical* answer in SlateIQ still goes through mcp-clickhouse.
+# ---------------------------------------------------------------------------
+@app.get("/api/export/editors-log")
+async def export_editors_log(
+    day: int = Query(..., ge=1, le=365),
+    format: str = Query("csv"),
+    status: str = Query("circled", description="comma-separated take statuses"),
+) -> Response:
+    import anyio
+
+    fmt = (format or "csv").lower().strip()
+    if fmt not in export.FORMATS:
+        raise HTTPException(400, f"format must be one of {', '.join(export.FORMATS)}")
+    statuses = tuple(s.strip().lower() for s in status.split(",") if s.strip())
+    if not statuses:
+        statuses = ("circled",)
+
+    def _run() -> list[dict[str, Any]]:
+        return export.editors_log_rows(_ch_client(), day, statuses)
+
+    try:
+        rows = await anyio.to_thread.run_sync(_run)
+    except Exception as exc:  # pragma: no cover - depends on a live DB
+        logger.exception("editors-log export failed")
+        raise HTTPException(502, f"ClickHouse export failed: {exc}") from exc
+
+    body, media_type, filename = export.render(rows, fmt, day)
+    return Response(
+        content=body,
+        media_type=media_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-SlateIQ-Rows": str(len(rows)),
+            "X-SlateIQ-Source": "direct clickhouse-connect (export only)",
+        },
+    )
 
 
 # ---------------------------------------------------------------------------

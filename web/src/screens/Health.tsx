@@ -220,6 +220,11 @@ function DprCard() {
     }
   }
 
+  // The Editor's Log export is a plain file download, not an agent turn: the
+  // API runs one fixed SELECT and streams CSV / ALE straight back.
+  const exportUrl = (format: 'csv' | 'ale') =>
+    `/api/export/editors-log?day=${day}&format=${format}`
+
   const readAloud = async () => {
     if (!markdown) return
     setSpeaking(true)
@@ -269,6 +274,23 @@ function DprCard() {
             {speaking ? <Spinner className="h-3.5 w-3.5" /> : <span aria-hidden="true">🔊</span>}
             Read it aloud
           </button>
+          <a
+            className="btn"
+            href={exportUrl('csv')}
+            download
+            title="The circled takes for this day as a spreadsheet"
+          >
+            <span aria-hidden="true">⬇</span>
+            Export Editor's Log (CSV)
+          </a>
+          <a
+            className="btn"
+            href={exportUrl('ale')}
+            download
+            title="Avid Log Exchange — drops straight into a Media Composer bin"
+          >
+            ALE
+          </a>
         </div>
       </header>
 

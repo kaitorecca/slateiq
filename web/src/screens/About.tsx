@@ -28,6 +28,10 @@ const STACK = [
   ['ClickHouse', 'The production brain: takes, timestamped events, continuity notes, frame-level telemetry.'],
   ['mcp-clickhouse', 'The official MCP server. Every analytical answer is SQL the agent wrote and ran through it — live.'],
   ['Gemini TTS', 'Reads the Daily Progress Report aloud for the drive home.'],
+  [
+    "Editor's Log → Avid",
+    "One click exports the day's circled takes as CSV or ALE (Avid Log Exchange) — scene, take, camroll, soundroll, timecode and Gemini's note arrive as bin columns in Media Composer, so nobody retypes the log.",
+  ],
   ['Cloud Run + GCS', 'Agent, UI and Grafana on Cloud Run (min-instances 0); clips served from GCS.'],
 ]
 

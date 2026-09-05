@@ -9,6 +9,10 @@ import { ErrorBox, Spinner } from '../components/States'
 import { SlateMark } from '../components/Brand'
 
 const CHIPS = [
+  // The hero prompt first: the soft-focus-on-a-circled-take catch is the one
+  // question nothing else on a set can answer, so it should be the first thing
+  // a visitor clicks rather than a line halfway down the README.
+  'Which circled takes have more than 3 seconds of soft focus?',
   'Best takes for scene 27?',
   'Are we on schedule after day 12?',
   "Every take where Celia says 'forty years'",
@@ -56,8 +60,14 @@ function AnswerStats({ m }: { m: ChatMessage }) {
           <span>{fmtSecs(m.elapsedMs)} s</span>
         </>
       )}
-      <span aria-hidden="true">·</span>
-      <span className="text-faint/80">through mcp-clickhouse</span>
+      {/* Only claim the partner path when something actually went through it --
+          a refused prompt runs 0 queries and touches no tool. */}
+      {queries > 0 && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span className="text-faint/80">through mcp-clickhouse</span>
+        </>
+      )}
     </div>
   )
 }
@@ -187,7 +197,20 @@ export function Ask() {
               at: Date.now(),
               pending: true,
             }
-            patch((m) => ({ ...m, trace: [...m.trace, item] }))
+            patch((m) => {
+              // JR2 #14: ADK reports `transfer_to_agent` as authored by
+              // whichever specialist currently holds the floor, so on a
+              // follow-up question the trace read "Editor agent → hand-off"
+              // and the coordinator appeared to vanish. Routing is always a
+              // coordinator decision -- show it as one.
+              const lastAgent = [...m.trace].reverse().find((t) => t.kind === 'agent')
+              const isCoordinator = lastAgent?.name === 'slateiq_coordinator' || lastAgent?.name === 'coordinator'
+              const lead: TraceItem[] =
+                e.name === 'transfer_to_agent' && !isCoordinator
+                  ? [{ id: uid(), kind: 'agent', name: 'slateiq_coordinator', at: Date.now() }]
+                  : []
+              return { ...m, trace: [...m.trace, ...lead, item] }
+            })
             break
           }
           case 'tool_result':

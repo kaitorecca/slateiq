@@ -12,13 +12,14 @@ ADK convention: `root_agent` is what `adk web` / `get_fast_api_app` pick up.
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 from google.adk.agents import LlmAgent
 from google.adk.tools.mcp_tool.mcp_session_manager import (
     StreamableHTTPConnectionParams,
 )
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
+from google.adk.agents.readonly_context import ReadonlyContext
 from google.genai import types
 
 from . import prompts
@@ -36,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "root_agent",
+    "SelfHealingMcpToolset",
     "build_clickhouse_toolset",
     "build_root_agent",
     "build_report_agent",
@@ -50,6 +52,115 @@ SUB_AGENT_NAMES = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Self-healing MCP toolset
+# ---------------------------------------------------------------------------
+# ADK pools one streamable-HTTP session per toolset and reuses it for the life
+# of the process. When `mcp-clickhouse` restarts (a redeploy, an OOM, the VM
+# rebooting) that pooled session is dead: ADK retries *session creation*
+# (`McpTool._create_session` is decorated with `retry_on_errors`) but never the
+# tool call itself, so the first question asked after a restart came back as a
+# developer error and only the second one worked. QC #2 flagged this and left
+# it for the deploy owner -- this is that fix.
+#
+# The cure is small: notice a transport-shaped failure on the tool-call path,
+# drop the pooled session, and run the call once more against a fresh one. A
+# ClickHouse error (bad SQL, unknown column) is NOT transport-shaped and is
+# never retried -- the model must see it and fix its own query.
+
+# Substrings that mean "the pipe, not the database, is what failed".
+_TRANSPORT_HINTS = (
+    "session",
+    "connection",
+    "connect",
+    "transport",
+    "closed",
+    "broken pipe",
+    "eof",
+    "peer",
+    "disconnect",
+    "reset by",
+    "timeout",
+    "timed out",
+    "httpx",
+    "httpcore",
+    "502",
+    "503",
+    "504",
+    "bad gateway",
+)
+
+
+def _is_transport_failure(text: str) -> bool:
+    low = (text or "").lower()
+    return any(hint in low for hint in _TRANSPORT_HINTS)
+
+
+def _looks_like_error(result: Any) -> str:
+    """The error text of a failed tool result, or '' if it succeeded.
+
+    With ADK's graceful MCP error handling on (the default), a failed tool call
+    comes back as ``{"error": "..."}`` instead of raising.
+    """
+    if isinstance(result, dict):
+        err = result.get("error")
+        if isinstance(err, str):
+            return err
+    return ""
+
+
+class SelfHealingMcpToolset(McpToolset):
+    """`McpToolset` that recovers on its own from an MCP server restart."""
+
+    async def _reset_session(self) -> None:
+        """Throw away the pooled MCP session so the next call opens a new one."""
+        try:
+            await self._mcp_session_manager.close()
+            logger.warning("MCP session reset -- reconnecting to %s", MCP_URL)
+        except Exception as exc:  # pragma: no cover - best effort
+            logger.warning("MCP session reset failed (continuing): %s", exc)
+
+    def _heal(self, tool: Any) -> Any:
+        """Wrap one MCP tool's `run_async` with reset-and-retry-once."""
+        if getattr(tool, "_slateiq_self_healing", False):
+            return tool
+        inner = tool.run_async
+
+        async def run_async(*, args, tool_context, **kwargs):
+            try:
+                result = await inner(args=args, tool_context=tool_context, **kwargs)
+                err = _looks_like_error(result)
+                if not err or not _is_transport_failure(err):
+                    return result
+                logger.warning("MCP tool %s failed on transport: %s", tool.name, err)
+            except Exception as exc:  # transport crash raised rather than returned
+                if not _is_transport_failure(f"{type(exc).__name__}: {exc}"):
+                    raise
+                logger.warning("MCP tool %s raised on transport: %s", tool.name, exc)
+            # One retry against a brand-new session. The MCP tools here are
+            # read-only SELECTs, so replaying one cannot duplicate a side
+            # effect -- which is exactly why ADK leaves this to the caller.
+            await self._reset_session()
+            return await inner(args=args, tool_context=tool_context, **kwargs)
+
+        tool.run_async = run_async
+        tool._slateiq_self_healing = True
+        return tool
+
+    async def get_tools(
+        self, readonly_context: Optional[ReadonlyContext] = None
+    ) -> list[Any]:
+        try:
+            tools = await super().get_tools(readonly_context)
+        except Exception as exc:
+            if not _is_transport_failure(f"{type(exc).__name__}: {exc}"):
+                raise
+            logger.warning("MCP tool listing failed (%s) -- reconnecting", exc)
+            await self._reset_session()
+            tools = await super().get_tools(readonly_context)
+        return [self._heal(t) for t in tools]
+
+
 def build_clickhouse_toolset() -> McpToolset:
     """Create an McpToolset pointed at the ClickHouse MCP server.
 
@@ -60,10 +171,13 @@ def build_clickhouse_toolset() -> McpToolset:
     -- the toolset owns one session manager and ADK does not reparent toolsets
     the way it reparents sub-agents. We share one instance so the whole network
     holds a single MCP connection, and close it once at shutdown.
+
+    The instance is a `SelfHealingMcpToolset` so a restart of the MCP server
+    does not cost the next question.
     """
     headers = {"Authorization": f"Bearer {MCP_TOKEN}"} if MCP_TOKEN else None
     logger.info("ClickHouse MCP: %s (auth=%s)", MCP_URL, bool(MCP_TOKEN))
-    return McpToolset(
+    return SelfHealingMcpToolset(
         connection_params=StreamableHTTPConnectionParams(
             url=MCP_URL,
             headers=headers,

@@ -100,9 +100,9 @@ export function TraceRow({ item }: { item: TraceItem }) {
         ) : (
           <span
             className="chip px-1.5 py-[1px] text-[9.5px] leading-none text-faint"
-            title="ADK's own sub-agent routing — not a ClickHouse call"
+            title="The coordinator's own sub-agent routing — not a ClickHouse call"
           >
-            hand-off
+            {item.name === 'transfer_to_agent' ? 'hand-off · coordinator' : 'hand-off'}
           </span>
         )}
         {isResult && <span className="label">result</span>}

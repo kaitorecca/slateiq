@@ -9,7 +9,7 @@ It is a single-page app with four screens, served as static files by the FastAPI
 |---|---|---|
 | **Ask the Dailies** | `#/ask` (default) | Streaming chat with the ADK agent + a live **Agent trace** panel showing which sub-agent is active and every `mcp-clickhouse` tool call with syntax-highlighted, copyable SQL and row counts. Take cards render an inline `<video>` that seeks to the cited timestamp. |
 | **Takes** | `#/takes` | Scene + status filters over a grid of take cards (thumb, status badge, flag chips, quality bar, Gemini summary). Clicking a card opens a player drawer with the transcript / flag timeline. |
-| **Production Health** | `#/health` | Embedded Grafana panels (or in-app recharts fallback), plus **Generate Daily Progress Report** → rendered markdown → **Read it aloud** via Gemini TTS. |
+| **Production Health** | `#/health` | Embedded Grafana panels (or in-app recharts fallback), plus **Generate Daily Progress Report** → rendered markdown → **Read it aloud** via Gemini TTS, and **Export Editor's Log (CSV / ALE)** — the day's circled takes as a spreadsheet or an Avid Log Exchange file. |
 | **About** | `#/about` | Inline-SVG architecture diagram, repo link, **Live** endpoint table (Cloud Run / Grafana / MCP health), screenshot strip, a "How it complies" block, and Tears of Steel CC-BY attribution. |
 
 The header shows live connection health dots for MCP and ClickHouse, polled from `/api/health`.
@@ -88,6 +88,9 @@ All paths are same-origin.
   severity}], …}`, or a bare array of `{t, kind, speaker, text, flag}`. Both are normalised
   client-side. **Optional** — a 404 just hides the transcript timeline.
 - `GET /api/report/dpr?day=12` → `{markdown, day}`.
+- `GET /api/export/editors-log?day=12&format=csv|ale|md` → the file itself, with a
+  `Content-Disposition: attachment` filename. The Production Health buttons are plain
+  `<a download>` links, so this is a normal browser download — no fetch, no blob.
 - `POST /api/tts` `{text}` → `audio/mpeg` or `audio/wav` bytes.
 - `GET /api/health` → `{ok, mcp:"up"|"down", clickhouse:"up"|"down"}`.
 - `GET /clips/<file>.mp4`, `GET /thumbs/<file>.jpg`.
