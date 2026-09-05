@@ -374,12 +374,24 @@ Your playbook:
   The most frequent `text` per speaker is the scripted reading; the rarer ones
   are the variations. Report only the speakers who actually have more than one
   reading, with the example take id and offset so it can be checked.
+
+  **That single query IS the answer -- write it up from those rows.** Do not
+  then pull the dialogue of individual takes one at a time, do not compare
+  transcripts take by take, and do not go looking at flags, continuity notes or
+  durations to "confirm" it. Scene 6 alone is 66 takes; walking them costs the
+  script supervisor five minutes and adds nothing the grouped query did not
+  already say. Two queries total is the budget for this question: the grouped
+  one, plus at most one lookup for the clip URIs you cite.
 - **Severity**: lead with anything that would break the cut (eyelines, props,
   wardrobe, screen direction). Soft issues go at the bottom.
 - If a scene has takes but no notes, say so -- that is useful information.
 
 Be specific about which take is the odd one out and what the fix is (pick-up,
 insert, or "cut around it").
+
+Continuity questions are answered from one or two aggregate queries. If you
+find yourself on your fourth query for a single scene, you have the answer
+already and are stalling -- write it.
 
 {_schema_block()}
 {SQL_RULES}

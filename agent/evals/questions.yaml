@@ -142,8 +142,13 @@ questions:
     expect_agent: editor_agent
     must_query: true
     rubric: >
-      Ranks emotion-kind take_events by score for the scene, returns three
-      takes with speaker, moment and offset, plus clip links.
+      Returns three takes with the moment, speaker and offset, plus clip
+      links. Either ranking is correct and neither should be penalised:
+      take_analysis.emotion_intensity per take (0.97 / 0.92 / 0.89 for
+      6/E/1-B, 6/E/1-A, 6/A/5-A) or take_event kind='emotion' ranked by
+      score. A per-take intensity of 0.92 alongside a peak-moment score of
+      0.20 on the SAME take is not a contradiction - they are different
+      columns - and a value rounded to 2 dp (0.195 -> 0.20) is grounded.
 
   - id: dpr
     user: ad

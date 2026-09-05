@@ -46,6 +46,12 @@ DB = _env("SLATEIQ_DB", "slateiq")
 # --- Guardrails -------------------------------------------------------------
 MAX_ROWS = int(_env("SLATEIQ_MAX_ROWS", "200"))
 MAX_TOOL_RESULT_CHARS = int(_env("SLATEIQ_MAX_TOOL_RESULT_CHARS", "24000"))
+# Hard ceiling on `run_query` calls per user turn, enforced by
+# `guardrails.before_tool_guardrail`. The prompts ask for 3 (6 multi-hop);
+# this is the backstop for the open-ended questions where the model keeps
+# digging after it already has the answer. Reports legitimately need more.
+MAX_QUERIES = int(_env("SLATEIQ_MAX_QUERIES", "9"))
+MAX_QUERIES_REPORT = int(_env("SLATEIQ_MAX_QUERIES_REPORT", "12"))
 
 # --- Media ------------------------------------------------------------------
 CLIPS_DIR = _env("CLIPS_DIR", str(REPO_ROOT / "data" / "clips"))

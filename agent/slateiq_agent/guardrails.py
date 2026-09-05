@@ -15,7 +15,7 @@ from typing import Any, Optional
 from google.adk.tools.base_tool import BaseTool
 from google.adk.tools.tool_context import ToolContext
 
-from .config import MAX_ROWS, MAX_TOOL_RESULT_CHARS
+from .config import MAX_QUERIES, MAX_QUERIES_REPORT, MAX_ROWS, MAX_TOOL_RESULT_CHARS
 
 # Statement keywords that must never reach ClickHouse from the agent path.
 # Words that can never legitimately appear in a read-only SELECT. Words that
@@ -249,12 +249,54 @@ def validate_sql(sql: str) -> Optional[str]:
     return enforce(sql)[0]
 
 
+def _budget_for(agent_name: str) -> int:
+    return MAX_QUERIES_REPORT if "report" in (agent_name or "") else MAX_QUERIES
+
+
+def _over_budget(tool_context: ToolContext) -> Optional[dict[str, Any]]:
+    """Hard cap on `run_query` calls within one user turn.
+
+    The instructions ask for query economy and the model mostly obeys, but on
+    open-ended questions ("did the dialogue change?", "do they share a common
+    cause?") it will keep digging long after the answer is in hand -- 17-19
+    queries and four minutes, when the first grouped query already said it.
+    A prompt cannot reliably stop that; a counter can. When the budget is
+    spent the model gets a tool result telling it to answer from what it has,
+    which is exactly the behaviour we want.
+    """
+    try:
+        inv = tool_context.invocation_id or ""
+        budget = _budget_for(getattr(tool_context, "agent_name", ""))
+        state = tool_context.state.get("slateiq_query_budget") or {}
+        used = int(state.get("used", 0)) if state.get("inv") == inv else 0
+        if used >= budget:
+            return {
+                "error": "SlateIQ query budget reached",
+                "reason": (
+                    f"this turn has already run {used} queries (limit {budget})"
+                ),
+                "hint": (
+                    "Stop querying and answer now from the results you already "
+                    "have. Say plainly if something is still unknown -- a "
+                    "partial answer with its gaps named is useful; another "
+                    "query is not."
+                ),
+            }
+        tool_context.state["slateiq_query_budget"] = {"inv": inv, "used": used + 1}
+    except Exception:  # pragma: no cover - never let accounting break a query
+        return None
+    return None
+
+
 def before_tool_guardrail(
     tool: BaseTool, args: dict[str, Any], tool_context: ToolContext
 ) -> Optional[dict[str, Any]]:
     """Reject non-SELECT SQL before it reaches the MCP server."""
     if tool.name != "run_query":
         return None
+    spent = _over_budget(tool_context)
+    if spent is not None:
+        return spent
     sql = args.get("query") or args.get("sql") or ""
     reason, safe_sql = enforce(sql)
     if reason:
