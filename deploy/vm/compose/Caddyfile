@@ -52,11 +52,31 @@
 	}
 }
 
-{$PUBLIC_HOST}, {$PUBLIC_HOST}:8443 {
-	import slateiq_routes
+(slateiq_log) {
 	log {
 		output stdout
 		format console
 		level ERROR
 	}
+}
+
+{$PUBLIC_HOST} {
+	import slateiq_routes
+	import slateiq_log
+}
+
+# Port 8443 exposes the ClickHouse HTTP interface at the ROOT path, over the same
+# Let's Encrypt certificate. Clients like clickhouse-connect (used by the agent's
+# takes-gallery passthrough) and clickhouse-client cannot speak to a server mounted
+# under a path prefix, so /ch/ on 443 is not enough for them.
+# Auth is the ClickHouse user itself — agent_ro is readonly=2 and cannot write.
+{$PUBLIC_HOST}:8443 {
+	reverse_proxy clickhouse:8123 {
+		flush_interval -1
+		transport http {
+			read_timeout 120s
+			write_timeout 120s
+		}
+	}
+	import slateiq_log
 }

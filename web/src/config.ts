@@ -17,7 +17,7 @@ const clean = (v: string | undefined, fallback: string): string =>
 export const REPO_URL = 'https://github.com/kaitorecca/slateiq'
 
 /** The hosted SlateIQ agent + UI (Cloud Run, min-instances 0). */
-export const APP_URL = clean(env.VITE_APP_URL, 'https://slateiq-hbissixc2q-uc.a.run.app')
+export const APP_URL = clean(env.VITE_APP_URL, 'https://slateiq-957930801789.us-central1.run.app')
 
 /** Grafana on Cloud Run — the Production Health dashboard. */
 export const GRAFANA_URL = clean(env.VITE_GRAFANA_URL, 'https://slateiq-grafana-hbissixc2q-uc.a.run.app')

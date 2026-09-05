@@ -23,8 +23,14 @@ CH_USER="${CH_USER:-agent_ro}"
 
 echo "project=$PROJECT service=$SERVICE ch_host=$PUBLIC_HOST"
 
-gcloud services enable run.googleapis.com artifactregistry.googleapis.com \
-  cloudbuild.googleapis.com secretmanager.googleapis.com --project "$PROJECT" --quiet >/dev/null
+ENABLED=$(gcloud services list --enabled --project "$PROJECT" --format='value(config.name)')
+MISSING=""
+for api in run.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com secretmanager.googleapis.com; do
+  echo "$ENABLED" | grep -qx "$api" || MISSING="$MISSING $api"
+done
+# `gcloud services enable` takes minutes even when everything is already on, so only call it
+# when something is genuinely missing.
+[ -n "$MISSING" ] && gcloud services enable $MISSING --project "$PROJECT" --quiet >/dev/null
 
 if ! gcloud artifacts repositories describe "$AR_REPO" --location "$REGION" --project "$PROJECT" >/dev/null 2>&1; then
   gcloud artifacts repositories create "$AR_REPO" --repository-format docker \

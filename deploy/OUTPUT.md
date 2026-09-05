@@ -8,12 +8,13 @@ Secrets referenced below live in `.secrets/deploy.env` (gitignored). Nothing her
 
 | What | URL |
 |---|---|
-| **Agent (Cloud Run)** | `https://slateiq-<hash>-uc.a.run.app` — see "Cloud Run" below |
+| **Agent + UI (Cloud Run)** | https://slateiq-957930801789.us-central1.run.app  (alias: `https://slateiq-hbissixc2q-uc.a.run.app`) |
 | **Grafana** | https://slateiq-grafana-hbissixc2q-uc.a.run.app |
 | **Production Health dashboard** | https://slateiq-grafana-hbissixc2q-uc.a.run.app/d/slateiq-prod-health |
 | **ClickHouse MCP (official server)** | `https://35.239.36.85.sslip.io/mcp` |
 | **MCP health (no auth)** | https://35.239.36.85.sslip.io/health |
-| **ClickHouse HTTP (read-only)** | `https://35.239.36.85.sslip.io/ch/` |
+| **ClickHouse HTTP (read-only)** | `https://35.239.36.85.sslip.io/ch/` (path-mounted, for Grafana) |
+| **ClickHouse HTTP at root** | `https://35.239.36.85.sslip.io:8443/` (for clickhouse-connect / clickhouse-client) |
 | **Clips / thumbnails (GCS)** | `https://storage.googleapis.com/slateiq-media-gke-hackathon-472816` |
 
 ## Environment for the agent
@@ -23,7 +24,17 @@ CLICKHOUSE_MCP_URL=https://35.239.36.85.sslip.io/mcp
 CLICKHOUSE_MCP_TOKEN=<.secrets/deploy.env: CLICKHOUSE_MCP_TOKEN>   # sent as: Authorization: Bearer <token>
 CLIPS_BASE_URL=https://storage.googleapis.com/slateiq-media-gke-hackathon-472816
 GRAFANA_URL=https://slateiq-grafana-hbissixc2q-uc.a.run.app
+
+# Direct read-only ClickHouse — UI takes-gallery passthrough ONLY, never agent reasoning.
+CLICKHOUSE_HOST=35.239.36.85.sslip.io
+CLICKHOUSE_PORT=8443
+CLICKHOUSE_SECURE=true
+CLICKHOUSE_USER=agent_ro
+CLICKHOUSE_PASSWORD=<.secrets/deploy.env: CH_AGENT_RO_PASSWORD>
+CLICKHOUSE_DATABASE=slateiq
 ```
+
+Frontend build: `VITE_APP_URL=https://slateiq-957930801789.us-central1.run.app`.
 
 MCP transport is **streamable HTTP** (`mcp-clickhouse` 0.6.0). Requests must send
 `Accept: application/json, text/event-stream`. Unauthenticated requests get **401**.
@@ -73,6 +84,19 @@ $ curl -s https://slateiq-grafana-hbissixc2q-uc.a.run.app/api/health
 
 $ curl -s -X POST .../api/ds/query -d '{... "rawSql":"SELECT scene_number, round(print_ratio,2) ..."}'
 {"results":{"A":{"status":200,"frames":[{... "values":[["98","19","91"],[7.55,7.18,6.71]]}]}}}
+
+$ curl -s https://slateiq-957930801789.us-central1.run.app/api/health
+{"status":"ok","ok":true,"mcp":"up","clickhouse":"up","model":"gemini-3.5-flash",
+ "clickhouse_mcp_url":"https://35.239.36.85.sslip.io/mcp","clickhouse_mcp_auth":true,
+ "database":"slateiq","schema_source":"/app/db/SCHEMA.md","web_dist":true,"clips_dir":true}
+
+$ curl -N -X POST .../api/chat -d '{"message":"How many takes were shot on day 12, and how many were circled?"}'
+event: agent   {"name":"production_agent"}
+event: tool_call   {"name":"run_query","args":{"query":"SELECT day_number, takes, circled FROM slateiq.daily_progress WHERE day_number = 12 LIMIT 1"}}
+event: tool_result {"rows":1,"summary":"[[12, 175, 38]]"}
+event: final   "On Day 12, we shot a total of **175 takes**, of which **38 were circled** ...
+                print ratio of **4.6:1** ..."
+   -> the SQL was written by the agent and executed through mcp-clickhouse on the VM.
 
 $ curl -sI https://storage.googleapis.com/slateiq-media-gke-hackathon-472816/clips/TOS-D12-S12-A-01-A.mp4
 HTTP/2 200 · content-type: video/mp4 · cache-control: public, max-age=31536000, immutable

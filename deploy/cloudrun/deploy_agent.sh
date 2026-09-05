@@ -32,11 +32,22 @@ CLICKHOUSE_MCP_URL="${CLICKHOUSE_MCP_URL:-}"
 CLICKHOUSE_MCP_TOKEN="${CLICKHOUSE_MCP_TOKEN:-}"
 CLIPS_BASE_URL="${CLIPS_BASE_URL:-}"
 GRAFANA_URL="${GRAFANA_URL:-}"
+# Direct read-only ClickHouse, for the UI's takes-gallery passthrough only (all agent
+# reasoning goes through MCP). Port 8443 is Caddy serving ClickHouse HTTP at the root path,
+# because clickhouse-connect cannot address a server mounted under /ch/.
+CH_DIRECT_HOST="${PUBLIC_HOST:-}"
+CH_DIRECT_PASSWORD="${CH_AGENT_RO_PASSWORD:-}"
 [ -n "$CLICKHOUSE_MCP_URL" ] || echo "WARN: CLICKHOUSE_MCP_URL empty — run deploy/vm/deploy_stack.sh first"
 
 # ---------------------------------------------------------------- APIs
-gcloud services enable run.googleapis.com artifactregistry.googleapis.com \
-  cloudbuild.googleapis.com secretmanager.googleapis.com --project "$PROJECT" --quiet >/dev/null
+ENABLED=$(gcloud services list --enabled --project "$PROJECT" --format='value(config.name)')
+MISSING=""
+for api in run.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com secretmanager.googleapis.com; do
+  echo "$ENABLED" | grep -qx "$api" || MISSING="$MISSING $api"
+done
+# `gcloud services enable` takes minutes even when everything is already on, so only call it
+# when something is genuinely missing.
+[ -n "$MISSING" ] && gcloud services enable $MISSING --project "$PROJECT" --quiet >/dev/null
 
 # ---------------------------------------------------------------- Artifact Registry
 if ! gcloud artifacts repositories describe "$AR_REPO" --location "$REGION" --project "$PROJECT" >/dev/null 2>&1; then
@@ -104,12 +115,17 @@ fi
 # ---------------------------------------------------------------- build
 # This project has no Compute Engine default service account, so Cloud Build must be told
 # which identity to run as, and logs must go to a user-owned regional bucket.
-gcloud builds submit "$SRC" \
-  --project "$PROJECT" --region "$REGION" \
-  --tag "${IMAGE}:${TAG}" \
-  --service-account="projects/${PROJECT}/serviceAccounts/${RUNTIME_SA}" \
-  --default-buckets-behavior=REGIONAL_USER_OWNED_BUCKET --quiet
-gcloud artifacts docker tags add "${IMAGE}:${TAG}" "${IMAGE}:latest" --quiet 2>/dev/null || true
+BUILD_ARGS=(--project "$PROJECT" --region "$REGION"
+            --service-account="projects/${PROJECT}/serviceAccounts/${RUNTIME_SA}"
+            --default-buckets-behavior=REGIONAL_USER_OWNED_BUCKET --quiet)
+if [ "$DOCKERFILE" = "Dockerfile" ]; then
+  gcloud builds submit "$SRC" "${BUILD_ARGS[@]}" --tag "${IMAGE}:${TAG}"
+else
+  # agent/Dockerfile is not at the source root, which --tag requires; use an explicit config.
+  gcloud builds submit "$SRC" "${BUILD_ARGS[@]}" \
+    --config="$PWD/cloudbuild.agent.yaml" \
+    --substitutions="_IMAGE=${IMAGE},_TAG=${TAG}"
+fi
 
 # ---------------------------------------------------------------- deploy
 gcloud run deploy "$SERVICE" \
@@ -124,7 +140,7 @@ gcloud run deploy "$SERVICE" \
   --service-account "$RUNTIME_SA" \
   --labels app=slateiq,tier=agent \
   --set-secrets "GOOGLE_API_KEY=${SECRET_NAME}:latest" \
-  --set-env-vars "^@^GOOGLE_GENAI_USE_VERTEXAI=FALSE@GOOGLE_CLOUD_PROJECT=${PROJECT}@GOOGLE_CLOUD_LOCATION=${REGION}@CLICKHOUSE_MCP_URL=${CLICKHOUSE_MCP_URL}@CLICKHOUSE_MCP_TOKEN=${CLICKHOUSE_MCP_TOKEN}@CLIPS_BASE_URL=${CLIPS_BASE_URL}@GRAFANA_URL=${GRAFANA_URL}" \
+  --set-env-vars "^@^GOOGLE_GENAI_USE_VERTEXAI=FALSE@GOOGLE_CLOUD_PROJECT=${PROJECT}@GOOGLE_CLOUD_LOCATION=${REGION}@CLICKHOUSE_MCP_URL=${CLICKHOUSE_MCP_URL}@CLICKHOUSE_MCP_TOKEN=${CLICKHOUSE_MCP_TOKEN}@CLIPS_BASE_URL=${CLIPS_BASE_URL}@GRAFANA_URL=${GRAFANA_URL}@CLICKHOUSE_HOST=${CH_DIRECT_HOST}@CLICKHOUSE_PORT=8443@CLICKHOUSE_SECURE=true@CLICKHOUSE_USER=agent_ro@CLICKHOUSE_PASSWORD=${CH_DIRECT_PASSWORD}@CLICKHOUSE_DATABASE=slateiq" \
   --quiet
 
 URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)')

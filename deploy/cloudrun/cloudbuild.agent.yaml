@@ -1,0 +1,21 @@
+# Build agent/Dockerfile with the REPO ROOT as context.
+# `gcloud builds submit --tag` only works when a Dockerfile sits at the source root, and ours
+# deliberately does not (the image needs db/ and web/ alongside agent/), so we spell the build out.
+# No `machineType` override on purpose: the default pool is what the 120 free build-minutes/day cover.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - agent/Dockerfile
+      - -t
+      - ${_IMAGE}:${_TAG}
+      - -t
+      - ${_IMAGE}:latest
+      - .
+images:
+  - ${_IMAGE}:${_TAG}
+  - ${_IMAGE}:latest
+options:
+  logging: GCS_ONLY
+timeout: 1800s
