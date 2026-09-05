@@ -9,8 +9,9 @@ Everything a reviewer needs to check the claims in the root [`README.md`](../REA
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | The system in detail: the shared `McpToolset`, coordinator → 4 specialists, the guardrail chain, the trace contract, and the ClickHouse schema the agent reasons over. The one doc to read if you only read one. |
 | [`DEVPOST.md`](DEVPOST.md) | The submission write-up — problem, what it does, how it was built, every number re-verified. |
 | [`PLAN.md`](PLAN.md) | The sprint plan the build followed. |
-| [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) | Shot list and voiceover for the ≤3-minute video (owned by the video editor — see [`../video/`](../video)). |
+| [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) | Beat-by-beat cut of the trailer, synced to the committed **v2** (2:56.1), plus the ready-to-paste YouTube listing. |
 | [`SUBMISSION.md`](SUBMISSION.md) | Submission checklist and status. |
+| [`HANDOFF.md`](HANDOFF.md) | **The last mile, by hand** — YouTube upload, the Devpost form field by field, pre-submit checks, and what to do during the judging window. Vietnamese summary at the top. |
 
 ## Evidence trail
 
