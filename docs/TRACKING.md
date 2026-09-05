@@ -93,3 +93,4 @@
 | 21:06 | orchestrator | redeploying to bake editor_log cache (closes P2 #1) | in progress |
 | 21:10 | orchestrator | redeploy (editor_log bake) still in Cloud Build — gcloud slow; hosted rev 00013 healthy, editor-log 0.66s on warm instance | in progress |
 | 21:10 | orchestrator | hung 'gcloud projects describe' killed; redeploy relaunched (two identical deploys may race, same commit); hosted 00013 healthy | in progress |
+| 21:25 | orchestrator | redeploy attempts hung inside gcloud CLI → killed; hosted rev 00013 healthy; editor_log bake documented as P2 follow-up in HANDOFF | done |

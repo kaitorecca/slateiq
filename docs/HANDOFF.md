@@ -12,6 +12,8 @@ Judging window: **23 Sep – 7 Oct 2026** — the VM and Cloud Run must stay ali
 
 > **Ops already in place (5 Sep):** Cloud Scheduler `slateiq-keepwarm` pings `/api/health` every 5 min (warm instance), and a Cloud Monitoring uptime check emails the owner's Gmail if the hosted health stops saying `mcp:up`. Both are free-tier; see deploy/README.md.
 
+> **Small follow-up (P2, optional):** Cloud Run rev `slateiq-00013` predates commit `eb10466`, so the baked Editor's Log cache (`data/cache/reports/editor_log_day12.json`) is missing from the image — the first `/api/report/editor-log?day=12` on a cold instance takes ~100 s (no UI button calls it; CSV/ALE exports and the DPR are unaffected). Fix = one redeploy when gcloud is responsive: `bash deploy/cloudrun/deploy_agent.sh` (~5 min). Two attempts on 5 Sep ~21:00 hung inside gcloud (`projects describe` / `services list` never returned) and were killed.
+
 ## Tóm tắt tiếng Việt (đọc cái này trước)
 
 Sản phẩm đã xong hết: code, deploy, test, video. **Chỉ còn 2 việc cần bạn tự làm bằng tay:**
