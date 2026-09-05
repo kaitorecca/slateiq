@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { mediaUrl, thumbUrl } from '../lib/media'
+import { isPlayable, mediaUrl, thumbUrl } from '../lib/media'
 
 interface Props {
   clipUri?: string
@@ -33,11 +33,21 @@ export function ClipPlayer({ clipUri, thumbUri, t, autoPlay, className = '', onT
   }, [t, src])
 
   if (!src || failed) {
+    // A gs:// URI in a bucket that was never made public is a publishing gap,
+    // not a broken file -- say so rather than showing a dead player.
+    const unpublished = !!clipUri && !isPlayable(clipUri)
     return (
       <div
-        className={`flex items-center justify-center rounded-lg border border-dashed border-line bg-cell text-[11px] text-faint ${className}`}
+        className={`flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-line bg-cell px-3 text-center ${className}`}
       >
-        clip unavailable
+        <span className="text-[11px] font-medium text-dim">
+          {unpublished ? 'Media not published' : 'Clip unavailable'}
+        </span>
+        <span className="text-[10px] leading-snug text-faint">
+          {unpublished
+            ? 'This synthetic take has no footage in the public bucket.'
+            : 'The clip could not be loaded.'}
+        </span>
       </div>
     )
   }

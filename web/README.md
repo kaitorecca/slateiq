@@ -10,9 +10,12 @@ It is a single-page app with four screens, served as static files by the FastAPI
 | **Ask the Dailies** | `#/ask` (default) | Streaming chat with the ADK agent + a live **Agent trace** panel showing which sub-agent is active and every `mcp-clickhouse` tool call with syntax-highlighted, copyable SQL and row counts. Take cards render an inline `<video>` that seeks to the cited timestamp. |
 | **Takes** | `#/takes` | Scene + status filters over a grid of take cards (thumb, status badge, flag chips, quality bar, Gemini summary). Clicking a card opens a player drawer with the transcript / flag timeline. |
 | **Production Health** | `#/health` | Embedded Grafana panels (or in-app recharts fallback), plus **Generate Daily Progress Report** → rendered markdown → **Read it aloud** via Gemini TTS. |
-| **About** | `#/about` | Inline-SVG architecture diagram, ClickHouse-track badge, Tears of Steel CC-BY attribution. |
+| **About** | `#/about` | Inline-SVG architecture diagram, repo link, **Live** endpoint table (Cloud Run / Grafana / MCP health), screenshot strip, a "How it complies" block, and Tears of Steel CC-BY attribution. |
 
 The header shows live connection health dots for MCP and ClickHouse, polled from `/api/health`.
+
+Hosted URLs and media/footage policy live in one place: **`src/config.ts`** (all values overridable at
+build time — see *Environment variables* below). Screenshots for the About strip are in `public/img/`.
 
 ## Run it
 
@@ -59,6 +62,10 @@ Build-time only (Vite inlines them), all optional:
 | `VITE_GRAFANA_URL` | *(unset)* | When set, Production Health embeds Grafana `d-solo` panels instead of the in-app charts. |
 | `VITE_GRAFANA_DASHBOARD` | `slateiq/production-health` | Dashboard uid/slug used in the `d-solo` URL. |
 | `VITE_GRAFANA_PANELS` | `1:Print ratio by scene,2:Pages vs plan,3:Flag rate,4:Camera hours` | Comma-separated `panelId:Title` list. |
+| `VITE_APP_URL` | `https://slateiq-hbissixc2q-uc.a.run.app` | Hosted app URL shown in the About page's **Live** section. |
+| `VITE_MCP_HEALTH_URL` | `https://35.239.36.85.sslip.io/health` | Unauthenticated `mcp-clickhouse` health route, linked from **Live**. |
+| `VITE_PUBLIC_MEDIA_BUCKETS` | `slateiq-media-gke-hackathon-472816` | Comma-separated GCS buckets that are public-read. A `gs://` `clip_uri` in any *other* bucket is treated as unpublished and renders a **"Media not published"** card instead of a dead `<video>`. |
+| `VITE_FOOTAGE_SCENES` | `12,14A,27,33,41,56,78,102` | Scenes with real ingested footage. The Takes gallery opens on these ("Scenes with footage"); *All scenes* shows the whole synthetic shoot. |
 | `VITE_API_TARGET` | `http://localhost:8811` | Dev-server proxy target only; irrelevant in production. |
 
 ## API contract this UI expects
@@ -87,8 +94,11 @@ All paths are same-origin.
 
 Notes for the backend:
 
-- `clip_uri` / `thumb_uri` may be relative (`clips/x.mp4`), absolute `https://…`, or `gs://bucket/…`
-  — all three are resolved client-side.
+- `clip_uri` / `thumb_uri` may be relative (`clips/x.mp4`), absolute `https://…`, or `gs://bucket/…`.
+  A `gs://` URI is rewritten to `https://storage.googleapis.com/…` **only** for buckets listed in
+  `VITE_PUBLIC_MEDIA_BUCKETS`; anything else renders a "Media not published" placeholder.
+- When `thumb_uri` is missing the poster is derived from `clip_uri` by swapping `clips/` → `thumbs/`
+  and the extension for `.jpg` (the layout both on disk and in the bucket).
 - `status` is matched case-insensitively against `circled` / `ng` / `hold`; anything else renders as
   a neutral badge.
 - `quality_score` may be 0–1 or 0–100.

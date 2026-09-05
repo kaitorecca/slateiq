@@ -7,7 +7,8 @@ import { ClipPlayer } from '../components/ClipPlayer'
 import { Drawer } from '../components/Drawer'
 import { Empty, ErrorBox, Skeleton } from '../components/States'
 import { FlagChips, QualityBar, StatusBadge } from '../components/StatusBadge'
-import { fmtTime } from '../lib/media'
+import { fmtTime, isPlayable } from '../lib/media'
+import { FOOTAGE_SCENES } from '../config'
 
 const STATUSES = [
   { id: 'all', label: 'All' },
@@ -166,11 +167,23 @@ function TakeDrawer({ take, onClose }: { take: Take | null; onClose: () => void 
   )
 }
 
+/**
+ * Sentinel scene-filter values. The gallery defaults to FOOTAGE, the scenes
+ * that have real Tears of Steel footage ingested -- the rest of the shoot is
+ * synthetic and its clips were never published, so it opens on cards that play.
+ */
+const FOOTAGE = '__footage'
+const ALL = '__all'
+
 export function Takes() {
-  const [scene, setScene] = useState<string | null>(null)
+  const [scene, setScene] = useState<string>(FOOTAGE)
   const [status, setStatus] = useState<StatusFilter>('all')
   const [selected, setSelected] = useState<Take | null>(null)
-  const { data, error, loading, reload } = useAsync<Take[]>(() => getTakes(scene), [scene])
+  const specific = scene !== FOOTAGE && scene !== ALL
+  const { data, error, loading, reload } = useAsync<Take[]>(
+    () => getTakes(specific ? scene : null),
+    [specific ? scene : ''],
+  )
 
   const scenes = useMemo(() => {
     const s = new Set<string>()
@@ -180,22 +193,32 @@ export function Takes() {
 
   const [allScenes, setAllScenes] = useState<string[]>([])
   useEffect(() => {
-    if (scene == null && scenes.length) setAllScenes(scenes)
-  }, [scene, scenes])
+    if (!specific && scenes.length) setAllScenes(scenes)
+  }, [specific, scenes])
+
+  const inScope = useMemo(
+    () =>
+      scene === FOOTAGE
+        ? (data ?? []).filter((t) => FOOTAGE_SCENES.includes(String(t.scene_number)))
+        : (data ?? []),
+    [data, scene],
+  )
 
   const shown = useMemo(
-    () => (data ?? []).filter((t) => status === 'all' || String(t.status).toLowerCase() === status),
-    [data, status],
+    () => inScope.filter((t) => status === 'all' || String(t.status).toLowerCase() === status),
+    [inScope, status],
   )
+
+  const unpublished = useMemo(() => inScope.filter((t) => !isPlayable(t.clip_uri)).length, [inScope])
 
   const counts = useMemo(() => {
     const c = { circled: 0, ng: 0, hold: 0 }
-    for (const t of data ?? []) {
+    for (const t of inScope) {
       const k = String(t.status).toLowerCase() as keyof typeof c
       if (k in c) c[k] += 1
     }
     return c
-  }, [data])
+  }, [inScope])
 
   return (
     <div className="h-full overflow-y-auto px-4 py-6 sm:px-8">
@@ -207,6 +230,12 @@ export function Takes() {
             <p className="mt-1 text-[13px] text-dim">
               Everything the camera rolled, scored and flagged by Gemini during ingest.
             </p>
+            {scene === FOOTAGE && (
+              <p className="mt-1 text-[11.5px] text-faint">
+                Showing the {FOOTAGE_SCENES.length} scenes with real footage ingested — switch to{' '}
+                <b className="font-medium text-dim">All scenes</b> for the full synthetic shoot.
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2 text-[11px] text-faint">
             <span className="chip border-circled/30 bg-circled/10 text-circled">{counts.circled} circled</span>
@@ -222,11 +251,12 @@ export function Takes() {
             </label>
             <select
               id="scene"
-              value={scene ?? ''}
-              onChange={(e) => setScene(e.target.value === '' ? null : e.target.value)}
+              value={scene}
+              onChange={(e) => setScene(e.target.value)}
               className="rounded-lg border border-line bg-raise px-2.5 py-1.5 text-[12.5px] text-ink focus:border-slate/60 focus:outline-none"
             >
-              <option value="">All scenes</option>
+              <option value={FOOTAGE}>Scenes with footage ({FOOTAGE_SCENES.length})</option>
+              <option value={ALL}>All scenes</option>
               {(allScenes.length ? allScenes : scenes).map((s) => (
                 <option key={s} value={s}>
                   Scene {s}
@@ -249,8 +279,15 @@ export function Takes() {
               </button>
             ))}
           </div>
-          <span className="ml-auto font-mono text-[11px] text-faint">
-            {loading ? 'loading…' : `${shown.length} take${shown.length === 1 ? '' : 's'}`}
+          <span className="ml-auto flex items-center gap-2 text-[11px] text-faint">
+            {!loading && unpublished > 0 && (
+              <span className="chip px-2 py-[2px] text-[10px]" title="Synthetic takes whose clips live in a bucket that was never published">
+                {unpublished} without media
+              </span>
+            )}
+            <span className="font-mono">
+              {loading ? 'loading…' : `${shown.length} take${shown.length === 1 ? '' : 's'}`}
+            </span>
           </span>
         </div>
 

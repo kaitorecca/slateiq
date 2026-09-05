@@ -90,7 +90,22 @@ export function TraceRow({ item }: { item: TraceItem }) {
           <ToolIcon name={item.name} />
         </span>
         <span className="font-mono text-[11px] font-semibold text-ink">{item.name}</span>
-        <span className="label">{isResult ? 'result' : isMcp ? 'MCP call' : 'ADK routing'}</span>
+        {isMcp ? (
+          <span
+            className="chip border-slate/40 bg-slate/10 px-1.5 py-[1px] font-mono text-[9.5px] leading-none text-slate"
+            title="Executed by the official mcp-clickhouse server at runtime"
+          >
+            via mcp-clickhouse
+          </span>
+        ) : (
+          <span
+            className="chip px-1.5 py-[1px] text-[9.5px] leading-none text-faint"
+            title="ADK's own sub-agent routing — not a ClickHouse call"
+          >
+            hand-off
+          </span>
+        )}
+        {isResult && <span className="label">result</span>}
         <span className="ml-auto flex items-center gap-2">
           {rows != null && (
             <span className="chip border-circled/30 bg-circled/10 px-2 py-[2px] font-mono text-[10px] text-circled">

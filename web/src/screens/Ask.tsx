@@ -20,6 +20,48 @@ const CHIPS = [
 let seq = 0
 const uid = () => `${Date.now().toString(36)}-${(seq += 1)}`
 
+const fmtSecs = (ms: number) => (ms < 10_000 ? (ms / 1000).toFixed(1) : Math.round(ms / 1000).toString())
+
+/** Live wall-clock while the agent is still working. */
+function Elapsed({ since }: { since?: number }) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (since == null) return
+    const id = window.setInterval(() => setNow(Date.now()), 100)
+    return () => window.clearInterval(id)
+  }, [since])
+  if (since == null) return null
+  return (
+    <span className="font-mono tabular-nums text-[11px] text-faint" aria-live="off">
+      {fmtSecs(Math.max(0, now - since))}s
+    </span>
+  )
+}
+
+/** "3 queries · 812 rows · 21.4 s" -- what the answer actually cost. */
+function AnswerStats({ m }: { m: ChatMessage }) {
+  const queries = m.trace.filter((t) => t.kind === 'tool_call' && t.query).length
+  const rows = m.trace.reduce((n, t) => n + (t.rows != null && t.rows > 0 ? t.rows : 0), 0)
+  if (!queries && m.elapsedMs == null) return null
+  return (
+    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 pt-0.5 font-mono text-[10.5px] text-faint">
+      <span>
+        {queries} quer{queries === 1 ? 'y' : 'ies'}
+      </span>
+      <span aria-hidden="true">·</span>
+      <span>{rows.toLocaleString()} rows</span>
+      {m.elapsedMs != null && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>{fmtSecs(m.elapsedMs)} s</span>
+        </>
+      )}
+      <span aria-hidden="true">·</span>
+      <span className="text-faint/80">through mcp-clickhouse</span>
+    </div>
+  )
+}
+
 function AssistantBubble({ m }: { m: ChatMessage }) {
   const { visible, payload } = useMemo(() => extractPayload(m.text), [m.text])
   // The `final` SSE event carries the same takes already enriched by the
@@ -41,10 +83,14 @@ function AssistantBubble({ m }: { m: ChatMessage }) {
           <div className="flex items-center gap-2 text-[13px] text-faint">
             <Spinner className="h-3.5 w-3.5" />
             <span className="animate-blip">consulting the dailies…</span>
+            <Elapsed since={m.startedAt} />
           </div>
         ) : null}
         {m.streaming && visible && (
-          <span className="inline-block h-3.5 w-[7px] translate-y-[2px] animate-blip bg-slate/80" aria-hidden="true" />
+          <span className="flex items-center gap-2">
+            <span className="inline-block h-3.5 w-[7px] animate-blip bg-slate/80" aria-hidden="true" />
+            <Elapsed since={m.startedAt} />
+          </span>
         )}
 
         {takes.length > 0 && (
@@ -70,6 +116,8 @@ function AssistantBubble({ m }: { m: ChatMessage }) {
             </div>
           </details>
         )}
+
+        {!m.streaming && <AnswerStats m={m} />}
 
         {m.error && <ErrorBox message={m.error} />}
       </div>
@@ -108,7 +156,7 @@ export function Ask() {
       setMessages((m) => [
         ...m,
         { id: uid(), role: 'user', text: q, trace: [] },
-        { id: aId, role: 'assistant', text: '', trace: [], streaming: true },
+        { id: aId, role: 'assistant', text: '', trace: [], streaming: true, startedAt: Date.now() },
       ])
 
       const patch = (fn: (m: ChatMessage) => ChatMessage) =>
@@ -183,12 +231,18 @@ export function Ask() {
         patch((m) => ({
           ...m,
           streaming: false,
+          elapsedMs: m.startedAt ? Date.now() - m.startedAt : m.elapsedMs,
           trace: m.trace.map((t) => ({ ...t, pending: false })),
           error: m.text || m.error ? m.error : 'The agent returned no answer.',
         }))
       } catch (err: unknown) {
-        if ((err as Error)?.name === 'AbortError') patch((m) => ({ ...m, streaming: false }))
-        else patch((m) => ({ ...m, streaming: false, error: err instanceof Error ? err.message : String(err) }))
+        const stop = (m: ChatMessage): ChatMessage => ({
+          ...m,
+          streaming: false,
+          elapsedMs: m.startedAt ? Date.now() - m.startedAt : m.elapsedMs,
+        })
+        if ((err as Error)?.name === 'AbortError') patch(stop)
+        else patch((m) => ({ ...stop(m), error: err instanceof Error ? err.message : String(err) }))
       } finally {
         setBusy(false)
         abortRef.current = null

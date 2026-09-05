@@ -77,4 +77,8 @@ export interface ChatMessage {
   trace: TraceItem[]
   streaming?: boolean
   error?: string
+  /** epoch ms when the question was sent (assistant messages only) */
+  startedAt?: number
+  /** wall-clock ms from question to final answer */
+  elapsedMs?: number
 }

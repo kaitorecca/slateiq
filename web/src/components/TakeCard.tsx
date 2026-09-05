@@ -1,8 +1,23 @@
 import { useEffect, useState } from 'react'
 import type { Take, TakeRef } from '../lib/types'
-import { fmtTime, takeLabel, thumbUrl } from '../lib/media'
+import { fmtTime, isPlayable, takeLabel, thumbUrl } from '../lib/media'
 import { FlagChips, QualityBar, StatusBadge } from './StatusBadge'
 import { ClipPlayer } from './ClipPlayer'
+
+function Unpublished({ className = '' }: { className?: string }) {
+  return (
+    <div
+      className={`relative flex aspect-video w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border border-dashed border-line bg-[repeating-linear-gradient(115deg,#14171B_0_10px,#0E1013_10px_20px)] px-3 text-center ${className}`}
+    >
+      <svg viewBox="0 0 24 24" className="h-4 w-4 text-faint" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="m4 19 6.5-7 4 4.5L17 13l3 3.5" />
+        <path d="M3 3l18 18" />
+      </svg>
+      <span className="text-[10.5px] font-medium text-dim">Media not published</span>
+    </div>
+  )
+}
 
 function Thumb({ take, onPlay }: { take: TakeRef; onPlay: () => void }) {
   const [broken, setBroken] = useState(false)
@@ -56,10 +71,16 @@ export function TakeCard({
 }) {
   const [playing, setPlaying] = useState(false)
   const full = take as Take
+  // gs:// clips in a bucket that was never published can't play anywhere --
+  // show an honest placeholder instead of a play button that leads to a
+  // dead <video>.
+  const published = isPlayable(take.clip_uri)
 
   return (
     <article className="card group flex flex-col gap-2.5 p-2.5 transition hover:border-slate/35">
-      {playing ? (
+      {!published ? (
+        <Unpublished />
+      ) : playing ? (
         <ClipPlayer clipUri={take.clip_uri} thumbUri={take.thumb_uri} t={take.t} autoPlay className="aspect-video" />
       ) : (
         <Thumb take={take} onPlay={() => setPlaying(true)} />
