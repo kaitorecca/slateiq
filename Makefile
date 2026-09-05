@@ -17,9 +17,10 @@ help:  ## show this list
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) \
 	  | awk -F':.*?## ' '{printf "  \033[1m%-8s\033[0m %s\n", $$1, $$2}'
 
-venvs:  ## create .venv (agent + pipeline) and .venv-mcp (mcp-clickhouse); run once
+venvs:  ## create .venv (agent + pipeline + dev tools) and .venv-mcp; run once
 	python3 -m venv .venv
-	$(PIP) install -q -r agent/requirements.txt -r ingest/requirements.txt
+	$(PIP) install -q -r agent/requirements.txt -r ingest/requirements.txt \
+	                  -r requirements-dev.txt
 	python3 -m venv .venv-mcp
 	.venv-mcp/bin/python -m pip install -q 'mcp-clickhouse==0.6.0'
 

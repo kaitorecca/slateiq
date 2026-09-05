@@ -1,0 +1,6 @@
+# Developer tooling: `make test` and `make lint`.
+# Not needed to run SlateIQ, and deliberately absent from the Cloud Run image.
+#
+#   .venv/bin/pip install -r requirements-dev.txt
+pytest>=8.0
+ruff>=0.6

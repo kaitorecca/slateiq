@@ -256,7 +256,7 @@ docker run -d --name slateiq-ch -p 8123:8123 -p 9000:9000 \
 
 # 2 — venvs (`make venvs` does exactly this)
 python3 -m venv .venv && .venv/bin/pip install \
-    -r agent/requirements.txt -r ingest/requirements.txt
+    -r agent/requirements.txt -r ingest/requirements.txt -r requirements-dev.txt
 python3 -m venv .venv-mcp && .venv-mcp/bin/pip install 'mcp-clickhouse==0.6.0'
 
 # 3 — data: the deterministic 30-day synthetic shoot (no API calls, no footage)
