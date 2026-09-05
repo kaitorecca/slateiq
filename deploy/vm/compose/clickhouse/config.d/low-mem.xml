@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<!-- SlateIQ: ClickHouse tuning for a 1 GiB e2-micro free-tier VM.
+     Budget: ClickHouse ~500 MB RSS, mcp-clickhouse ~120 MB, Caddy ~40 MB. -->
+<clickhouse>
+    <!-- Hard ceiling: 60% of the box (~600 MB) for the whole server. -->
+    <max_server_memory_usage_to_ram_ratio>0.6</max_server_memory_usage_to_ram_ratio>
+
+    <!-- Caches: keep marks small, drop the uncompressed cache entirely. -->
+    <mark_cache_size>134217728</mark_cache_size>          <!-- 128 MiB -->
+    <uncompressed_cache_size>0</uncompressed_cache_size>
+    <index_mark_cache_size>33554432</index_mark_cache_size>  <!-- 32 MiB -->
+    <index_uncompressed_cache_size>0</index_uncompressed_cache_size>
+    <compiled_expression_cache_size>0</compiled_expression_cache_size>
+    <mmap_cache_size>256</mmap_cache_size>
+
+    <!-- Concurrency: 2 shared vCPU, so keep queues tiny. -->
+    <max_concurrent_queries>8</max_concurrent_queries>
+    <max_concurrent_insert_queries>4</max_concurrent_insert_queries>
+    <max_concurrent_select_queries>8</max_concurrent_select_queries>
+    <max_thread_pool_size>256</max_thread_pool_size>
+    <max_connections>64</max_connections>
+
+    <!-- Background pools: defaults (16/128) allocate far too many threads here. -->
+    <background_pool_size>4</background_pool_size>
+    <background_merges_mutations_concurrency_ratio>2</background_merges_mutations_concurrency_ratio>
+    <background_move_pool_size>1</background_move_pool_size>
+    <background_fetches_pool_size>2</background_fetches_pool_size>
+    <background_common_pool_size>2</background_common_pool_size>
+    <background_buffer_flush_schedule_pool_size>2</background_buffer_flush_schedule_pool_size>
+    <background_schedule_pool_size>4</background_schedule_pool_size>
+    <background_message_broker_schedule_pool_size>2</background_message_broker_schedule_pool_size>
+    <background_distributed_schedule_pool_size>2</background_distributed_schedule_pool_size>
+    <tables_loader_foreground_pool_size>2</tables_loader_foreground_pool_size>
+    <tables_loader_background_pool_size>2</tables_loader_background_pool_size>
+
+    <!-- Cheap merges: a small max part size keeps peak merge memory bounded. -->
+    <merge_tree>
+        <max_bytes_to_merge_at_max_space_in_pool>1073741824</max_bytes_to_merge_at_max_space_in_pool>
+        <number_of_free_entries_in_pool_to_lower_max_size_of_merge>2</number_of_free_entries_in_pool_to_lower_max_size_of_merge>
+        <!-- Must stay <= background_pool_size * background_merges_mutations_concurrency_ratio (4*2=8),
+             otherwise ClickHouse refuses to start: mutations could never be scheduled. -->
+        <number_of_free_entries_in_pool_to_execute_mutation>4</number_of_free_entries_in_pool_to_execute_mutation>
+        <number_of_free_entries_in_pool_to_execute_optimize_entire_partition>4</number_of_free_entries_in_pool_to_execute_optimize_entire_partition>
+        <merge_max_block_size>2048</merge_max_block_size>
+    </merge_tree>
+
+    <!-- System log noise costs RAM + disk on a 30 GB pd-standard. Keep only query_log. -->
+    <asynchronous_metric_log remove="1"/>
+    <metric_log remove="1"/>
+    <trace_log remove="1"/>
+    <session_log remove="1"/>
+    <part_log remove="1"/>
+    <text_log remove="1"/>
+    <crash_log remove="1"/>
+    <processors_profile_log remove="1"/>
+    <query_views_log remove="1"/>
+    <query_metric_log remove="1"/>
+    <error_log remove="1"/>
+    <latency_log remove="1"/>
+    <backup_log remove="1"/>
+    <blob_storage_log remove="1"/>
+    <query_log>
+        <database>system</database>
+        <table>query_log</table>
+        <ttl>event_date + INTERVAL 3 DAY DELETE</ttl>
+        <flush_interval_milliseconds>10000</flush_interval_milliseconds>
+    </query_log>
+
+    <logger>
+        <level>warning</level>
+        <size>50M</size>
+        <count>2</count>
+    </logger>
+
+    <!-- Listen on all interfaces inside the compose network; only Caddy is exposed. -->
+    <listen_host>0.0.0.0</listen_host>
+</clickhouse>

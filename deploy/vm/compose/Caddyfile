@@ -1,0 +1,62 @@
+# SlateIQ TLS edge. PUBLIC_HOST is a sslip.io name (<ip>.sslip.io) so Let's Encrypt
+# issues a real cert with zero DNS cost. Routes:
+#   https://$PUBLIC_HOST/mcp     -> mcp-clickhouse   (streamable HTTP MCP, bearer token)
+#   https://$PUBLIC_HOST/health  -> mcp-clickhouse   (unauthenticated liveness)
+#   https://$PUBLIC_HOST/ch/*    -> clickhouse:8123  (Grafana datasource; CH user+password is the auth)
+{
+	admin off
+	servers {
+		protocols h1 h2 h3
+	}
+}
+
+(slateiq_routes) {
+	encode zstd gzip
+
+	handle /health {
+		reverse_proxy mcp:8765
+	}
+
+	# MCP streamable-HTTP endpoint. Long-lived SSE responses must not be buffered
+	# or timed out by the proxy.
+	handle /mcp* {
+		reverse_proxy mcp:8765 {
+			flush_interval -1
+			transport http {
+				read_timeout 0
+				write_timeout 0
+				dial_timeout 10s
+			}
+		}
+	}
+
+	# ClickHouse native HTTP interface, path-stripped: /ch/ping -> /ping.
+	# The matcher is /ch* (not /ch/*) on purpose: the Grafana ClickHouse plugin issues
+	# `POST /ch?query=...` with no trailing slash, which /ch/* would not match (404).
+	handle_path /ch* {
+		reverse_proxy clickhouse:8123 {
+			flush_interval -1
+			transport http {
+				read_timeout 120s
+				write_timeout 120s
+			}
+		}
+	}
+
+	handle / {
+		respond "SlateIQ data plane — POST /mcp (Bearer token), /ch/ (ClickHouse HTTP), /health" 200
+	}
+
+	handle {
+		respond "not found" 404
+	}
+}
+
+{$PUBLIC_HOST}, {$PUBLIC_HOST}:8443 {
+	import slateiq_routes
+	log {
+		output stdout
+		format console
+		level ERROR
+	}
+}

@@ -1,0 +1,100 @@
+# SlateIQ data plane — one e2-micro (1 GiB RAM, 2 shared vCPU) in us-central1.
+# Memory budget: clickhouse ~500 MB, mcp ~120 MB, caddy ~40 MB, host+docker ~200 MB,
+# plus a 2 GiB swapfile created by bootstrap.sh as a safety net.
+name: slateiq
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.6
+    container_name: slateiq-ch
+    restart: unless-stopped
+    environment:
+      CH_DEFAULT_PASSWORD: ${CH_DEFAULT_PASSWORD:?set in .env}
+      CH_AGENT_RO_PASSWORD: ${CH_AGENT_RO_PASSWORD:?set in .env}
+      CLICKHOUSE_SKIP_USER_SETUP: 1        # we ship our own users.d/slateiq.xml
+    ulimits:
+      nofile: { soft: 262144, hard: 262144 }
+    cap_add: [SYS_NICE, NET_ADMIN, IPC_LOCK]
+    volumes:
+      - ch-data:/var/lib/clickhouse
+      - ./clickhouse/config.d:/etc/clickhouse-server/config.d:ro
+      - ./clickhouse/users.d:/etc/clickhouse-server/users.d:ro
+      - ./seed:/seed                        # parquet drop-box for seed_remote.sh
+    ports:
+      - "127.0.0.1:8123:8123"               # localhost only; the internet reaches CH via caddy /ch/
+      - "127.0.0.1:9000:9000"
+    mem_limit: 620m
+    memswap_limit: 1500m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8123/ping | grep -q Ok"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    logging: { driver: json-file, options: { max-size: "10m", max-file: "2" } }
+
+  mcp:
+    build: ./mcp
+    image: slateiq/mcp-clickhouse:0.6.0
+    container_name: slateiq-mcp
+    restart: unless-stopped
+    depends_on:
+      clickhouse: { condition: service_healthy }
+    environment:
+      # --- transport ---
+      CLICKHOUSE_MCP_SERVER_TRANSPORT: http
+      CLICKHOUSE_MCP_BIND_HOST: 0.0.0.0
+      CLICKHOUSE_MCP_BIND_PORT: "8765"
+      CLICKHOUSE_MCP_AUTH_TOKEN: ${CLICKHOUSE_MCP_TOKEN:?set in .env}
+      # Host header allowlist — must contain the public name Caddy forwards.
+      CLICKHOUSE_MCP_ALLOWED_HOSTS: ${PUBLIC_HOST:?set in .env},${PUBLIC_HOST}:443,localhost:8765,127.0.0.1:8765,mcp:8765
+      CLICKHOUSE_MCP_ALLOWED_ORIGINS: "https://${PUBLIC_HOST}"
+      CLICKHOUSE_MCP_MAX_WORKERS: "2"
+      CLICKHOUSE_MCP_QUERY_TIMEOUT: "30"
+      # --- read-only ClickHouse connection ---
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_PORT: "8123"
+      CLICKHOUSE_SECURE: "false"
+      CLICKHOUSE_USER: agent_ro
+      CLICKHOUSE_PASSWORD: ${CH_AGENT_RO_PASSWORD:?set in .env}
+      CLICKHOUSE_DATABASE: slateiq
+      CLICKHOUSE_ALLOW_WRITE_ACCESS: "false"
+      CLICKHOUSE_ALLOW_DROP: "false"
+      CLICKHOUSE_CONNECT_TIMEOUT: "15"
+      CLICKHOUSE_SEND_RECEIVE_TIMEOUT: "60"
+    expose: ["8765"]
+    mem_limit: 200m
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8765/health',timeout=5).status==200 else 1)\""]
+      interval: 20s
+      timeout: 8s
+      retries: 10
+      start_period: 30s
+    logging: { driver: json-file, options: { max-size: "10m", max-file: "2" } }
+
+  caddy:
+    image: caddy:2.10-alpine
+    container_name: slateiq-caddy
+    restart: unless-stopped
+    depends_on: [mcp]
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?set in .env}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+      CH_PROXY_USER: ${CH_PROXY_USER:-agent_ro}
+      CH_AGENT_RO_PASSWORD: ${CH_AGENT_RO_PASSWORD:?set in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    ports:
+      - "80:80"       # required for the ACME HTTP-01 challenge / redirect
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+      - "8443:8443"   # alternate TLS port (same routes), for networks that block 443
+    mem_limit: 80m
+    logging: { driver: json-file, options: { max-size: "10m", max-file: "2" } }
+
+volumes:
+  ch-data:
+  caddy-data:
+  caddy-config:

@@ -1,0 +1,592 @@
+{
+  "uid": "slateiq-prod-health",
+  "title": "SlateIQ Production Health",
+  "tags": [
+    "slateiq",
+    "production",
+    "clickhouse"
+  ],
+  "timezone": "browser",
+  "editable": false,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "",
+  "time": {
+    "from": "2026-08-18T00:00:00.000Z",
+    "to": "2026-10-02T00:00:00.000Z"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "production",
+        "label": "Production",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "slateiq-clickhouse"
+        },
+        "query": "SELECT DISTINCT production_id FROM slateiq.take ORDER BY 1",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "tos2026",
+          "value": "tos2026"
+        }
+      },
+      {
+        "name": "day",
+        "label": "Shooting day",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "slateiq-clickhouse"
+        },
+        "query": "SELECT toString(day_number) FROM slateiq.daily_progress WHERE production_id='$production' ORDER BY day_number",
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "current": {
+          "text": "12",
+          "value": "12"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Pages planned vs shot per day",
+      "description": "The 1st AD's headline number, in script pages (eighths/8). Bars below the planned line are days the unit lost ground.",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "slateiq-clickhouse"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 16,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 55,
+            "lineWidth": 1,
+            "barAlignment": 0
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "pages_planned"
+            },
+            "properties": [
+              {
+                "id": "custom.drawStyle",
+                "value": "line"
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": 0,
+          "queryType": "sql",
+          "rawSql": "SELECT toDateTime(shoot_date) AS time,\n       round(sum(pages_planned_eighths) / 8, 2) AS pages_planned,\n       round(sum(pages_shot_eighths)    / 8, 2) AS pages_shot\nFROM slateiq.daily_progress\nWHERE production_id = '$production' AND takes > 0 AND $__timeFilter(shoot_date)\nGROUP BY time\nORDER BY time"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Schedule position",
+      "description": "Cumulative pages shot minus planned across the whole shoot.",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "slateiq-clickhouse"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": -1
+              },
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": 1,
+          "queryType": "sql",
+          "rawSql": "SELECT round((sum(pages_shot_eighths) - sum(pages_planned_eighths)) / 8, 2) AS \"pages ahead / behind\",\n       round(sum(pages_shot_eighths) / 8, 2)                                AS \"pages shot\",\n       count()                                                              AS \"days shot\"\nFROM slateiq.daily_progress\nWHERE production_id = '$production' AND takes > 0"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "barchart",
+      "title": "Print ratio (takes per circled take) by scene",
+      "description": "Takes exposed per printed (circled) take. A tall bar means the scene was fought for \u2014 coverage, resets, or a performance problem.",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "slateiq-clickhouse"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 1,
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "scene",
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "legend": {
+          "showLegend": false
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": 1,
+          "queryType": "sql",
+          "rawSql": "SELECT concat('Sc ', scene_number) AS scene,\n       round(print_ratio, 2)     AS \"print ratio\"\nFROM slateiq.scene_progress\nWHERE production_id = '$production' AND print_ratio > 0\nORDER BY print_ratio DESC\nLIMIT 20"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Flags by type per day",
+      "description": "QC events the ingest agents raised on takes: soft focus, boom in shot, flubbed line, overlap, continuity.",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "slateiq-clickhouse"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "stacking": {
+              "mode": "normal"
+            },
+            "fillOpacity": 70,
+            "lineWidth": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": 0,
+          "queryType": "sql",
+          "rawSql": "SELECT toDateTime(d.shoot_date) AS time,\n       f.flag_type               AS flag,\n       sum(f.flags)              AS flags\nFROM slateiq.flag_summary AS f\nINNER JOIN slateiq.daily_progress AS d\n        ON d.production_id = f.production_id AND d.day_number = f.day_number\nWHERE f.production_id = '$production' AND $__timeFilter(d.shoot_date)\nGROUP BY time, flag\nORDER BY time"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "barchart",
+      "title": "Takes per hour \u2014 shooting day $day",
+      "description": "The shape of a shooting day, keyed off the slate timecode: the lunch dip, and whether the unit was still rolling after the 12th hour.",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "slateiq-clickhouse"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 18
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "xField": "hour",
+        "orientation": "vertical",
+        "showValue": "auto",
+        "stacking": "none",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": 1,
+          "queryType": "sql",
+          "rawSql": "SELECT toUInt8(substring(tc_in, 1, 2)) AS hour,\n       count()                         AS takes,\n       countIf(status = 'circled')     AS circled\nFROM slateiq.take\nWHERE production_id = '$production' AND day_number = toUInt16($day) AND tc_in != ''\nGROUP BY hour\nORDER BY hour"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Wrap delay trend",
+      "description": "Minutes past the scheduled wrap, per day. A rising line is the overtime conversation nobody wants at 1 a.m.",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "slateiq-clickhouse"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 18
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "m",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "spanNulls": true
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 30
+              },
+              {
+                "color": "red",
+                "value": 60
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": 0,
+          "queryType": "sql",
+          "rawSql": "SELECT toDateTime(shoot_date)   AS time,\n       toInt32(ifNull(wrap_delay_min, 0)) AS \"wrap delay (min)\"\nFROM slateiq.daily_progress\nWHERE production_id = '$production' AND takes > 0 AND $__timeFilter(shoot_date)\nORDER BY time"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "piechart",
+      "title": "Circled vs NG",
+      "description": "Circled takes are the ones the director printed. Everything else is either a hold or an outright NG.",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "slateiq-clickhouse"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 27
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "circled"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "ng"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "hold"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "wild"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "purple"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "pending"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "pieType": "donut",
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "value",
+            "percent"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": 1,
+          "queryType": "sql",
+          "rawSql": "SELECT status, count() AS takes\nFROM slateiq.take\nWHERE production_id = '$production'\nGROUP BY status\nORDER BY takes DESC"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "Scenes at risk",
+      "description": "Every scene by print ratio \u2014 takes burned per usable take. Where a producer should look first.",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "slateiq-clickhouse"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 8,
+        "y": 27
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "print ratio"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 8
+                    },
+                    {
+                      "color": "red",
+                      "value": 15
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "print ratio",
+            "desc": true
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": 1,
+          "queryType": "sql",
+          "rawSql": "SELECT sp.scene_number              AS scene,\n       sp.slug                      AS slug,\n       round(sp.page_eighths / 8, 2) AS pages,\n       sp.takes                     AS takes,\n       sp.circled                   AS circled,\n       round(sp.print_ratio, 2)  AS \"print ratio\",\n       sp.status                    AS status\nFROM slateiq.scene_progress AS sp\nWHERE sp.production_id = '$production'\nORDER BY sp.print_ratio DESC\nLIMIT 15"
+        }
+      ]
+    }
+  ]
+}

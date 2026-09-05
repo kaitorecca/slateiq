@@ -1,0 +1,23 @@
+# ClickHouse datasource -> the free-tier VM, over Caddy's TLS /ch/ path proxy.
+# Credentials arrive as env vars (Secret Manager / deploy script); nothing is baked in.
+apiVersion: 1
+datasources:
+  - name: SlateIQ ClickHouse
+    uid: slateiq-clickhouse
+    type: grafana-clickhouse-datasource
+    access: proxy
+    isDefault: true
+    editable: false
+    jsonData:
+      host: ${CH_HOST}          # <ip>.sslip.io
+      port: 443
+      protocol: http            # ClickHouse HTTP interface (not the native TCP protocol)
+      secure: true
+      path: ch                  # Caddy strips /ch/ before forwarding to clickhouse:8123
+      username: ${CH_USER}      # agent_ro — readonly=2, cannot write
+      defaultDatabase: slateiq
+      tlsSkipVerify: false
+      dialTimeout: 15
+      queryTimeout: 60
+    secureJsonData:
+      password: ${CH_PASSWORD}

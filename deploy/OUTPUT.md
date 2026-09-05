@@ -1,0 +1,118 @@
+# deploy/OUTPUT.md — live SlateIQ endpoints
+
+Last verified: **2026-09-05 ~05:00 UTC** · project `gke-hackathon-472816` · region `us-central1`
+
+Secrets referenced below live in `.secrets/deploy.env` (gitignored). Nothing here is a secret.
+
+## Endpoints
+
+| What | URL |
+|---|---|
+| **Agent (Cloud Run)** | `https://slateiq-<hash>-uc.a.run.app` — see "Cloud Run" below |
+| **Grafana** | https://slateiq-grafana-hbissixc2q-uc.a.run.app |
+| **Production Health dashboard** | https://slateiq-grafana-hbissixc2q-uc.a.run.app/d/slateiq-prod-health |
+| **ClickHouse MCP (official server)** | `https://35.239.36.85.sslip.io/mcp` |
+| **MCP health (no auth)** | https://35.239.36.85.sslip.io/health |
+| **ClickHouse HTTP (read-only)** | `https://35.239.36.85.sslip.io/ch/` |
+| **Clips / thumbnails (GCS)** | `https://storage.googleapis.com/slateiq-media-gke-hackathon-472816` |
+
+## Environment for the agent
+
+```bash
+CLICKHOUSE_MCP_URL=https://35.239.36.85.sslip.io/mcp
+CLICKHOUSE_MCP_TOKEN=<.secrets/deploy.env: CLICKHOUSE_MCP_TOKEN>   # sent as: Authorization: Bearer <token>
+CLIPS_BASE_URL=https://storage.googleapis.com/slateiq-media-gke-hackathon-472816
+GRAFANA_URL=https://slateiq-grafana-hbissixc2q-uc.a.run.app
+```
+
+MCP transport is **streamable HTTP** (`mcp-clickhouse` 0.6.0). Requests must send
+`Accept: application/json, text/event-stream`. Unauthenticated requests get **401**.
+
+## Resources created (nothing pre-existing was touched)
+
+| Resource | Name |
+|---|---|
+| Compute Engine VM | `slateiq-data` (e2-micro, us-central1-a, 30 GB pd-standard, deletion protection ON) |
+| Firewall rule | `slateiq-allow-web` (tcp 80/443/8443 + udp 443, target tag `slateiq-data`) |
+| Cloud Run | `slateiq` (agent), `slateiq-grafana` |
+| Artifact Registry | `slateiq` (us-central1) — images `slateiq`, `grafana` |
+| Secret Manager | `slateiq-google-api-key`, `slateiq-ch-ro-password` (1 active version each) |
+| GCS bucket | `slateiq-media-gke-hackathon-472816` (public read, 48 objects, 43.7 MB) |
+| Runtime service account | `slateiq-dev@gke-hackathon-472816.iam.gserviceaccount.com` |
+
+The project's Compute Engine default service account does not exist, so both Cloud Build and
+Cloud Run are pinned to `slateiq-dev@` explicitly (`--service-account`,
+`--default-buckets-behavior=REGIONAL_USER_OWNED_BUCKET`).
+
+Untouched, as instructed: `ai-magic-design-frontend`, `design-search-api`.
+
+## Verification transcript
+
+```
+$ curl -s https://35.239.36.85.sslip.io/health
+OK
+
+$ curl -s https://35.239.36.85.sslip.io/ch/ping
+Ok.
+
+$ curl -s -o /dev/null -w '%{http_code}\n' -X POST https://35.239.36.85.sslip.io/mcp
+401
+
+$ curl -s https://35.239.36.85.sslip.io/mcp -H "Authorization: Bearer $T" \
+    -H 'Accept: application/json, text/event-stream' -H 'Content-Type: application/json' \
+    -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{...}}'
+event: message
+data: {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18",...,
+       "serverInfo":{"name":"mcp-clickhouse","version":"0.6.0"}}}
+
+$ curl -s 'https://35.239.36.85.sslip.io/ch?query=SELECT+count()+FROM+slateiq.take' --user agent_ro:***
+2503
+
+$ curl -s https://slateiq-grafana-hbissixc2q-uc.a.run.app/api/health
+{"database":"ok","version":"12.4.3","commit":"86c83248"}
+
+$ curl -s -X POST .../api/ds/query -d '{... "rawSql":"SELECT scene_number, round(print_ratio,2) ..."}'
+{"results":{"A":{"status":200,"frames":[{... "values":[["98","19","91"],[7.55,7.18,6.71]]}]}}}
+
+$ curl -sI https://storage.googleapis.com/slateiq-media-gke-hackathon-472816/clips/TOS-D12-S12-A-01-A.mp4
+HTTP/2 200 · content-type: video/mp4 · cache-control: public, max-age=31536000, immutable
+```
+
+## Hosted data (seeded from local ClickHouse, exact row-count match)
+
+| Table | Rows |
+|---|---|
+| `production` | 1 |
+| `scene` | 120 |
+| `shooting_day` | 30 |
+| `take` | 2,503 |
+| `take_analysis` | 2,503 |
+| `take_event` | 26,750 |
+| `continuity_note` | 66 |
+| **`frame_telemetry`** | **3,074,957** |
+| `take_daily_agg` (MV) | 12 |
+| `take_scene_agg` (MV) | 51 |
+
+Views `daily_progress`, `scene_progress` (with the renamed `print_ratio` column), `flag_summary`
+are present. Total on disk: **53.5 MiB** — `frame_telemetry` moved in 8 hash-modulo chunks of
+~400k rows, ~9 MB of zstd Parquet each, so the 1 GiB VM never saw more than one chunk at a time.
+
+## Health / RAM on the VM
+
+```
+$ free -m
+               total        used        free       buff/cache   available
+Mem:             969         684         128              296         285
+Swap:           2047         113        1934
+```
+
+Containers: `slateiq-ch` (healthy), `slateiq-mcp` (healthy), `slateiq-caddy` — all `unless-stopped`.
+
+## Known caveats
+
+- **The VM's external IP is ephemeral.** If the instance is stopped/restarted the IP changes and
+  with it `PUBLIC_HOST` (`<ip>.sslip.io`). Recovery: `deploy/vm/deploy_stack.sh`, then
+  `deploy/cloudrun/deploy_agent.sh` and `deploy/grafana/deploy.sh` (~4 min, all idempotent).
+  This is also the only line item that can cost money — see [cost.md](cost.md).
+- Grafana's sqlite is in `/tmp`, so anything a viewer changes in the UI is lost on the next cold
+  start. That is intentional: the image is the source of truth.
