@@ -92,3 +92,4 @@
 | 21:05 | regression | docs/QC_REGRESSION_00013.md: 21/21 green, no marker leaks, DPR chip 6.6s cached; 2 P2 (editor-log bake missed the image; refresh stales TTS wav) | done |
 | 21:06 | orchestrator | redeploying to bake editor_log cache (closes P2 #1) | in progress |
 | 21:10 | orchestrator | redeploy (editor_log bake) still in Cloud Build — gcloud slow; hosted rev 00013 healthy, editor-log 0.66s on warm instance | in progress |
+| 21:10 | orchestrator | hung 'gcloud projects describe' killed; redeploy relaunched (two identical deploys may race, same commit); hosted 00013 healthy | in progress |
