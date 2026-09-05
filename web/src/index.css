@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { color-scheme: dark; }
+  html, body, #root { height: 100%; }
+  body {
+    @apply bg-void text-ink font-sans antialiased;
+    background-image:
+      radial-gradient(1200px 600px at 78% -10%, rgba(240,180,41,.055), transparent 60%),
+      radial-gradient(900px 500px at 0% 100%, rgba(91,159,227,.045), transparent 60%);
+    background-attachment: fixed;
+  }
+  * { -webkit-tap-highlight-color: transparent; }
+  :focus-visible {
+    @apply outline-none ring-2 ring-slate/70 ring-offset-2 ring-offset-void rounded-[6px];
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #23272E; border-radius: 999px; border: 3px solid transparent; background-clip: content-box; }
+  ::-webkit-scrollbar-thumb:hover { background: #333942; background-clip: content-box; }
+}
+
+@layer components {
+  .card { @apply bg-panel/80 border border-line rounded-xl shadow-lift backdrop-blur-[2px]; }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-raise/70
+           px-2.5 py-1 text-[11px] font-medium text-dim transition-colors;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-raise
+           px-3.5 py-2 text-[13px] font-medium text-ink transition
+           hover:border-slate/50 hover:text-white active:translate-y-px
+           disabled:opacity-40 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply border-slate/60 bg-slate/15 text-slate hover:bg-slate/25 hover:text-slate;
+  }
+  .label { @apply text-[10px] uppercase tracking-[.16em] text-faint font-semibold; }
+  /* clapper-stripe rule used as a section divider / brand motif */
+  .clapper {
+    background-image: repeating-linear-gradient(115deg,
+      #E9E7E2 0 12px, #0E1013 12px 24px);
+  }
+}
+
+/* SQL highlighting tokens */
+.sql-kw { color: #F0B429; font-weight: 600; }
+.sql-fn { color: #8FD3FF; }
+.sql-str { color: #9BE6A8; }
+.sql-num { color: #E7A2E0; }
+.sql-com { color: #5B626C; font-style: italic; }
+.sql-op  { color: #9AA1AB; }
+
+.prose-slate-dark { @apply text-[13.5px] leading-[1.75] text-ink/90; }
+.prose-slate-dark h1 { @apply text-xl font-semibold text-ink mt-0 mb-3 pb-2 border-b border-line; }
+.prose-slate-dark h2 { @apply text-[15px] font-semibold text-ink mt-6 mb-2 tracking-tight; }
+.prose-slate-dark h3 { @apply text-[13px] font-semibold text-dim mt-4 mb-1.5 uppercase tracking-wider; }
+.prose-slate-dark p { @apply my-2.5; }
+.prose-slate-dark ul { @apply list-disc pl-5 my-2.5 space-y-1; }
+.prose-slate-dark ol { @apply list-decimal pl-5 my-2.5 space-y-1; }
+.prose-slate-dark strong { @apply text-white font-semibold; }
+.prose-slate-dark a { @apply text-slate underline underline-offset-2; }
+.prose-slate-dark code { @apply font-mono text-[12px] bg-raise border border-line rounded px-1 py-0.5 text-slate; }
+.prose-slate-dark pre { @apply bg-cell border border-line rounded-lg p-3 overflow-x-auto my-3; }
+.prose-slate-dark pre code { @apply bg-transparent border-0 p-0 text-ink; }
+.prose-slate-dark blockquote { @apply border-l-2 border-slate/50 pl-3 my-3 text-dim italic; }
+.prose-slate-dark table { @apply w-full text-[12.5px] my-3 border-collapse; }
+.prose-slate-dark th { @apply text-left font-semibold text-dim border-b border-line px-2.5 py-1.5 bg-raise/50; }
+.prose-slate-dark td { @apply border-b border-line/60 px-2.5 py-1.5; }
+.prose-slate-dark hr { @apply border-line my-5; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}

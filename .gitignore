@@ -1,0 +1,11 @@
+.secrets/
+.env
+.venv/
+.venv-mcp/
+data/footage/
+data/clips/
+data/video/
+!data/cache/
+node_modules/
+__pycache__/
+*.pyc
