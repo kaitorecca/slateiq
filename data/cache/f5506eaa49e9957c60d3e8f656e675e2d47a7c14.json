@@ -1,0 +1,75 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 14.8,
+        "start": 11.0,
+        "text": "The older man walks out of frame to the left, and the cyborg man lowers his hand."
+      }
+    ],
+    "camera": [
+      {
+        "end": 14.8,
+        "start": 0.0,
+        "text": "static medium close-up"
+      }
+    ],
+    "emotions": [
+      {
+        "end": 11.0,
+        "intensity": 0.8,
+        "label": "earnestness",
+        "start": 0.0
+      },
+      {
+        "end": 11.0,
+        "intensity": 0.5,
+        "label": "solemnity",
+        "start": 0.0
+      }
+    ],
+    "flags": [],
+    "performance_note": "Strong, intimate delivery with effective whispering that remains clear. The silent reaction from the older man adds weight.",
+    "quality_score": 8.5,
+    "recommended": true,
+    "slate": "",
+    "summary": "A cyborg man whispers heartfelt advice to an older man, urging him to be tender and honest. The older man listens solemnly before walking away.",
+    "transcript": [
+      {
+        "end": 2.2,
+        "speaker": "CYBORG",
+        "start": 0.0,
+        "text": "Be... be tender to her."
+      },
+      {
+        "end": 4.1,
+        "speaker": "CYBORG",
+        "start": 2.2,
+        "text": "Be honest."
+      },
+      {
+        "end": 6.1,
+        "speaker": "CYBORG",
+        "start": 4.1,
+        "text": "Be tender."
+      },
+      {
+        "end": 10.0,
+        "speaker": "CYBORG",
+        "start": 6.1,
+        "text": "Remind her what love is."
+      },
+      {
+        "end": 11.5,
+        "speaker": "CYBORG",
+        "start": 10.0,
+        "text": "Go."
+      }
+    ]
+  },
+  "analyzed_at": "2026-09-05 03:46:38",
+  "clip_sha1": "f5506eaa49e9957c60d3e8f656e675e2d47a7c14",
+  "duration_s": 14.75,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S41-A-01-A"
+}

@@ -1,0 +1,59 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 4.0,
+        "start": 1.0,
+        "text": "A young man materializes on a bridge with a digital glitch effect."
+      },
+      {
+        "end": 7.0,
+        "start": 4.0,
+        "text": "He looks down at his hands and body to inspect himself."
+      },
+      {
+        "end": 18.6,
+        "start": 7.0,
+        "text": "He walks forward across the bridge."
+      }
+    ],
+    "camera": [
+      {
+        "end": 3.0,
+        "start": 0.0,
+        "text": "Medium shot, static, framed between a lamppost and a foreground structure."
+      },
+      {
+        "end": 18.6,
+        "start": 3.0,
+        "text": "Pan right, tracking the man as he walks."
+      }
+    ],
+    "emotions": [
+      {
+        "end": 7.0,
+        "intensity": 0.6,
+        "label": "bewilderment",
+        "start": 3.0
+      },
+      {
+        "end": 18.6,
+        "intensity": 0.5,
+        "label": "determination",
+        "start": 7.0
+      }
+    ],
+    "flags": [],
+    "performance_note": "The actor effectively conveys the initial confusion of materializing followed by a transition to a purposeful walk.",
+    "quality_score": 9.0,
+    "recommended": true,
+    "slate": "",
+    "summary": "A young man materializes on a bridge via a digital glitch effect. He checks his hands and body before walking forward across the bridge.",
+    "transcript": []
+  },
+  "analyzed_at": "2026-09-05 03:47:05",
+  "clip_sha1": "bded50dd7acbd9beb8ad5d81489d64e63dbb7af1",
+  "duration_s": 18.583333,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S41-B-01-B"
+}

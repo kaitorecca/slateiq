@@ -2,10 +2,12 @@
 .env
 .venv/
 .venv-mcp/
-data/footage/
-data/clips/
-data/video/
-!data/cache/
-node_modules/
+
+# media: clips and source footage are published via GCS, never committed.
+# Gemini results ARE committed so the pipeline replays for free.
+data/*
+!data/cache
+!data/cache/**
+
 __pycache__/
 *.pyc

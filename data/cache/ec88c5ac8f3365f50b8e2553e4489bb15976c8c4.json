@@ -1,0 +1,73 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 2.0,
+        "start": 0.0,
+        "text": "The cyborg-eyed man points his arm out to the side."
+      },
+      {
+        "end": 6.0,
+        "start": 3.0,
+        "text": "The cyborg-eyed man pulls the older man close by his shoulder."
+      },
+      {
+        "end": 9.0,
+        "start": 6.0,
+        "text": "The cyborg-eyed man points forward, gesturing toward an off-screen target."
+      }
+    ],
+    "camera": [
+      {
+        "end": 9.5,
+        "start": 0.0,
+        "text": "medium close-up, slow push in"
+      }
+    ],
+    "emotions": [
+      {
+        "end": 3.0,
+        "intensity": 0.6,
+        "label": "focused",
+        "start": 0.0
+      },
+      {
+        "end": 9.0,
+        "intensity": 0.8,
+        "label": "conspiratorial",
+        "start": 3.0
+      }
+    ],
+    "flags": [],
+    "performance_note": "The lead actor delivers a strong, creepy performance, using physical proximity to build tension.",
+    "quality_score": 8.5,
+    "recommended": true,
+    "slate": "",
+    "summary": "A cyborg-eyed man points out a target to an older companion, pulling him close to whisper, while a young woman watches silently.",
+    "transcript": [
+      {
+        "end": 1.5,
+        "speaker": "CYBORG",
+        "start": 0.0,
+        "text": "worry about. Dom."
+      },
+      {
+        "end": 5.0,
+        "speaker": "CYBORG",
+        "start": 3.5,
+        "text": "Dom."
+      },
+      {
+        "end": 9.0,
+        "speaker": "CYBORG",
+        "start": 5.5,
+        "text": "There she is. Now."
+      }
+    ]
+  },
+  "analyzed_at": "2026-09-05 03:46:14",
+  "clip_sha1": "ec88c5ac8f3365f50b8e2553e4489bb15976c8c4",
+  "duration_s": 9.5,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S33-B-01-B"
+}

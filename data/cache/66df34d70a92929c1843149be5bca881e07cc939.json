@@ -1,0 +1,54 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 3.0,
+        "start": 1.0,
+        "text": "An older man enters the room through a doorway."
+      },
+      {
+        "end": 5.0,
+        "start": 3.0,
+        "text": "A young woman in military-style gear enters and stands beside him."
+      },
+      {
+        "end": 9.0,
+        "start": 7.0,
+        "text": "The older man walks to the left, exiting the frame."
+      }
+    ],
+    "camera": [
+      {
+        "end": 11.0,
+        "start": 0.0,
+        "text": "medium shot, static"
+      }
+    ],
+    "emotions": [
+      {
+        "end": 8.0,
+        "intensity": 0.6,
+        "label": "caution",
+        "start": 1.0
+      },
+      {
+        "end": 11.0,
+        "intensity": 0.7,
+        "label": "anxiety",
+        "start": 3.0
+      }
+    ],
+    "flags": [],
+    "performance_note": "The actors effectively convey a sense of caution and tension through their silent expressions and movements.",
+    "quality_score": 9.0,
+    "recommended": true,
+    "slate": "",
+    "summary": "An older man enters a dimly lit room cautiously, followed by a young woman in military attire. He looks around before walking off-camera, leaving her standing alone and looking concerned.",
+    "transcript": []
+  },
+  "analyzed_at": "2026-09-05 03:45:52",
+  "clip_sha1": "66df34d70a92929c1843149be5bca881e07cc939",
+  "duration_s": 10.96,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S27-B-01-B"
+}

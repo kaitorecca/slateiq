@@ -1,0 +1,65 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 4.0,
+        "start": 0.0,
+        "text": "The sniper drinks from a mango juice box."
+      },
+      {
+        "end": 6.0,
+        "start": 4.0,
+        "text": "The sniper puts down the juice box and aims his rifle."
+      },
+      {
+        "end": 12.8,
+        "start": 6.0,
+        "text": "Cut to a wide shot of a man hanging from a high beam in front of a pipe organ."
+      }
+    ],
+    "camera": [
+      {
+        "end": 6.0,
+        "start": 0.0,
+        "text": "Close-up, static shot of the sniper."
+      },
+      {
+        "end": 12.8,
+        "start": 6.0,
+        "text": "Wide shot, slow push-in on the hanging man."
+      }
+    ],
+    "emotions": [
+      {
+        "end": 4.0,
+        "intensity": 0.4,
+        "label": "calm",
+        "start": 0.0
+      },
+      {
+        "end": 6.0,
+        "intensity": 0.8,
+        "label": "focus",
+        "start": 4.0
+      },
+      {
+        "end": 12.8,
+        "intensity": 0.7,
+        "label": "despair",
+        "start": 6.0
+      }
+    ],
+    "flags": [],
+    "performance_note": "Excellent contrast between the sniper's casual juice-drinking and the sudden tension of aiming. The wide shot of the hanging man is framed beautifully.",
+    "quality_score": 9.0,
+    "recommended": true,
+    "slate": "",
+    "summary": "A sniper drinks from a juice box before aiming his rifle. The shot cuts to a man hanging from a beam in a ruined cathedral.",
+    "transcript": []
+  },
+  "analyzed_at": "2026-09-05 03:45:12",
+  "clip_sha1": "3dc31af4929f92ad0100d2fd990fc689c0140f98",
+  "duration_s": 12.75,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S14A-B-01-B"
+}

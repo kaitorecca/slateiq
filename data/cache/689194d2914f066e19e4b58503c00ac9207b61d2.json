@@ -1,0 +1,76 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 3.5,
+        "start": 0.0,
+        "text": "The woman stands talking to a man with a cybernetic eye piece."
+      },
+      {
+        "end": 6.5,
+        "start": 3.5,
+        "text": "The woman exits through a sliding metal door."
+      },
+      {
+        "end": 10.0,
+        "start": 6.5,
+        "text": "A giant mechanical leg steps down outside the window."
+      },
+      {
+        "end": 23.7,
+        "start": 10.0,
+        "text": "An older man stands on a bridge, comforting a large mechanical beast."
+      }
+    ],
+    "camera": [
+      {
+        "end": 6.5,
+        "start": 0.0,
+        "text": "Medium shot, static"
+      },
+      {
+        "end": 10.0,
+        "start": 6.5,
+        "text": "Low angle tilt up tracking the mechanical leg"
+      },
+      {
+        "end": 23.7,
+        "start": 10.0,
+        "text": "High angle extreme wide shot, slow crane up and pull back"
+      }
+    ],
+    "emotions": [
+      {
+        "end": 3.5,
+        "intensity": 0.5,
+        "label": "calm",
+        "start": 0.0
+      },
+      {
+        "end": 23.7,
+        "intensity": 0.6,
+        "label": "tenderness",
+        "start": 10.0
+      }
+    ],
+    "flags": [],
+    "performance_note": "Good physical performances and seamless integration with the complex visual effects elements.",
+    "quality_score": 8.5,
+    "recommended": true,
+    "slate": "",
+    "summary": "A young woman delivers a brief line in an office before exiting through a sliding door. The scene cuts to an exterior wide shot of an older man comforting a large mechanical creature on a bridge.",
+    "transcript": [
+      {
+        "end": 2.5,
+        "speaker": "WOMAN",
+        "start": 0.8,
+        "text": "Could have been worse."
+      }
+    ]
+  },
+  "analyzed_at": "2026-09-05 03:49:43",
+  "clip_sha1": "689194d2914f066e19e4b58503c00ac9207b61d2",
+  "duration_s": 23.71,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S102-B-01-B"
+}

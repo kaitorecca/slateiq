@@ -1,0 +1,66 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 3.0,
+        "start": 0.0,
+        "text": "The man lets go of the rope."
+      },
+      {
+        "end": 5.0,
+        "start": 2.0,
+        "text": "He clutches his left shoulder."
+      },
+      {
+        "end": 13.0,
+        "start": 5.0,
+        "text": "He walks toward the glowing machine."
+      }
+    ],
+    "camera": [
+      {
+        "end": 4.0,
+        "start": 0.0,
+        "text": "tilt up from feet to medium shot"
+      },
+      {
+        "end": 13.0,
+        "start": 4.0,
+        "text": "slow pan following character from behind"
+      }
+    ],
+    "emotions": [
+      {
+        "end": 5.0,
+        "intensity": 0.8,
+        "label": "pain",
+        "start": 0.0
+      },
+      {
+        "end": 13.0,
+        "intensity": 0.5,
+        "label": "determination",
+        "start": 5.0
+      }
+    ],
+    "flags": [],
+    "performance_note": "Strong physical performance showing pain transitioning to determination.",
+    "quality_score": 8.5,
+    "recommended": true,
+    "slate": "",
+    "summary": "An injured older man lets go of a rope, clutches his shoulder, and walks toward a glowing machine.",
+    "transcript": [
+      {
+        "end": 1.2,
+        "speaker": "MAN",
+        "start": 0.0,
+        "text": "Oh."
+      }
+    ]
+  },
+  "analyzed_at": "2026-09-05 03:45:34",
+  "clip_sha1": "ffb08b478058a34dc932387b7780e79c5233a90b",
+  "duration_s": 13.75,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S27-A-01-A"
+}

@@ -1,0 +1,59 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 5.5,
+        "start": 0.0,
+        "text": "The young man holds a mechanical device as it unfolds and transforms."
+      },
+      {
+        "end": 9.5,
+        "start": 6.5,
+        "text": "A crew member in a white suit walks past in the background."
+      },
+      {
+        "end": 16.9,
+        "start": 13.0,
+        "text": "The young man turns, revealing another crew member behind him."
+      }
+    ],
+    "camera": [
+      {
+        "end": 11.0,
+        "start": 0.0,
+        "text": "Medium close-up, static shot on the character and device."
+      },
+      {
+        "end": 16.9,
+        "start": 11.0,
+        "text": "Camera pans right, maintaining medium close-up and revealing background."
+      }
+    ],
+    "emotions": [
+      {
+        "end": 5.0,
+        "intensity": 0.6,
+        "label": "concentration",
+        "start": 0.0
+      },
+      {
+        "end": 16.9,
+        "intensity": 0.8,
+        "label": "wonder",
+        "start": 5.0
+      }
+    ],
+    "flags": [],
+    "performance_note": "Excellent physical acting and facial expressions reacting to the prop transformation. Timing of head turns aligns well with camera movement.",
+    "quality_score": 9.0,
+    "recommended": true,
+    "slate": "",
+    "summary": "A young man in a white suit watches a mechanical device transform in his hand. He looks around in wonder as other crew members move in the background.",
+    "transcript": []
+  },
+  "analyzed_at": "2026-09-05 03:48:13",
+  "clip_sha1": "bc51c52e3f6e70f6ffc145f6abf2e336b89ad126",
+  "duration_s": 16.916667,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S78-A-01-A"
+}

@@ -1,0 +1,92 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 3.5,
+        "start": 0.0,
+        "text": "The soldier swings on a rope, firing his rifle at the mechanical beast."
+      },
+      {
+        "end": 7.5,
+        "start": 3.5,
+        "text": "The mechanical beast takes heavy fire and begins to collapse."
+      },
+      {
+        "end": 10.0,
+        "start": 7.5,
+        "text": "The soldier swings back across the cathedral holding a flare."
+      },
+      {
+        "end": 13.0,
+        "start": 10.0,
+        "text": "The beast crashes through the floor, creating a massive cloud of debris."
+      }
+    ],
+    "camera": [
+      {
+        "end": 1.5,
+        "start": 0.0,
+        "text": "Wide shot, high angle"
+      },
+      {
+        "end": 3.5,
+        "start": 1.5,
+        "text": "Medium close-up tracking shot"
+      },
+      {
+        "end": 7.5,
+        "start": 3.5,
+        "text": "Medium shot panning down"
+      },
+      {
+        "end": 10.0,
+        "start": 7.5,
+        "text": "Medium shot from behind"
+      },
+      {
+        "end": 13.0,
+        "start": 10.0,
+        "text": "Extreme wide shot"
+      }
+    ],
+    "emotions": [
+      {
+        "end": 3.5,
+        "intensity": 0.9,
+        "label": "adrenaline",
+        "start": 1.0
+      },
+      {
+        "end": 12.5,
+        "intensity": 0.8,
+        "label": "adrenaline",
+        "start": 10.0
+      }
+    ],
+    "flags": [],
+    "performance_note": "Great physical energy and vocal intensity from the actor during the stunt work.",
+    "quality_score": 9.0,
+    "recommended": true,
+    "slate": "",
+    "summary": "A soldier swings from a rope inside a cathedral, firing at a giant mechanical beast. The beast is defeated and crashes through the floor.",
+    "transcript": [
+      {
+        "end": 3.5,
+        "speaker": "SOLDIER",
+        "start": 1.5,
+        "text": "Ahhhhh!"
+      },
+      {
+        "end": 12.0,
+        "speaker": "SOLDIER",
+        "start": 10.0,
+        "text": "Ahhhhh!"
+      }
+    ]
+  },
+  "analyzed_at": "2026-09-05 03:49:03",
+  "clip_sha1": "8604f380c3fa7c69801ccab3f9df7140f3eff452",
+  "duration_s": 12.96,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S78-C-01-A"
+}

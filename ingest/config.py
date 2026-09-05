@@ -1,9 +1,9 @@
 """Shared configuration for the SlateIQ ingest pipeline.
 
 Owns the *real footage* slice of the dataset: shooting day 12 of production
-``tos`` (Tears of Steel, Blender Foundation, CC-BY 3.0), scenes 12 / 14A / 27 /
-33 / 41 / 56 / 78 / 102.  Everything else in the database is generated
-synthetically by ``db/``.
+``tos2026`` (Tears of Steel, Blender Foundation, CC-BY 3.0), scenes 12 / 14A /
+27 / 33 / 41 / 56 / 78 / 102.  Everything else in the database is generated
+synthetically by ``db/`` — see ``db/SCHEMA.md`` for the shared contract.
 
 The take plan below is deliberately static (not re-derived from ffmpeg scene
 detection at run time) so the whole pipeline is idempotent: same take ids, same
@@ -32,9 +32,9 @@ FFPROBE = os.environ.get("FFPROBE_BIN", str(Path.home() / "miniconda3/envs/media
 # --------------------------------------------------------------------------
 # production constants
 # --------------------------------------------------------------------------
-PRODUCTION_ID = "tos"
+PRODUCTION_ID = "tos2026"
 DAY_NUMBER = 12
-SHOOT_DATE = "2026-08-24"  # day 12 of the schedule; created_at anchors off this
+SHOOT_DATE = "2026-09-04"  # day 12 of the schedule; created_at anchors off this
 REAL_SCENES = ["12", "14A", "27", "33", "41", "56", "78", "102"]
 
 GEMINI_MODEL = os.environ.get("SLATEIQ_GEMINI_MODEL", "gemini-3.5-flash")
@@ -51,14 +51,15 @@ FLAG_TYPES = [
     "crew_in_shot",
 ]
 EVENT_KINDS = ["dialogue", "action", "flag", "slate", "emotion", "camera"]
-STATUSES = ["circled", "ng", "hold", "pending"]
+STATUSES = ["circled", "ng", "hold", "wild", "pending"]
+CONTINUITY_CATEGORIES = ["wardrobe", "props", "hair_makeup", "screen_direction",
+                         "lighting", "action_match", "dialogue", "set_dressing"]
 
 
 @dataclass
 class Take:
     """One dailies take backed by a real clip cut from the source footage."""
 
-    take_id: str
     scene_number: str
     shot: str
     take_number: int
@@ -77,6 +78,12 @@ class Take:
     # window inside the *clip* where the induced defect lives
     defect_window: tuple[float, float] = (0.0, 0.0)
     tags: list[str] = field(default_factory=list)
+
+    @property
+    def take_id(self) -> str:
+        """db/SCHEMA.md id convention: TOS-D12-S<scene>-<setup>-<NN>-<camera>."""
+        return (f"TOS-D{DAY_NUMBER:02d}-S{self.scene_number}-{self.shot}-"
+                f"{self.take_number:02d}-{self.camera}")
 
     @property
     def is_variant(self) -> bool:
@@ -99,10 +106,6 @@ class Take:
         return f"thumbs/{self.take_id}.jpg"
 
 
-def _tid(scene: str, shot: str, n: int) -> str:
-    return f"d12_{shot}_t{n}".replace("-", "")
-
-
 # --------------------------------------------------------------------------
 # the take plan
 #
@@ -113,73 +116,73 @@ def _tid(scene: str, shot: str, n: int) -> str:
 # --------------------------------------------------------------------------
 TAKES: list[Take] = [
     # ---- scene 12 -------------------------------------------------------
-    Take("d12_12A_t1", "12", "12A", 1, "A", 35, 800, "12:04:11:00", "circled",
+    Take("12", "A", 1, "A", 35, 800, "12:04:11:00", "circled",
          "Good energy, keep this one.", src_start=25.00, src_end=40.25),
-    Take("d12_12A_t2", "12", "12A", 2, "A", 35, 800, "12:05:02:12", "ng",
+    Take("12", "A", 2, "A", 35, 800, "12:05:02:12", "ng",
          "Focus puller lost her on the turn — NG.",
-         parent="d12_12A_t1", degrade="soft_focus", defect_window=(4.5, 9.5)),
-    Take("d12_12B_t1", "12", "12B", 1, "B", 50, 800, "12:19:40:06", "hold",
+         parent="TOS-D12-S12-A-01-A", degrade="soft_focus", defect_window=(4.5, 9.5)),
+    Take("12", "B", 1, "B", 50, 800, "12:19:40:06", "hold",
          "Alt angle, hold for editorial.", src_start=84.83, src_end=100.50),
-    Take("d12_12B_t2", "12", "12B", 2, "B", 50, 800, "12:26:18:20", "circled",
+    Take("12", "B", 2, "B", 50, 800, "12:26:18:20", "circled",
          "Cleaner. Print.", src_start=100.50, src_end=116.71),
 
     # ---- scene 14A ------------------------------------------------------
-    Take("d12_14AA_t1", "14A", "14AA", 1, "A", 28, 640, "13:02:55:14", "circled",
+    Take("14A", "A", 1, "A", 28, 640, "13:02:55:14", "circled",
          "Nice reset on the walk-in.", src_start=119.88, src_end=139.92),
-    Take("d12_14AA_t2", "14A", "14AA", 2, "A", 28, 640, "13:09:31:02", "ng",
+    Take("14A", "A", 2, "A", 28, 640, "13:09:31:02", "ng",
          "Boom dipped frame left — go again.",
-         parent="d12_14AA_t1", degrade="boom_in_shot", defect_window=(7.0, 8.6)),
-    Take("d12_14AB_t1", "14A", "14AB", 1, "B", 85, 640, "13:21:07:18", "pending",
+         parent="TOS-D12-S14A-A-01-A", degrade="boom_in_shot", defect_window=(7.0, 8.6)),
+    Take("14A", "B", 1, "B", 85, 640, "13:21:07:18", "pending",
          "Coverage, unreviewed.", src_start=145.79, src_end=158.54),
 
     # ---- scene 27 -------------------------------------------------------
-    Take("d12_27A_t1", "27", "27A", 1, "A", 40, 1250, "14:11:22:09", "circled",
+    Take("27", "A", 1, "A", 40, 1250, "14:11:22:09", "circled",
          "That's the one — the beat lands.", src_start=158.54, src_end=172.29),
-    Take("d12_27A_t2", "27", "27A", 2, "A", 40, 1250, "14:17:48:23", "ng",
+    Take("27", "A", 2, "A", 40, 1250, "14:17:48:23", "ng",
          "Sound reports clipping on the shout.",
-         parent="d12_27A_t1", degrade="audio_clip", defect_window=(5.0, 8.5)),
-    Take("d12_27B_t1", "27", "27B", 1, "B", 24, 1250, "14:33:05:11", "hold",
+         parent="TOS-D12-S27-A-01-A", degrade="audio_clip", defect_window=(5.0, 8.5)),
+    Take("27", "B", 1, "B", 24, 1250, "14:33:05:11", "hold",
          "Wide, usable if we need the geography.", src_start=172.29, src_end=183.25),
 
     # ---- scene 33 -------------------------------------------------------
-    Take("d12_33A_t1", "33", "33A", 1, "A", 50, 400, "15:02:14:04", "circled",
+    Take("33", "A", 1, "A", 50, 400, "15:02:14:04", "circled",
          "Print it.", src_start=189.50, src_end=198.50),
-    Take("d12_33A_t2", "33", "33A", 2, "A", 50, 400, "15:07:59:16", "ng",
+    Take("33", "A", 2, "A", 50, 400, "15:07:59:16", "ng",
          "Operator drifted, she's clipping the frame edge.",
-         parent="d12_33A_t1", degrade="frame_edge", defect_window=(3.0, 7.0)),
-    Take("d12_33B_t1", "33", "33B", 1, "B", 100, 400, "15:19:33:02", "pending",
+         parent="TOS-D12-S33-A-01-A", degrade="frame_edge", defect_window=(3.0, 7.0)),
+    Take("33", "B", 1, "B", 100, 400, "15:19:33:02", "pending",
          "Insert / detail pass.", src_start=225.08, src_end=234.58),
 
     # ---- scene 41 -------------------------------------------------------
-    Take("d12_41A_t1", "41", "41A", 1, "A", 32, 1600, "16:04:41:19", "circled",
+    Take("41", "A", 1, "A", 32, 1600, "16:04:41:19", "circled",
          "Strong. Emotion is there.", src_start=238.67, src_end=253.42),
-    Take("d12_41A_t2", "41", "41A", 2, "A", 32, 1600, "16:12:26:07", "ng",
+    Take("41", "A", 2, "A", 32, 1600, "16:12:26:07", "ng",
          "Soft through the middle — NG for focus.",
-         parent="d12_41A_t1", degrade="soft_focus", defect_window=(3.5, 9.0)),
-    Take("d12_41B_t1", "41", "41B", 1, "B", 65, 1600, "16:29:18:21", "hold",
+         parent="TOS-D12-S41-A-01-A", degrade="soft_focus", defect_window=(3.5, 9.0)),
+    Take("41", "B", 1, "B", 65, 1600, "16:29:18:21", "hold",
          "Long lens option, hold.", src_start=257.92, src_end=276.50),
 
     # ---- scene 56 -------------------------------------------------------
-    Take("d12_56A_t1", "56", "56A", 1, "A", 21, 500, "17:08:03:13", "circled",
+    Take("56", "A", 1, "A", 21, 500, "17:08:03:13", "circled",
          "Great movement, keep.", src_start=276.50, src_end=295.12),
-    Take("d12_56B_t1", "56", "56B", 1, "B", 50, 500, "17:22:47:05", "pending",
+    Take("56", "B", 1, "B", 50, 500, "17:22:47:05", "pending",
          "Second unit style coverage.", src_start=330.29, src_end=338.92),
-    Take("d12_56B_t2", "56", "56B", 2, "B", 50, 500, "17:26:12:18", "ng",
+    Take("56", "B", 2, "B", 50, 500, "17:26:12:18", "ng",
          "Boom shadow / boom in frame top.",
-         parent="d12_56B_t1", degrade="boom_in_shot", defect_window=(3.0, 4.8)),
+         parent="TOS-D12-S56-B-01-B", degrade="boom_in_shot", defect_window=(3.0, 4.8)),
 
     # ---- scene 78 -------------------------------------------------------
-    Take("d12_78A_t1", "78", "78A", 1, "A", 35, 2000, "18:03:55:00", "circled",
+    Take("78", "A", 1, "A", 35, 2000, "18:03:55:00", "circled",
          "Print. Best of the three.", src_start=444.88, src_end=461.79),
-    Take("d12_78B_t1", "78", "78B", 1, "B", 75, 2000, "18:15:22:14", "hold",
+    Take("78", "B", 1, "B", 75, 2000, "18:15:22:14", "hold",
          "Tighter option.", src_start=468.33, src_end=480.21),
-    Take("d12_78C_t1", "78", "78C", 1, "A", 18, 2000, "18:31:09:22", "pending",
+    Take("78", "C", 1, "A", 18, 2000, "18:31:09:22", "pending",
          "Wide establishing, unreviewed.", src_start=489.42, src_end=502.38),
 
     # ---- scene 102 ------------------------------------------------------
-    Take("d12_102A_t1", "102", "102A", 1, "A", 40, 1000, "19:06:30:11", "circled",
+    Take("102", "A", 1, "A", 40, 1000, "19:06:30:11", "circled",
          "Final of the day — got it.", src_start=543.17, src_end=556.83),
-    Take("d12_102B_t1", "102", "102B", 1, "B", 28, 1000, "19:24:58:03", "hold",
+    Take("102", "B", 1, "B", 28, 1000, "19:24:58:03", "hold",
          "Safety take.", src_start=564.29, src_end=588.00),
 ]
 
@@ -188,9 +191,9 @@ ORIGINALS = [t for t in TAKES if not t.is_variant]
 VARIANTS = [t for t in TAKES if t.is_variant]
 
 # camera roll / sound roll are per (day, camera) on a real set
-ROLL = {"A": "A012", "B": "B009"}
-SOUND_ROLL = {"A": "SR012", "B": "SR012"}
-FPS = 24
+ROLL = {"A": "A012", "B": "B012"}
+SOUND_ROLL = {"A": "S012", "B": "S012"}
+FPS = 24  # Tears of Steel is 24 fps; the synthetic units shoot 25
 
 
 def roll_for(t: Take) -> str:

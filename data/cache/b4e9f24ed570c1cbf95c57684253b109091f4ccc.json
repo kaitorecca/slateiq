@@ -1,0 +1,64 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 11.0,
+        "start": 8.0,
+        "text": "The sniper loads a red cartridge into his futuristic rifle."
+      },
+      {
+        "end": 15.5,
+        "start": 12.5,
+        "text": "The sleeping man wakes up and pulls the newspaper off his face as the searchlight hits him."
+      }
+    ],
+    "camera": [
+      {
+        "end": 7.0,
+        "start": 0.0,
+        "text": "POV shot through circular scope, tracking the airship"
+      },
+      {
+        "end": 11.0,
+        "start": 7.0,
+        "text": "extreme close-up of sniper and rifle"
+      },
+      {
+        "end": 12.5,
+        "start": 11.0,
+        "text": "POV shot through circular scope"
+      },
+      {
+        "end": 15.7,
+        "start": 12.5,
+        "text": "medium shot of the balcony, showing the sleeping man in foreground and sniper in background"
+      }
+    ],
+    "emotions": [
+      {
+        "end": 11.0,
+        "intensity": 0.8,
+        "label": "focus",
+        "start": 7.0
+      },
+      {
+        "end": 15.7,
+        "intensity": 0.6,
+        "label": "surprise",
+        "start": 13.0
+      }
+    ],
+    "flags": [],
+    "performance_note": "The sniper's movements are sharp and deliberate, and the sleeping man's reaction to the searchlight is perfectly timed with the visual effects cue.",
+    "quality_score": 9.0,
+    "recommended": true,
+    "slate": "",
+    "summary": "A sniper tracks a futuristic airship through his scope and loads his rifle. As the airship's searchlights illuminate the area, a man sleeping under a newspaper on a balcony wakes up in surprise.",
+    "transcript": []
+  },
+  "analyzed_at": "2026-09-05 03:44:05",
+  "clip_sha1": "b4e9f24ed570c1cbf95c57684253b109091f4ccc",
+  "duration_s": 15.67,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S12-B-01-B"
+}

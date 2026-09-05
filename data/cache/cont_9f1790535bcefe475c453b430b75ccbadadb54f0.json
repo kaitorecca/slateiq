@@ -1,0 +1,13 @@
+{
+  "model": "gemini-3.5-flash",
+  "notes": [
+    {
+      "category": "action_match",
+      "description": "In Take A, the older man is injured, clutching his shoulder and letting go of a rope, whereas in Take B he enters through a doorway showing no signs of injury and is accompanied by a young woman who is absent in Take A.",
+      "severity": 3,
+      "take_id_a": "TOS-D12-S27-A-01-A",
+      "take_id_b": "TOS-D12-S27-B-01-B"
+    }
+  ],
+  "scene_number": "27"
+}

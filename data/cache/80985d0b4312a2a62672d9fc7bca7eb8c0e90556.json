@@ -1,0 +1,78 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 3.0,
+        "start": 0.0,
+        "text": "Cut from OTS view of a giant robot to an indoor medium shot of three characters."
+      },
+      {
+        "end": 6.0,
+        "start": 4.0,
+        "text": "Cybernetic man hands a microphone to the older man."
+      },
+      {
+        "end": 9.0,
+        "start": 7.0,
+        "text": "Cybernetic man raises a small radio antenna and speaks."
+      }
+    ],
+    "camera": [
+      {
+        "end": 3.0,
+        "start": 0.0,
+        "text": "Cut from OTS medium shot to medium three-shot."
+      },
+      {
+        "end": 9.0,
+        "start": 3.0,
+        "text": "Static medium three-shot."
+      }
+    ],
+    "emotions": [
+      {
+        "end": 6.0,
+        "intensity": 0.7,
+        "label": "encouragement",
+        "start": 1.0
+      },
+      {
+        "end": 9.0,
+        "intensity": 0.5,
+        "label": "focus",
+        "start": 6.0
+      }
+    ],
+    "flags": [],
+    "performance_note": "Good energy and delivery from the supporting actor, with a solid, stoic reaction from the lead.",
+    "quality_score": 8.5,
+    "recommended": true,
+    "slate": "",
+    "summary": "A man with a cybernetic eye piece encourages an older, white-haired man before handing him a microphone. He then speaks into a radio device to check in with someone named Barley.",
+    "transcript": [
+      {
+        "end": 2.5,
+        "speaker": "CYBERNETIC MAN",
+        "start": 1.0,
+        "text": "Are you ready?"
+      },
+      {
+        "end": 6.0,
+        "speaker": "CYBERNETIC MAN",
+        "start": 2.5,
+        "text": "Of course you're ready. You're a rock star."
+      },
+      {
+        "end": 9.0,
+        "speaker": "CYBERNETIC MAN",
+        "start": 7.0,
+        "text": "How's it looking, Barley?"
+      }
+    ]
+  },
+  "analyzed_at": "2026-09-05 03:43:02",
+  "clip_sha1": "80985d0b4312a2a62672d9fc7bca7eb8c0e90556",
+  "duration_s": 9.0,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S33-A-01-A"
+}

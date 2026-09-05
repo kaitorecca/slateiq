@@ -1,0 +1,77 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 8.0,
+        "start": 0.0,
+        "text": "A young man walks along a canal bridge."
+      },
+      {
+        "end": 12.0,
+        "start": 8.0,
+        "text": "The man stops to look at a large robotic mech."
+      },
+      {
+        "end": 15.5,
+        "start": 13.0,
+        "text": "A woman hands a radio microphone to a cybernetic man at a desk."
+      },
+      {
+        "end": 18.0,
+        "start": 15.5,
+        "text": "The cybernetic man speaks into the microphone and points."
+      }
+    ],
+    "camera": [
+      {
+        "end": 12.0,
+        "start": 0.0,
+        "text": "Tracking profile shot moving with the walking man."
+      },
+      {
+        "end": 18.6,
+        "start": 13.0,
+        "text": "Static medium shot of the cybernetic man."
+      }
+    ],
+    "emotions": [
+      {
+        "end": 8.0,
+        "intensity": 0.3,
+        "label": "calm",
+        "start": 0.0
+      },
+      {
+        "end": 12.0,
+        "intensity": 0.5,
+        "label": "curiosity",
+        "start": 8.0
+      },
+      {
+        "end": 18.0,
+        "intensity": 0.8,
+        "label": "authority",
+        "start": 13.0
+      }
+    ],
+    "flags": [],
+    "performance_note": "The actor delivers the final line with excellent energy and authority, fitting the eccentric sci-fi tone.",
+    "quality_score": 9.0,
+    "recommended": true,
+    "slate": "",
+    "summary": "A young man walks along an Amsterdam canal and stops upon encountering a large robotic mech. The scene cuts to a cybernetic commander in a control room who commands 'And... action!' into a radio.",
+    "transcript": [
+      {
+        "end": 18.0,
+        "speaker": "CYBERNETIC MAN",
+        "start": 15.5,
+        "text": "And... action!"
+      }
+    ]
+  },
+  "analyzed_at": "2026-09-05 03:47:31",
+  "clip_sha1": "48240b008cdda8fcceb37509be79d128f9f532b7",
+  "duration_s": 18.625,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S56-A-01-A"
+}

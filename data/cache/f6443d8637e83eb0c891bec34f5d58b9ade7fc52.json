@@ -1,0 +1,96 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 5.2,
+        "start": 0.0,
+        "text": "The man gestures while talking to Celia on the bridge."
+      },
+      {
+        "end": 9.2,
+        "start": 5.3,
+        "text": "Celia turns to face him, raising her robotic hand defensively."
+      },
+      {
+        "end": 12.1,
+        "start": 9.3,
+        "text": "The man stammers and gestures towards her hand."
+      },
+      {
+        "end": 15.2,
+        "start": 12.2,
+        "text": "The man looks down, then admits his fear directly to her."
+      }
+    ],
+    "camera": [
+      {
+        "end": 15.2,
+        "start": 0.0,
+        "text": "Static medium wide shot of the couple on the canal bridge."
+      }
+    ],
+    "emotions": [
+      {
+        "end": 5.2,
+        "intensity": 0.6,
+        "label": "earnestness",
+        "start": 0.0
+      },
+      {
+        "end": 9.2,
+        "intensity": 0.7,
+        "label": "defiance",
+        "start": 5.3
+      },
+      {
+        "end": 12.1,
+        "intensity": 0.5,
+        "label": "hesitation",
+        "start": 9.3
+      },
+      {
+        "end": 15.2,
+        "intensity": 0.7,
+        "label": "honesty",
+        "start": 12.2
+      }
+    ],
+    "flags": [],
+    "performance_note": "Strong comedic timing and natural chemistry between the actors. The robotic arm prop is handled convincingly.",
+    "quality_score": 8.5,
+    "recommended": true,
+    "slate": "",
+    "summary": "A young man and a woman with a robotic arm discuss their passions on a bridge. She accuses him of being freaked out by her hand, and he eventually admits it.",
+    "transcript": [
+      {
+        "end": 5.2,
+        "speaker": "MAN",
+        "start": 0.0,
+        "text": "Celia, we have to follow our passions. You have your robotics and I just want to be awesome in space."
+      },
+      {
+        "end": 9.2,
+        "speaker": "CELIA",
+        "start": 5.3,
+        "text": "Why don't you just admit that you're freaked out by my robot hand?"
+      },
+      {
+        "end": 11.5,
+        "speaker": "MAN",
+        "start": 9.3,
+        "text": "I-I'm not freaked out by, it's..."
+      },
+      {
+        "end": 15.2,
+        "speaker": "MAN",
+        "start": 12.2,
+        "text": "All right, fine. I'm freaked out. I'm having night..."
+      }
+    ]
+  },
+  "analyzed_at": "2026-09-05 03:43:44",
+  "clip_sha1": "f6443d8637e83eb0c891bec34f5d58b9ade7fc52",
+  "duration_s": 15.25,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S12-A-01-A"
+}

@@ -1,0 +1,54 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 1.5,
+        "start": 0.0,
+        "text": "An older man lies resting on a cot while a soldier in the background aims a scoped rifle."
+      },
+      {
+        "end": 16.2,
+        "start": 1.5,
+        "text": "The view transitions to the scope's POV, tracking a large flying mechanical vessel with searchlights as it flies over a city."
+      }
+    ],
+    "camera": [
+      {
+        "end": 1.5,
+        "start": 0.0,
+        "text": "static medium shot"
+      },
+      {
+        "end": 16.2,
+        "start": 1.5,
+        "text": "POV through a circular scope, tracking the flying vessel"
+      }
+    ],
+    "emotions": [
+      {
+        "end": 1.5,
+        "intensity": 0.6,
+        "label": "tension",
+        "start": 0.0
+      },
+      {
+        "end": 16.2,
+        "intensity": 0.7,
+        "label": "suspense",
+        "start": 1.5
+      }
+    ],
+    "flags": [],
+    "performance_note": "The transition to the scope POV is clean, and the visual effects tracking of the flying vessel are highly detailed and well-integrated.",
+    "quality_score": 9.0,
+    "recommended": true,
+    "slate": "",
+    "summary": "An older man rests on a cot while a soldier keeps watch. The view shifts to the soldier's scope POV, tracking a complex flying vessel as it maneuvers over a city.",
+    "transcript": []
+  },
+  "analyzed_at": "2026-09-05 03:44:29",
+  "clip_sha1": "906bc2f3bae8e1cfec8d0ff1331ae4c5d5172a3e",
+  "duration_s": 16.21,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S12-B-02-B"
+}

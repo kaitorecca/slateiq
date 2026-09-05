@@ -1,0 +1,27 @@
+{
+  "model": "gemini-3.5-flash",
+  "notes": [
+    {
+      "category": "dialogue",
+      "description": "In Take A, the cybernetic man asks the older man if he is ready and checks in with Barley, whereas in Take B, he repeatedly says 'Dom' and points out a target.",
+      "severity": 3,
+      "take_id_a": "TOS-D12-S33-A-01-A",
+      "take_id_b": "TOS-D12-S33-B-01-B"
+    },
+    {
+      "category": "props",
+      "description": "In Take A, the cybernetic man handles a microphone and a radio antenna, which are completely absent in Take B.",
+      "severity": 3,
+      "take_id_a": "TOS-D12-S33-A-01-A",
+      "take_id_b": "TOS-D12-S33-B-01-B"
+    },
+    {
+      "category": "action_match",
+      "description": "In Take A, the cybernetic man stands in a three-shot handing off items, whereas in Take B, he physically pulls the older man close by the shoulder.",
+      "severity": 3,
+      "take_id_a": "TOS-D12-S33-A-01-A",
+      "take_id_b": "TOS-D12-S33-B-01-B"
+    }
+  ],
+  "scene_number": "33"
+}

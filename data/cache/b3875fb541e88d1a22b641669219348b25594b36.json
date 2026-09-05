@@ -1,0 +1,63 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 0.1,
+        "start": 0.0,
+        "text": "A woman fires a heavy energy weapon."
+      },
+      {
+        "end": 0.4,
+        "start": 0.1,
+        "text": "Robotic creatures leap and sprint through the greenhouse ruins."
+      },
+      {
+        "end": 10.0,
+        "start": 0.4,
+        "text": "Four defenders kneel and fire their weapons at the oncoming robots."
+      }
+    ],
+    "camera": [
+      {
+        "end": 0.1,
+        "start": 0.0,
+        "text": "close-up on defender"
+      },
+      {
+        "end": 0.4,
+        "start": 0.1,
+        "text": "tracking shot of advancing robots"
+      },
+      {
+        "end": 10.0,
+        "start": 0.4,
+        "text": "wide shot of the defensive line"
+      },
+      {
+        "end": 11.9,
+        "start": 10.0,
+        "text": "extreme close-up of mechanical parts"
+      }
+    ],
+    "emotions": [
+      {
+        "end": 10.0,
+        "intensity": 0.8,
+        "label": "defiance",
+        "start": 0.0
+      }
+    ],
+    "flags": [],
+    "performance_note": "Strong physical performances from the actors, maintaining focus and intensity while interacting with complex visual effects elements.",
+    "quality_score": 8.5,
+    "recommended": true,
+    "slate": "",
+    "summary": "Four defenders in white jumpsuits fire energy weapons at advancing robotic creatures in a ruined greenhouse. The robots charge forward, overwhelming the defensive line.",
+    "transcript": []
+  },
+  "analyzed_at": "2026-09-05 03:48:37",
+  "clip_sha1": "b3875fb541e88d1a22b641669219348b25594b36",
+  "duration_s": 11.88,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S78-B-01-B"
+}

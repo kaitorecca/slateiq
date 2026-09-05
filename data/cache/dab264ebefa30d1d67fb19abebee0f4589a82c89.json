@@ -1,0 +1,67 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 6.0,
+        "start": 0.0,
+        "text": "The man sits up from his makeshift bed."
+      },
+      {
+        "end": 10.0,
+        "start": 6.0,
+        "text": "He rubs his neck and shoulder in discomfort."
+      }
+    ],
+    "camera": [
+      {
+        "end": 14.0,
+        "start": 0.0,
+        "text": "medium shot, static"
+      },
+      {
+        "end": 20.0,
+        "start": 14.0,
+        "text": "extreme wide shot, static"
+      }
+    ],
+    "emotions": [
+      {
+        "end": 10.0,
+        "intensity": 0.7,
+        "label": "weariness",
+        "start": 0.0
+      },
+      {
+        "end": 20.0,
+        "intensity": 0.6,
+        "label": "defiance",
+        "start": 10.0
+      }
+    ],
+    "flags": [],
+    "performance_note": "Strong, understated performance showing physical weariness and defensive vulnerability.",
+    "quality_score": 9.0,
+    "recommended": true,
+    "slate": "",
+    "summary": "An older man wakes up on a covered balcony, rubs his sore neck, and defensively addresses others about a conversation he overheard.",
+    "transcript": [
+      {
+        "end": 13.5,
+        "speaker": "MAN",
+        "start": 11.0,
+        "text": "I heard you guys talking last night."
+      },
+      {
+        "end": 18.5,
+        "speaker": "MAN",
+        "start": 16.0,
+        "text": "It's not my fault, you know."
+      }
+    ]
+  },
+  "analyzed_at": "2026-09-05 03:44:54",
+  "clip_sha1": "dab264ebefa30d1d67fb19abebee0f4589a82c89",
+  "duration_s": 20.041667,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S14A-A-01-A"
+}

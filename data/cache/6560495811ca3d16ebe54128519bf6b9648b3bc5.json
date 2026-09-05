@@ -1,0 +1,43 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 8.6,
+        "start": 2.5,
+        "text": "A large robotic mech climbs over the rooftops, crushing tiles."
+      }
+    ],
+    "camera": [
+      {
+        "end": 3.0,
+        "start": 0.0,
+        "text": "pan right through a circular scope"
+      },
+      {
+        "end": 8.6,
+        "start": 3.0,
+        "text": "slow push in and track on the robot"
+      }
+    ],
+    "emotions": [
+      {
+        "end": 8.6,
+        "intensity": 0.5,
+        "label": "suspense",
+        "start": 0.0
+      }
+    ],
+    "flags": [],
+    "performance_note": "Excellent CGI integration and animation weight. The mechanical sounds align perfectly with the visual movement.",
+    "quality_score": 9.0,
+    "recommended": true,
+    "slate": "",
+    "summary": "A robotic mech is tracked through a circular scope as it climbs over traditional rooftops. The camera pans and zooms to follow its heavy movements.",
+    "transcript": []
+  },
+  "analyzed_at": "2026-09-05 03:47:53",
+  "clip_sha1": "6560495811ca3d16ebe54128519bf6b9648b3bc5",
+  "duration_s": 8.63,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S56-B-01-B"
+}

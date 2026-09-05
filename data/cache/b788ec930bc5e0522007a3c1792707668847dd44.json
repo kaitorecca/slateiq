@@ -1,0 +1,54 @@
+{
+  "analysis": {
+    "actions": [
+      {
+        "end": 9,
+        "start": 0,
+        "text": "The man stands beside the mechanical creature, placing his hands on its head."
+      },
+      {
+        "end": 13.7,
+        "start": 9,
+        "text": "Cut to a close-up of the man looking intently at the creature."
+      }
+    ],
+    "camera": [
+      {
+        "end": 9,
+        "start": 0,
+        "text": "medium shot, static"
+      },
+      {
+        "end": 13.7,
+        "start": 9,
+        "text": "close-up, static"
+      }
+    ],
+    "emotions": [
+      {
+        "end": 9,
+        "intensity": 0.6,
+        "label": "tenderness",
+        "start": 0
+      },
+      {
+        "end": 13.7,
+        "intensity": 0.7,
+        "label": "wonder",
+        "start": 9
+      }
+    ],
+    "flags": [],
+    "performance_note": "The actor's subtle facial expressions and gentle physical interaction effectively convey a sense of connection.",
+    "quality_score": 9,
+    "recommended": true,
+    "slate": "",
+    "summary": "An older man gently touches a large mechanical creature's head. The camera cuts to a close-up of his face, capturing his expression of wonder.",
+    "transcript": []
+  },
+  "analyzed_at": "2026-09-05 03:49:20",
+  "clip_sha1": "b788ec930bc5e0522007a3c1792707668847dd44",
+  "duration_s": 13.666667,
+  "model": "gemini-3.5-flash",
+  "take_id": "TOS-D12-S102-A-01-A"
+}

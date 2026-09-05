@@ -1,0 +1,20 @@
+{
+  "model": "gemini-3.5-flash",
+  "notes": [
+    {
+      "category": "set_dressing",
+      "description": "In take B-01-B, the foreground character is sleeping under a newspaper on a balcony, whereas in take B-02-B, the set is dressed with a cot where the character is resting.",
+      "severity": 3,
+      "take_id_a": "TOS-D12-S12-B-01-B",
+      "take_id_b": "TOS-D12-S12-B-02-B"
+    },
+    {
+      "category": "props",
+      "description": "In take B-01-B, the sniper loads a red cartridge into his rifle, which is absent in take B-02-B where the soldier only aims the weapon.",
+      "severity": 2,
+      "take_id_a": "TOS-D12-S12-B-01-B",
+      "take_id_b": "TOS-D12-S12-B-02-B"
+    }
+  ],
+  "scene_number": "12"
+}
