@@ -1,8 +1,25 @@
 <?xml version="1.0"?>
 <!-- SlateIQ users/profiles. Passwords come from the container env (see .env on the VM).
-     - default   : admin/ingest user, used by seed_remote.sh and the Grafana /ch/ proxy fallback.
-     - agent_ro  : the ONLY user mcp-clickhouse (and therefore the ADK agent) ever connects with.
-                   readonly=2 -> SELECT + SET settings, no INSERT/ALTER/DDL. -->
+     - default   : admin/ingest user, used by seed_remote.sh. Not reachable from the internet
+                   (ClickHouse binds 127.0.0.1 only; Caddy always presents agent_ro).
+     - agent_ro  : the ONLY user mcp-clickhouse (and therefore the ADK agent) and Grafana
+                   ever connect with.
+
+     Least privilege for agent_ro is enforced in THREE independent layers:
+       1. RBAC grants  - explicit `GRANT SELECT ON slateiq.*` plus the three system tables
+                         the ClickHouse client and the MCP server structurally need.
+                         Everything else (system.query_log, system.users, system.grants,
+                         system.zookeeper, ...) is ACCESS_DENIED, not merely read-only.
+       2. readonly=1   - no writes, no DDL, and no table functions at all
+                         (url()/file()/remote()/s3()/mysql() -> code 164 READONLY),
+                         which closes the SSRF / local-file-read class outright.
+       3. resource caps- max_execution_time / max_result_rows / max_memory_usage below,
+                         plus a per-minute quota, so a runaway agent query cannot OOM
+                         the 1 GiB e2-micro.
+
+     `<grants>` and the legacy `<allow_databases>` are mutually exclusive in ClickHouse;
+     `allow_databases` only filtered SHOW output and left the user holding the default
+     "everything" grant, so it is deliberately gone. -->
 <clickhouse>
     <profiles>
         <default>
@@ -16,19 +33,58 @@
             <log_queries>1</log_queries>
         </default>
 
+        <!-- Settings profile for every agent/Grafana query. -->
         <agent_ro>
-            <max_memory_usage>419430400</max_memory_usage>          <!-- 400 MiB -->
-            <max_bytes_before_external_group_by>209715200</max_bytes_before_external_group_by>
-            <max_bytes_before_external_sort>209715200</max_bytes_before_external_sort>
+            <max_memory_usage>314572800</max_memory_usage>          <!-- 300 MiB, of a 620 MB container -->
+            <max_bytes_before_external_group_by>157286400</max_bytes_before_external_group_by>  <!-- 150 MiB -->
+            <max_bytes_before_external_sort>157286400</max_bytes_before_external_sort>
             <max_threads>2</max_threads>
             <max_block_size>16384</max_block_size>
+
+            <!-- Wall-clock cap. 30 s is well past the slowest legitimate dashboard query
+                 (frame_telemetry full scan ~1.4 s) and below Caddy's 120 s proxy timeout. -->
             <max_execution_time>30</max_execution_time>
+            <timeout_overflow_mode>throw</timeout_overflow_mode>
+
+            <!-- Result caps. `break` returns a truncated result rather than an error, so a
+                 careless `SELECT *` degrades instead of failing the agent's turn. -->
             <max_result_rows>20000</max_result_rows>
-            <max_result_bytes>16777216</max_result_bytes>
+            <max_result_bytes>16777216</max_result_bytes>            <!-- 16 MiB -->
             <result_overflow_mode>break</result_overflow_mode>
-            <readonly>2</readonly>
+
+            <!-- Read caps: frame_telemetry is 3.07 M rows; 50 M leaves room for joins
+                 against it but stops a cartesian product dead. -->
+            <max_rows_to_read>50000000</max_rows_to_read>
+            <max_bytes_to_read>2147483648</max_bytes_to_read>        <!-- 2 GiB -->
+            <read_overflow_mode>throw</read_overflow_mode>
+
+            <!-- readonly=1: SELECT only, settings frozen, table functions refused.
+                 mcp-clickhouse detects the server already enforces readonly and simply
+                 echoes 1 back per query (see get_readonly_setting), so this is a no-op
+                 change for it rather than a forbidden SET. -->
+            <readonly>1</readonly>
             <allow_ddl>0</allow_ddl>
             <log_queries>1</log_queries>
+
+            <!-- readonly=1 freezes EVERY setting, which is the point - it is what makes
+                 url()/file()/remote() unreachable. One bounded exception is required:
+                 the Grafana ClickHouse datasource plugin sends its own max_execution_time
+                 on the handshake of every connection and fails the whole query with
+                 code 164 if the server refuses it. Observed on the live revision
+                 (clickhouse-datasource 4.21.2 / clickhouse-go 2.47.0): it sends
+                 jsonData.queryTimeout + a 4 s margin, i.e. 64 with queryTimeout 60.
+                 `changeable_in_readonly` whitelists exactly that one setting and `max`
+                 caps it, so a client may move the timeout between the 30 s profile
+                 default and 65 s - and may change nothing else at all.
+                 provisioning/datasources/clickhouse.yml has since been lowered to
+                 queryTimeout 25 (-> 29), so after the next Grafana image rebuild the
+                 real ceiling for every identity is the profile's 30 s again. -->
+            <constraints>
+                <max_execution_time>
+                    <max>65</max>
+                    <changeable_in_readonly/>
+                </max_execution_time>
+            </constraints>
         </agent_ro>
     </profiles>
 
@@ -46,13 +102,30 @@
             <profile>agent_ro</profile>
             <quota>agent_ro</quota>
             <networks><ip>::/0</ip></networks>
-            <allow_databases>
-                <database>slateiq</database>
-                <database>system</database>
-                <database>default</database>
-                <database>information_schema</database>
-                <database>INFORMATION_SCHEMA</database>
-            </allow_databases>
+            <access_management>0</access_management>
+            <named_collection_control>0</named_collection_control>
+            <show_named_collections>0</show_named_collections>
+            <show_named_collections_secrets>0</show_named_collections_secrets>
+            <grants>
+                <!-- The product surface: every table, view and MV in slateiq, read-only. -->
+                <query>GRANT SELECT ON slateiq.*</query>
+                <!-- SHOW is implied by SELECT, but stated so `SHOW TABLES`/`SHOW CREATE`
+                     and the Grafana schema browser keep working if SELECT is ever narrowed. -->
+                <query>GRANT SHOW ON slateiq.*</query>
+
+                <!-- The minimum system surface, and nothing else:
+                     system.settings  - clickhouse-connect reads it on every connect
+                                        (`SELECT name, value, readonly FROM system.settings`);
+                                        without it the client cannot be constructed at all.
+                     system.tables    - mcp-clickhouse `list_tables`
+                     system.columns   - mcp-clickhouse `list_tables` column metadata
+                     All three are row-filtered by ClickHouse to objects the user may see,
+                     so they leak the slateiq schema only - which the agent is given anyway
+                     in db/SCHEMA.md. -->
+                <query>GRANT SELECT ON system.settings</query>
+                <query>GRANT SELECT ON system.tables</query>
+                <query>GRANT SELECT ON system.columns</query>
+            </grants>
         </agent_ro>
     </users>
 

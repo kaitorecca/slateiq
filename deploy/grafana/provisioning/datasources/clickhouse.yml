@@ -14,10 +14,13 @@ datasources:
       protocol: http            # ClickHouse HTTP interface (not the native TCP protocol)
       secure: true
       path: ch                  # Caddy strips /ch/ before forwarding to clickhouse:8123
-      username: ${CH_USER}      # agent_ro — readonly=2, cannot write
+      username: ${CH_USER}      # agent_ro — readonly=1, GRANT SELECT ON slateiq.* only
       defaultDatabase: slateiq
       tlsSkipVerify: false
       dialTimeout: 15
-      queryTimeout: 60
+      # The plugin sends queryTimeout+4 as max_execution_time on every connection, and
+      # agent_ro is readonly=1 with that setting capped at 65 (users.d/slateiq.xml).
+      # 25 -> 29, i.e. inside the profile default of 30. Do not raise past 61.
+      queryTimeout: 25
     secureJsonData:
       password: ${CH_PASSWORD}

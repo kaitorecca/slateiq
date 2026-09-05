@@ -35,6 +35,13 @@ fi
 # ---------------------------------------------------------------- instance
 if gcloud compute instances describe "$VM" --zone "$ZONE" --project "$PROJECT" >/dev/null 2>&1; then
   echo "instance $VM already exists in $ZONE"
+  # Converge the startup-script even on an existing box: bootstrap.sh is what installs and
+  # enables slateiq-stack.service, so an edit to it must reach a VM that was created earlier.
+  # (Metadata is only read at boot; run `sudo google_metadata_script_runner startup` on the VM,
+  # or just reboot, to apply it now.)
+  echo "--- refreshing startup-script metadata from bootstrap.sh"
+  gcloud compute instances add-metadata "$VM" --zone "$ZONE" --project "$PROJECT" \
+    --metadata-from-file startup-script=bootstrap.sh --quiet >/dev/null
 else
   gcloud compute instances create "$VM" \
     --project "$PROJECT" \

@@ -13,7 +13,7 @@ Everything SlateIQ runs on, and how to (re)build it. Free tier only — see [cos
    FastAPI + UI     anon Viewer          public read         | caddy   :80/:443/:8443    |
         |                 |                                  |   /mcp  -> mcp:8765       |
         |  MCP (https,    |  ClickHouse HTTP over TLS        |   /ch/* -> clickhouse:8123|
-        |  bearer token)  |  (user agent_ro, read-only)      | mcp-clickhouse 0.6 (http) |
+        |  bearer token)  |  (agent_ro: SELECT on slateiq.*) | mcp-clickhouse 0.6 (http) |
         +-----------------+----------------------------------> clickhouse-server 25.6   |
                                                              +---------------------------+
 ```
@@ -44,7 +44,9 @@ deploy/vm/deploy_stack.sh     # ships compose/, generates secrets, brings the st
 
 `create_vm.sh` passes `bootstrap.sh` as the GCE **startup-script**: it installs Docker CE +
 the compose plugin, creates a 2 GiB swapfile, sets `vm.swappiness=10` /
-`vm.overcommit_memory=1`, caps container logs, and restarts the stack on every boot.
+`vm.overcommit_memory=1`, caps container logs, and installs + enables the
+`slateiq-stack.service` systemd unit that brings compose up on every boot (see
+[Resilience](#resilience--what-brings-the-stack-back)).
 The Ops Agent is deliberately **not** installed — it would cost ~120 MB of a 1 GiB box.
 
 `deploy_stack.sh` then:
@@ -54,6 +56,9 @@ The Ops Agent is deliberately **not** installed — it would cost ~120 MB of a 1
 3. `docker compose up -d --build`;
 4. curls `https://<ip>.sslip.io/health`, `/ch/ping`, and an unauthenticated `POST /mcp`
    (which must return **401**).
+
+After it finishes, `deploy/vm/healthcheck.sh` is the one command that proves the whole plane —
+see [Health check](#health-check) below.
 
 ### What runs on the VM
 
@@ -67,12 +72,57 @@ The Ops Agent is deliberately **not** installed — it would cost ~120 MB of a 1
 `max_server_memory_usage_to_ram_ratio 0.6`, `mark_cache_size 128 MiB`,
 `uncompressed_cache_size 0`, `max_concurrent_queries 8`, background pools cut to 4/2/2,
 merges capped at 1 GiB parts, and every system log except a 3-day-TTL `query_log` disabled.
-Per-user limits live in `compose/clickhouse/users.d/slateiq.xml`: `max_memory_usage 400 MB`,
-`max_threads 2`, spill-to-disk thresholds at 200 MB.
+Per-user limits live in `compose/clickhouse/users.d/slateiq.xml`: the `default` (seeding) profile
+keeps `max_memory_usage 400 MB` and 200 MB spill thresholds; the `agent_ro` profile is tighter —
+see below.
 
 **Users:** `default` (admin, used only by seeding, reachable only on localhost/inside the
-container) and **`agent_ro`** — `readonly=2`, `allow_ddl=0`, 30 s query timeout, 20k row result
-cap, 240 queries/min quota. `agent_ro` is the only identity mcp-clickhouse and Grafana ever use.
+container) and **`agent_ro`** — the only identity mcp-clickhouse, the agent and Grafana ever use.
+`agent_ro` is least-privileged in three independent layers, all declared in
+`compose/clickhouse/users.d/slateiq.xml` so a rebuild reproduces them exactly:
+
+1. **RBAC grants.** Five `GRANT` statements, and nothing else:
+
+   ```
+   GRANT SHOW, SELECT ON slateiq.*
+   GRANT SELECT ON system.settings     -- clickhouse-connect reads it on every connect
+   GRANT SELECT ON system.tables       -- mcp-clickhouse list_tables
+   GRANT SELECT ON system.columns      -- mcp-clickhouse list_tables column metadata
+   ```
+
+   The three system tables are row-filtered by ClickHouse to objects the user may see, so they
+   expose the `slateiq` schema and nothing more. Everything else — `system.query_log`,
+   `system.users`, `system.grants`, `system.zookeeper`, the `default` database — is
+   **ACCESS_DENIED (code 497)**, not merely read-only. This replaces the legacy
+   `<allow_databases>` list, which only filtered `SHOW` output and left the user holding
+   ClickHouse's default "everything" grant (including `SYSTEM SHUTDOWN`, `INTROSPECTION` and
+   `SOURCES`). `<grants>` and `<allow_databases>` are mutually exclusive, which is why the
+   latter is gone.
+
+2. **`readonly=1`** (was `readonly=2`). No writes, no DDL, and — the reason for the change —
+   **no table functions at all**: `url()`, `file()`, `remote()`, `s3()`, `mysql()` are refused,
+   closing the SSRF / local-file-read class that QC #2 finding **G-2** flagged as depending on a
+   setting we did not control. `mcp-clickhouse` detects that the server already enforces
+   readonly and echoes `1` back per query rather than trying to set it, so this is a no-op for
+   it (see `get_readonly_setting` in `mcp_server.py`).
+
+3. **Resource caps** (settings profile `agent_ro`): `max_execution_time 30`,
+   `max_result_rows 20000` / `max_result_bytes 16 MiB` with `result_overflow_mode break`,
+   `max_rows_to_read 50M` / `max_bytes_to_read 2 GiB`, `max_memory_usage 300 MB`,
+   `max_threads 2`, plus a 240 queries/min quota. A runaway query degrades or errors; it does
+   not OOM a 1 GiB box.
+
+   One deliberate exception exists to `readonly=1` freezing every setting: the Grafana
+   ClickHouse datasource plugin sends its own `max_execution_time` on each connection handshake
+   (`jsonData.queryTimeout` + 4 s) and fails the whole query with code 164 if the server refuses
+   it. A `<constraints>` block marks that single setting `changeable_in_readonly` with
+   `<max>65</max>`, so a client may move the timeout between 30 s and 65 s and change nothing
+   else. `provisioning/datasources/clickhouse.yml` has been lowered to `queryTimeout: 25`
+   (→ 29 s), so after the next Grafana image rebuild the real ceiling is the profile's 30 s
+   again for every identity.
+
+Changing this file needs no rebuild — ClickHouse hot-reloads `users.d/` within a few seconds.
+`docker restart slateiq-mcp` afterwards only refreshes mcp-clickhouse's pooled connections.
 
 **TLS** is Let's Encrypt via Caddy against `<ip>.sslip.io` — a free wildcard DNS service that
 resolves any `<ip>.sslip.io` to that IP. No domain, no Cloud DNS zone, no managed certificate.
@@ -92,13 +142,60 @@ curl -s https://$H/mcp -H "Authorization: Bearer $T" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"curl","version":"0"}}}'
 ```
 
+### Resilience — what brings the stack back
+
+Three layers, deliberately overlapping, because each covers a case the others do not:
+
+| Layer | Where | Covers |
+|---|---|---|
+| `restart: unless-stopped` on all three services | `compose/docker-compose.yml` | a crashed/OOM-killed container, and a docker daemon restart |
+| **`slateiq-stack.service`** (systemd, `Type=oneshot`, `RemainAfterExit=yes`, `After=docker.service network-online.target`) | written and `systemctl enable`d by `bootstrap.sh` | boot, **and** a container that was manually `docker stop`ped — which `unless-stopped` deliberately will not restart. `ExecStartPre` waits up to 60 s for the docker socket, because it can lag systemd on a 1 GiB box. |
+| `bootstrap.sh` re-run by GCE as the instance **startup-script** on every boot | `create_vm.sh --metadata-from-file startup-script=` | a boot where the unit file itself is missing (first provision, or a restored disk) |
+
+Both ClickHouse and mcp-clickhouse also carry container `healthcheck`s (`/ping` and `/health`,
+15 s / 20 s intervals), and `mcp` has `depends_on: {clickhouse: {condition: service_healthy}}`,
+so a cold boot never starts the MCP server against a database that is not accepting queries yet.
+
+Measured on 2026-09-05:
+
+```
+docker restart slateiq-mcp   -> /health returns OK again after ~12 s
+docker kill    slateiq-mcp   -> back up and healthy inside 30 s (restart policy)
+docker stop    slateiq-caddy -> stays down (correct); systemctl restart slateiq-stack -> up in 11 s
+sudo systemctl reboot        -> whole stack healthy 103 s after the reboot command,
+                                all three containers healthy, ephemeral IP unchanged
+```
+
+A `reboot` keeps the ephemeral IP; only `gcloud compute instances stop` releases it.
+
+### Health check
+
+```bash
+deploy/vm/healthcheck.sh            # 7 checks, from the laptop, no ssh needed
+deploy/vm/healthcheck.sh --ssh      # + containers, RAM and the systemd unit on the VM
+deploy/vm/healthcheck.sh --quiet    # exit code only, for a cron or watch loop
+```
+
+Exit 0 = all green, 1 = something failed, and every line prints the value it saw. It covers:
+MCP `/health`; unauthenticated `POST /mcp` returning **401**; an MCP `initialize` handshake with
+the bearer token; ClickHouse `/ch/ping`; **hosted-vs-local row counts** for all seven base tables
+(this is what caught `continuity_note` sitting at 0 rows on the VM while local had 66); that
+`agent_ro` still gets ACCESS_DENIED on `system.query_log` and on `CREATE TABLE`; and the Cloud Run
+agent's `/api/health`. Local ClickHouse being down downgrades the row-count checks to `skip`
+rather than failing them.
+
 ### Operating
 
 ```bash
 gcloud compute ssh slateiq-data --zone us-central1-a --command 'cd /opt/slateiq && docker compose ps'
 gcloud compute ssh slateiq-data --zone us-central1-a --command 'docker logs --tail 50 slateiq-mcp'
 gcloud compute ssh slateiq-data --zone us-central1-a --command 'free -m && docker stats --no-stream'
+gcloud compute ssh slateiq-data --zone us-central1-a --command 'systemctl status slateiq-stack.service'
 ```
+
+To change `agent_ro`'s privileges: edit `compose/clickhouse/users.d/slateiq.xml`, `gcloud compute
+scp` it to `/opt/slateiq/clickhouse/users.d/`, wait ~5 s for the hot reload, then
+`docker restart slateiq-mcp`. `deploy_stack.sh` does the same thing for the whole bundle.
 
 **If the VM is stopped and restarted its ephemeral IP changes**, and with it `PUBLIC_HOST`.
 Recover with: `deploy/vm/deploy_stack.sh` then `deploy/cloudrun/deploy_agent.sh` and
@@ -171,8 +268,10 @@ Anonymous `Viewer` access, login form disabled, `GF_SECURITY_ALLOW_EMBEDDING=tru
 that matters is provisioned from the image, so a cold start rebuilds the identical org.
 
 - Datasource: `provisioning/datasources/clickhouse.yml` → `https://<PUBLIC_HOST>/ch` (Caddy
-  strips the `/ch` prefix), protocol `http`, `secure: true`, user `agent_ro`, password from
-  Secret Manager (`slateiq-ch-ro-password`).
+  strips the `/ch` prefix), protocol `http`, `secure: true`, user `agent_ro` (`readonly=1`,
+  `GRANT SELECT ON slateiq.*` only), `queryTimeout: 25`, password from Secret Manager
+  (`slateiq-ch-ro-password`). Do not raise `queryTimeout` past 61 — the plugin sends
+  `queryTimeout + 4` as `max_execution_time` and the server caps that setting at 65.
 - Dashboard: `dashboards/slateiq-production-health.json`, uid **`slateiq-prod-health`**, also
   set as the anonymous home dashboard.
 

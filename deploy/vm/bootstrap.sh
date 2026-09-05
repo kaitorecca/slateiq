@@ -61,12 +61,46 @@ chmod 0777 "$STACK_DIR/seed"          # so scp'd parquet from the login user lan
 chmod 0775 "$STACK_DIR"
 chgrp docker "$STACK_DIR" 2>/dev/null || true
 
-# ---------------------------------------------------------------- 4. bring the stack up if already provisioned
-# (On a reboot the compose bundle is already on disk; `restart: unless-stopped` normally
-#  handles this, but this makes a cold boot self-healing.)
+# ---------------------------------------------------------------- 4. systemd unit for the stack
+# Three independent layers keep the data plane up, deliberately:
+#   1. `restart: unless-stopped` in docker-compose.yml  -> a crashed container comes back
+#      immediately, and docker's own service restores containers on daemon start.
+#   2. slateiq-stack.service (below)                    -> a oneshot `compose up -d` after
+#      docker.service on every boot. This is what covers the cases restart policies do not:
+#      a container that was manually stopped, a half-applied `compose down`, or a boot where
+#      the metadata startup-script is slow/absent.
+#   3. this bootstrap script itself, re-run by GCE as the startup-script on every boot.
+# Layer 2 is the load-bearing one; 1 and 3 are belt and braces.
+cat > /etc/systemd/system/slateiq-stack.service <<UNIT
+[Unit]
+Description=SlateIQ data plane (clickhouse + mcp-clickhouse + caddy)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=$STACK_DIR
+# Docker's socket can lag systemd's idea of "started" on a 1 GiB box.
+ExecStartPre=/bin/sh -c 'for i in \$(seq 1 30); do docker info >/dev/null 2>&1 && exit 0; sleep 2; done; exit 1'
+ExecStart=/usr/bin/docker compose up -d --remove-orphans
+ExecStop=/usr/bin/docker compose stop
+TimeoutStartSec=600
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl daemon-reload
+systemctl enable slateiq-stack.service
+
+# Bring the stack up now if it is already provisioned (first boot has no bundle yet;
+# deploy_stack.sh starts it in that case).
 if [ -f "$STACK_DIR/docker-compose.yml" ] && [ -f "$STACK_DIR/.env" ]; then
-  echo "--- compose bundle present, starting stack"
-  (cd "$STACK_DIR" && docker compose up -d --remove-orphans) || true
+  echo "--- compose bundle present, starting stack via systemd"
+  systemctl start slateiq-stack.service || (cd "$STACK_DIR" && docker compose up -d --remove-orphans) || true
 fi
 
 # ---------------------------------------------------------------- 5. housekeeping
