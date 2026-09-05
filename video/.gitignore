@@ -1,0 +1,6 @@
+node_modules/
+package-lock.json
+
+# symlinks into data/ so the card pages can reference the real clips
+cards/clips
+cards/thumbs

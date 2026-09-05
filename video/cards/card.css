@@ -1,0 +1,29 @@
+/* Shared look for the non-app beats — same cutting-room palette as web/tailwind.config.js */
+:root{
+  --cell:#0E1013; --panel:#14171B; --raise:#1B1F25; --line:#252A31;
+  --ink:#E9E7E2; --dim:#9AA1AB; --faint:#666D77;
+  --slate:#F0B429; --circled:#5FBF7F; --ng:#E0574F; --hold:#5B9FE3; --lav:#D9A0F0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden}
+body{
+  background:var(--cell); color:var(--ink);
+  font-family:"DejaVu Sans","Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"DejaVu Sans Mono","SF Mono",monospace}
+.stage{width:1920px;height:1080px;display:flex;flex-direction:column;justify-content:center;padding:0 150px}
+.label{font-size:17px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);font-weight:600}
+.clapper{
+  height:12px;background:repeating-linear-gradient(115deg,var(--ink) 0 18px,#0a0b0d 18px 36px);
+  border-radius:2px;
+}
+.fade{opacity:0;animation:fade .7s ease forwards}
+.rise{opacity:0;transform:translateY(18px);animation:rise .7s cubic-bezier(.2,.8,.3,1) forwards}
+@keyframes fade{to{opacity:1}}
+@keyframes rise{to{opacity:1;transform:none}}
+/* a soft vignette keeps 1080p text off a flat black field */
+.stage::after{
+  content:"";position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 45%,rgba(240,180,41,.030) 0%,rgba(240,180,41,.012) 45%,transparent 78%);
+}

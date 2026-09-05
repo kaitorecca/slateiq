@@ -1,0 +1,30 @@
+<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="card.css">
+<style>
+  .stage{justify-content:center;padding:0 120px}
+  .label{margin-bottom:38px}
+  ul{list-style:none;font-size:40px;line-height:1.6}
+  li{display:grid;grid-template-columns:max-content 260px;column-gap:64px;align-items:baseline;color:var(--dim);opacity:0;
+     transform:translateY(14px);animation:rise .55s cubic-bezier(.2,.8,.3,1) forwards}
+  li b{color:var(--ink);font-weight:600}
+  li span{color:var(--slate);font-weight:600}
+  li:nth-child(1){animation-delay:.3s} li:nth-child(2){animation-delay:1.5s} li:nth-child(3){animation-delay:2.7s}
+  .rule{height:2px;background:var(--line);margin:34px 0 30px;width:1260px;opacity:0;animation:fade .5s 3.9s forwards}
+  .sum{font-size:60px;font-weight:700;opacity:0;animation:rise .6s 4.1s cubic-bezier(.2,.8,.3,1) forwards;
+       display:grid;grid-template-columns:max-content 260px;column-gap:64px;align-items:baseline}
+  .sum b{color:var(--faint);font-size:40px;font-weight:600}
+  .sum span{white-space:nowrap}
+  .sum span{color:var(--slate)}
+  .big{margin-top:34px;font-size:38px;color:var(--dim);opacity:0;animation:rise .6s 5.5s cubic-bezier(.2,.8,.3,1) forwards}
+  .big b{color:var(--ink);font-size:52px}
+</style>
+<div class="stage">
+  <div class="label">What the paperwork costs, every shooting day</div>
+  <ul>
+    <li><b>Script supervisor — facing pages, daily report</b><span>≈ 1 h</span></li>
+    <li><b>Production office — DPR reconciliation</b><span>≈ 45 min</span></li>
+    <li><b>Assistant editor — sync &amp; log the dailies</b><span>≈ 1.5 h</span></li>
+  </ul>
+  <div class="rule"></div>
+  <div class="sum"><b>Per shooting day</b><span>≈ 3 crew-hours</span></div>
+  <div class="big">Over a 30-day feature — <b>≈ 90 hours.</b> Two crew-weeks, retyped by hand.</div>
+</div>

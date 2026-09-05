@@ -1,0 +1,77 @@
+<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="card.css">
+<style>
+  .scene{position:fixed;inset:0;opacity:0;transition:opacity .5s ease}
+  .scene.on{opacity:1}
+  /* ---- 1. the slate ---- */
+  #slate{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .board{width:520px;margin-bottom:54px}
+  .top{height:34px;background:repeating-linear-gradient(115deg,#E9E7E2 0 34px,#0a0b0d 34px 68px);
+       border-radius:3px;transform-origin:left center;animation:clap 1.0s cubic-bezier(.3,1.5,.4,1) forwards}
+  @keyframes clap{0%{transform:rotate(-24deg)}58%{transform:rotate(2deg)}100%{transform:rotate(0)}}
+  .board .body{height:140px;background:var(--panel);border:2px solid var(--line);border-radius:4px;margin-top:5px;
+        display:grid;grid-template-columns:repeat(3,1fr);align-items:center;font-size:17px;color:var(--faint);letter-spacing:.1em}
+  .board .body div{border-right:1px solid var(--line);padding:0 18px;text-align:left}
+  .board .body div:last-child{border:none}
+  .board .body b{display:block;color:var(--dim);margin-top:6px;font-size:19px}
+  h1{font-size:130px;letter-spacing:-.035em;font-weight:700;line-height:1;animation-delay:.7s}
+  h1 em{font-style:normal;color:var(--slate)}
+  #slate p{font-size:33px;color:var(--dim);margin-top:24px;animation-delay:1.0s}
+  /* ---- 2. the take, annotated ---- */
+  #take{display:flex;align-items:center;justify-content:center}
+  .frame{position:relative;width:1500px;aspect-ratio:16/9;border:1px solid var(--line);
+         border-radius:8px;overflow:hidden;background:#000}
+  .frame video{width:100%;height:100%;object-fit:cover;display:block}
+  .ann{position:absolute;opacity:0;transform:translateY(10px);transition:opacity .45s,transform .45s}
+  .ann.on{opacity:1;transform:none}
+  .tag{background:rgba(14,16,19,.9);border:1px solid var(--line);border-left:3px solid var(--slate);
+       border-radius:6px;padding:11px 16px;backdrop-filter:blur(6px)}
+  .tag .k{font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  .tag .v{font-size:24px;color:var(--ink);margin-top:5px}
+  .tag.warn{border-left-color:var(--ng)} .tag.warn .v{color:var(--ng)}
+  .tag.ok{border-left-color:var(--circled)}
+  .slug{position:absolute;left:26px;top:22px;font-size:19px;letter-spacing:.14em;color:var(--slate);
+        background:rgba(14,16,19,.85);border-radius:5px;padding:8px 14px}
+</style>
+
+<div class="scene on stage" id="slate">
+  <div class="board">
+    <div class="top"></div>
+    <div class="body">
+      <div>PROD<b>TEARS OF STEEL</b></div>
+      <div>DAY<b>12 / 30</b></div>
+      <div>ROLL<b>A012</b></div>
+    </div>
+  </div>
+  <h1 class="rise">Slate<em>IQ</em></h1>
+  <p class="rise">Dailies intelligence</p>
+</div>
+
+<div class="scene" id="take">
+  <div class="frame">
+    <video id="v" src="clips/TOS-D12-S12-A-01-A.mp4" muted playsinline></video>
+    <div class="slug">SC 12 · SETUP A · TAKE 1 · CAM A · 01:12:04:08</div>
+    <div class="ann tag" id="a1" style="left:26px;bottom:170px;max-width:760px">
+      <div class="k">Gemini · dialogue · 05.3–09.2 s</div>
+      <div class="v">CELIA — “Why don't you just admit that you're freaked out by my robot hand?”</div>
+    </div>
+    <div class="ann tag ok" id="a2" style="right:26px;top:110px">
+      <div class="k">emotion</div><div class="v">defiance · 0.70</div>
+    </div>
+    <div class="ann tag warn" id="a3" style="right:26px;top:220px">
+      <div class="k">telemetry · flag</div><div class="v">soft_focus · 0.52</div>
+    </div>
+    <div class="ann tag" id="a4" style="left:26px;bottom:70px">
+      <div class="k">status</div><div class="v" style="color:var(--circled)">CIRCLED</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const on = (id) => document.getElementById(id).classList.add('on');
+  const off = (id) => document.getElementById(id).classList.remove('on');
+  const v = document.getElementById('v');
+  setTimeout(() => { off('slate'); on('take'); v.play(); }, 4300);
+  setTimeout(() => { v.pause(); }, 11500);     // freeze on the frame
+  [['a1', 8200], ['a2', 11900], ['a3', 12900], ['a4', 13900]].forEach(([id, t]) => setTimeout(() => on(id), t));
+  window.__duration = 18000;
+</script>

@@ -1,0 +1,179 @@
+1
+00:00:03,500 --> 00:00:09,044
+One a.m. On every film set in the world, three people
+
+2
+00:00:09,044 --> 00:00:13,961
+are still awake, typing up what happened today.
+
+3
+00:00:13,961 --> 00:00:18,982
+Which takes got circled. How many pages we made.
+
+4
+00:00:19,282 --> 00:00:23,928
+That's three crew-hours a day. Ninety hours over a feature.
+
+5
+00:00:23,928 --> 00:00:27,234
+And the knowledge ends up trapped in a PDF
+
+6
+00:00:27,234 --> 00:00:30,069
+that can't answer a single question.
+
+7
+00:00:30,069 --> 00:00:32,274
+So we built the other thing.
+
+8
+00:00:32,574 --> 00:00:37,364
+Gemini three point five Flash watches every take.
+
+9
+00:00:37,364 --> 00:00:42,349
+Dialogue, boom in shot, soft focus, a flubbed line.
+
+10
+00:00:42,349 --> 00:00:48,019
+And we measure the file itself twenty-five times a second:
+
+11
+00:00:48,019 --> 00:00:53,200
+focus, exposure, audio peak. Both land in ClickHouse.
+
+12
+00:00:53,200 --> 00:00:56,622
+Three million rows, one production.
+
+13
+00:00:56,922 --> 00:01:00,196
+Now ask something nobody could ask before.
+
+14
+00:01:00,196 --> 00:01:03,626
+The director circled scene twelve, take two.
+
+15
+00:01:03,626 --> 00:01:07,836
+It is soft for thirteen seconds, and nobody caught it.
+
+16
+00:01:07,836 --> 00:01:10,643
+That answer joins what Gemini saw to
+
+17
+00:01:10,643 --> 00:01:13,293
+what the camera actually measured.
+
+18
+00:01:13,293 --> 00:01:17,191
+Three million rows, sixty-five milliseconds, every
+
+19
+00:01:17,191 --> 00:01:21,011
+query through the official ClickHouse MCP server.
+
+20
+00:01:21,011 --> 00:01:24,442
+That's a reshoot you don't have to schedule.
+
+21
+00:01:24,742 --> 00:01:26,940
+Ask like an assistant editor:
+
+22
+00:01:26,940 --> 00:01:31,337
+the line, the take, the timecode, and it plays from there.
+
+23
+00:01:31,337 --> 00:01:32,853
+Ask like a producer:
+
+24
+00:01:32,853 --> 00:01:35,203
+forty-eight and a half pages of
+
+25
+00:01:35,203 --> 00:01:37,856
+fifty-two, three and a half behind.
+
+26
+00:01:37,856 --> 00:01:41,267
+It knows days eight and eleven lost setups to
+
+27
+00:01:41,267 --> 00:01:44,148
+rain, because it read the call sheets.
+
+28
+00:01:44,448 --> 00:01:46,700
+Ask like a script supervisor.
+
+29
+00:01:46,700 --> 00:01:49,883
+It reads across every take of a scene and
+
+30
+00:01:49,883 --> 00:01:52,911
+tells you which one is the odd one out.
+
+31
+00:01:53,211 --> 00:01:56,332
+And at wrap it writes the paperwork.
+
+32
+00:01:56,332 --> 00:01:59,627
+The progress report, the editor's log,
+
+33
+00:01:59,627 --> 00:02:02,488
+the facing pages in digital form.
+
+34
+00:02:02,488 --> 00:02:06,649
+Pages in eighths, setups, circled, NG, overtime.
+
+35
+00:02:06,649 --> 00:02:10,464
+Every field is a live query, not a template.
+
+36
+00:02:10,464 --> 00:02:14,278
+And it reads you the short version out loud.
+
+37
+00:02:14,578 --> 00:02:17,682
+Same database, straight through Grafana.
+
+38
+00:02:17,682 --> 00:02:20,397
+Print ratio by scene, pages against
+
+39
+00:02:20,397 --> 00:02:23,035
+plan, where the flags are landing.
+
+40
+00:02:23,035 --> 00:02:26,060
+And every take in the shoot, browsable.
+
+41
+00:02:26,360 --> 00:02:30,474
+Gemini and Google Cloud Agent Builder on Cloud Run.
+
+42
+00:02:30,474 --> 00:02:34,185
+ClickHouse as the production's memory, reached
+
+43
+00:02:34,185 --> 00:02:37,169
+only through its official MCP server.
+
+44
+00:02:37,169 --> 00:02:41,767
+It's live, it's open source, and the link is right there.
+
+45
+00:02:42,067 --> 00:02:46,455
+SlateIQ. Your dailies, finally talking back.

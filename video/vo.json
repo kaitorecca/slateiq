@@ -1,0 +1,47 @@
+{
+  "voice": "Kore",
+  "model": "gemini-2.5-flash-preview-tts",
+  "style": "Read as a warm, confident film-trailer narrator. Measured pace, clear consonants, no rush.",
+  "beats": [
+    {
+      "id": "b01",
+      "text": "One a.m. On every film set in the world, three people are still awake, typing up what happened today. Which takes got circled. How many pages we made."
+    },
+    {
+      "id": "b02",
+      "text": "That's three crew-hours a day. Ninety hours over a feature. And the knowledge ends up trapped in a P D F that can't answer a single question. So we built the other thing."
+    },
+    {
+      "id": "b03",
+      "text": "Gemini three point five Flash watches every take. Dialogue, boom in shot, soft focus, a flubbed line. And we measure the file itself twenty-five times a second: focus, exposure, audio peak. Both land in ClickHouse. Three million rows, one production."
+    },
+    {
+      "id": "b04",
+      "text": "Now ask something nobody could ask before. The director circled scene twelve, take two. It is soft for thirteen seconds, and nobody caught it. That answer joins what Gemini saw to what the camera actually measured. Three million rows, sixty-five milliseconds, every query through the official ClickHouse M C P server. That's a reshoot you don't have to schedule."
+    },
+    {
+      "id": "b05",
+      "text": "Ask like an assistant editor: the line, the take, the timecode, and it plays from there. Ask like a producer: forty-eight and a half pages of fifty-two, three and a half behind. It knows days eight and eleven lost setups to rain, because it read the call sheets."
+    },
+    {
+      "id": "b06",
+      "text": "Ask like a script supervisor. It reads across every take of a scene and tells you which one is the odd one out."
+    },
+    {
+      "id": "b07",
+      "text": "And at wrap it writes the paperwork. The progress report, the editor's log, the facing pages in digital form. Pages in eighths, setups, circled, N G, overtime. Every field is a live query, not a template. And it reads you the short version out loud."
+    },
+    {
+      "id": "b08",
+      "text": "Same database, straight through Grafana. Print ratio by scene, pages against plan, where the flags are landing. And every take in the shoot, browsable."
+    },
+    {
+      "id": "b09",
+      "text": "Gemini and Google Cloud Agent Builder on Cloud Run. ClickHouse as the production's memory, reached only through its official M C P server. It's live, it's open source, and the link is right there."
+    },
+    {
+      "id": "b10",
+      "text": "SlateIQ. Your dailies, finally talking back."
+    }
+  ]
+}

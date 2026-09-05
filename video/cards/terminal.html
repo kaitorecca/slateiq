@@ -1,0 +1,60 @@
+<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="card.css">
+<style>
+  .stage{padding:60px 120px;justify-content:center}
+  .term{background:#08090b;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+        box-shadow:0 40px 120px rgba(0,0,0,.6)}
+  .bar{display:flex;align-items:center;gap:10px;padding:14px 18px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .bar i{width:12px;height:12px;border-radius:50%;display:block}
+  .bar span{margin-left:14px;font-size:15px;color:var(--faint);letter-spacing:.06em}
+  pre{padding:30px 34px;font-size:21px;line-height:1.62;color:#C9CEd6;white-space:pre;min-height:640px}
+  .p{color:var(--circled)} .c{color:var(--ink)} .g{color:var(--faint)}
+  .y{color:var(--slate)} .r{color:var(--ng)} .b{color:var(--hold)}
+  .cur{display:inline-block;width:11px;height:23px;background:var(--slate);vertical-align:-4px;animation:bl 1s steps(1) infinite}
+  @keyframes bl{50%{opacity:0}}
+</style>
+<div class="stage">
+  <div class="term">
+    <div class="bar"><i style="background:#E0574F"></i><i style="background:#F0B429"></i><i style="background:#5FBF7F"></i>
+      <span class="mono">slateiq — clickhouse-client — 3,074,957 rows of frame telemetry</span></div>
+    <pre id="t" class="mono"></pre>
+  </div>
+</div>
+<script>
+// Verbatim transcript of the real session — the numbers below are the ones the
+// database returns today (db/verify.py + golden query 14 restricted to circled takes).
+const LINES = [
+ ['<span class="p">$</span> <span class="c">clickhouse-client --query "SELECT count() FROM slateiq.frame_telemetry"</span>', 320],
+ ['<span class="y">3074957</span>', 260],
+ ['', 200],
+ ['<span class="p">$</span> <span class="c">cat hero.sql</span>', 320],
+ ['<span class="g">-- circled takes that the camera measured as SOFT</span>', 90],
+ ['<span class="b">SELECT</span> t.take_id, t.scene_number, t.shot, t.take_number, t.status,', 90],
+ ['       <span class="b">round</span>(<span class="b">countIf</span>(f.focus_score &lt; 0.55)/25.0, 1) <span class="b">AS</span> soft_s,', 90],
+ ['       <span class="b">round</span>(<span class="b">avg</span>(f.focus_score), 3) <span class="b">AS</span> avg_focus', 90],
+ ['<span class="b">FROM</span> slateiq.frame_telemetry f <span class="b">JOIN</span> slateiq.take t <span class="b">USING</span> take_id', 90],
+ ['<span class="b">WHERE</span> t.status = <span class="y">\'circled\'</span>', 90],
+ ['<span class="b">GROUP BY</span> t.take_id, t.scene_number, t.shot, t.take_number, t.status', 90],
+ ['<span class="b">HAVING</span> soft_s &gt; 5 <span class="b">ORDER BY</span> soft_s <span class="b">DESC</span>', 90],
+ ['', 260],
+ ['<span class="p">$</span> <span class="c">clickhouse-client --time &lt; hero.sql</span>', 700],
+ ['   ┌─take_id────────────┬─scene─┬─shot─┬─take─┬─status──┬─soft_s─┬─avg_focus─┐', 70],
+ ['1. │ <span class="r">TOS-D12-S12-B-02-B</span> │ 12    │ B    │    2 │ <span class="y">circled</span> │   <span class="r">13.0</span> │     <span class="r">0.521</span> │', 70],
+ ['   └────────────────────┴───────┴──────┴──────┴─────────┴────────┴───────────┘', 70],
+ ['', 160],
+ ['<span class="g">1 row in set. Elapsed: <span class="y">0.065 sec</span>. Processed <span class="y">3.09 million rows</span>, 74.06 MB', 130],
+ ['<span class="g">(47.52 million rows/s., 1.14 GB/s.)</span>', 240],
+ ['', 240],
+ ['<span class="g">→ the director circled it. the camera says it is soft for 13 seconds.</span>', 200],
+].map(([html, hold]) => ({ html, hold }));
+
+const out = document.getElementById('t');
+let acc = '', i = 0;
+(function next() {
+  if (i >= LINES.length) { out.innerHTML = acc + '<span class="cur"></span>'; return; }
+  const { html, hold } = LINES[i++];
+  acc += html + '\n';
+  out.innerHTML = acc + '<span class="cur"></span>';
+  setTimeout(next, hold);
+})();
+window.__duration = 12000;
+</script>
