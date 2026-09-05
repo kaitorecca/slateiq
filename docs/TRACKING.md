@@ -65,3 +65,4 @@
 | 18:50 | QC final | hosted judge pass 18/20, no P0s: 7/7 chips traced through mcp-clickhouse + numbers verified vs ClickHouse, 0 console errors, clean at 390px, exports/DPR/read-aloud/Grafana/About links all green, secrets clean, 116 tests + 43/43 verify. Fixed 2 P1s (Gemini 503 leaked raw JSON twice; stale TTS cache = 55s cold read-aloud → 1.71s) and redeployed rev 00010. Biggest remaining risk: video not uploaded, 16s cold start | done |
 | 18:58 | QC final | docs/QC_FINAL.md 18/20, no P0; fixed 2 P1 (Gemini 503 leak, stale TTS cache) → Cloud Run rev 00010; 7/7 chips trace via MCP; exports OK; 116 tests; no secrets in git | done |
 | 18:59 | orchestrator | added reshoot-day cost clause to README/DEVPOST (impact); video v2 still running | in progress |
+| 18:52 | orchestrator | tick: launched code-quality/repo-hygiene agent (ruff, Makefile, Lighthouse, a11y); video v2 running | in progress |
