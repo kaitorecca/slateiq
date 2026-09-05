@@ -96,3 +96,4 @@
 | 21:25 | orchestrator | redeploy attempts hung inside gcloud CLI → killed; hosted rev 00013 healthy; editor_log bake documented as P2 follow-up in HANDOFF | done |
 | 21:25 | orchestrator | final pre-wrap check: hosted/MCP/Grafana/repo all OK, no secrets tracked, 100 commits, trailer v2 committed; awaiting 22:00 wrap-up | done |
 | 21:27 | orchestrator | tick: retrying redeploy (editor_log bake) under a 12-min timeout; no agents running | in progress |
+| 21:35 | orchestrator | USER REQUEST: stop GCP services. VM slateiq-data stopped (IPv4 released → MCP URL changes on restart), keep-warm scheduler paused, uptime check + alert deleted, redeploy killed, orchestrator crons deleted. Cloud Run (scale-to-zero, $0 idle), GCS 44MB, AR 0.4GB, Secret Manager left in place. | done |

@@ -14,6 +14,8 @@ Judging window: **23 Sep – 7 Oct 2026** — the VM and Cloud Run must stay ali
 
 > **Small follow-up (P2, optional):** Cloud Run rev `slateiq-00013` predates commit `eb10466`, so the baked Editor's Log cache (`data/cache/reports/editor_log_day12.json`) is missing from the image — the first `/api/report/editor-log?day=12` on a cold instance takes ~100 s (no UI button calls it; CSV/ALE exports and the DPR are unaffected). Fix = one redeploy when gcloud is responsive: `bash deploy/cloudrun/deploy_agent.sh` (~5 min). Two attempts on 5 Sep ~21:00 hung inside gcloud (`projects describe` / `services list` never returned) and were killed.
 
+> **⚠️ Trạng thái 5 Sep 21:35 (AEST): hạ tầng đã TẮT theo yêu cầu tiết kiệm chi phí.** VM `slateiq-data` đã stop (ClickHouse + mcp-clickhouse offline → hosted app trả `mcp:down`, Grafana không có dữ liệu); Cloud Scheduler keep-warm đã pause; uptime check/alert đã xóa. Để bật lại trước khi giám khảo chấm (23 Sep–7 Oct): `gcloud compute instances start slateiq-data --zone us-central1-a`, chờ ~2 phút, lấy IP mới (`gcloud compute instances describe slateiq-data --zone us-central1-a --format='value(networkInterfaces[0].accessConfigs[0].natIP)'`), rồi chạy lại `bash deploy/vm/deploy_stack.sh` (Caddy cert cho `<ip-mới>.sslip.io`), cập nhật `CLICKHOUSE_MCP_URL` trong `.secrets/deploy.env`, chạy `bash deploy/cloudrun/deploy_agent.sh` và `bash deploy/grafana/deploy.sh`, sau đó `bash deploy/vm/healthcheck.sh`. Dữ liệu trên đĩa VM vẫn còn (pd-standard 30GB, không cần seed lại).
+
 ## Tóm tắt tiếng Việt (đọc cái này trước)
 
 Sản phẩm đã xong hết: code, deploy, test, video. **Chỉ còn 2 việc cần bạn tự làm bằng tay:**
