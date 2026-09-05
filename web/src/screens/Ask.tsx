@@ -129,7 +129,13 @@ function AssistantBubble({ m }: { m: ChatMessage }) {
 
         {!m.streaming && <AnswerStats m={m} />}
 
-        {m.error && <ErrorBox message={m.error} />}
+        {/* The runtime emits a `final` carrying the friendly failure text *and*
+            an `error` event with the same string, so the answer bubble is never
+            empty. Rendering both printed the message twice; only show the box
+            when it says something the bubble does not. */}
+        {m.error && m.error.trim() !== (m.text || '').trim() && (
+          <ErrorBox message={m.error} />
+        )}
       </div>
     </div>
   )

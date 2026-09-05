@@ -309,6 +309,36 @@ def test_other_failures_keep_their_detail_but_never_invent_a_number() -> None:
     assert "kaboom" in msg
 
 
+# A Gemini capacity blip is transient and has nothing to do with the data. QC #4
+# caught the raw provider JSON -- truncated mid-sentence -- being rendered into
+# the chat window on a hosted 503.
+_GEMINI_503 = (
+    "ServerError: 503 Service Unavailable. {'message': '{\n \"error\": {\n "
+    "\"code\": 503,\n \"message\": \"This model is currently experiencing "
+    "high demand. Spikes in demand are usually temporary. Please try again.\"}}'}"
+)
+
+
+def test_model_overload_is_reported_as_busy_not_as_a_database_outage() -> None:
+    msg = guardrails.friendly_error(_GEMINI_503)
+    assert "busy" in msg.lower()
+    # never leak the provider payload, and never blame ClickHouse/MCP
+    assert "503" not in msg
+    assert "ServerError" not in msg
+    assert "MCP" not in msg
+
+
+def test_rate_limit_is_also_a_busy_message() -> None:
+    msg = guardrails.friendly_error("ClientError: 429 RESOURCE_EXHAUSTED")
+    assert "busy" in msg.lower()
+    assert "429" not in msg
+
+
+def test_mcp_outage_still_reports_the_database() -> None:
+    msg = guardrails.friendly_error(ValueError("Tool 'run_query' not found"))
+    assert "MCP" in msg
+
+
 # ---------------------------------------------------------------------------
 # after_tool_callback truncation
 # ---------------------------------------------------------------------------

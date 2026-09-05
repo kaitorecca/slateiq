@@ -138,6 +138,28 @@ _FRIENDLY_MCP = (
     "stack needs to restart the MCP server."
 )
 
+# Gemini capacity blips (503 UNAVAILABLE / 429 RESOURCE_EXHAUSTED) are
+# transient and have nothing to do with the data. Shipping the raw provider
+# JSON -- truncated mid-sentence -- into the chat window reads like a broken
+# product; it is a "try again" and should say so.
+_MODEL_BUSY_HINTS = (
+    "503",
+    "429",
+    "unavailable",
+    "resource_exhausted",
+    "resource exhausted",
+    "experiencing high demand",
+    "overloaded",
+    "rate limit",
+    "quota exceeded",
+)
+
+_FRIENDLY_MODEL_BUSY = (
+    "The Gemini model is busy right now (the API returned a temporary "
+    "capacity error), so the question never reached the database. Nothing is "
+    "wrong with the data -- ask again in a few seconds and it will run."
+)
+
 
 def friendly_error(exc: BaseException | str) -> str:
     """Turn a runtime failure into something a crew member can act on.
@@ -149,6 +171,11 @@ def friendly_error(exc: BaseException | str) -> str:
     """
     text = exc if isinstance(exc, str) else f"{type(exc).__name__}: {exc}"
     low = text.lower()
+    # Checked before the MCP hints: a Gemini 503 body often mentions
+    # "connection"-ish words, and a capacity blip must not be reported as a
+    # database outage.
+    if any(h in low for h in _MODEL_BUSY_HINTS):
+        return _FRIENDLY_MODEL_BUSY
     if any(h in low for h in _MCP_HINTS):
         return _FRIENDLY_MCP
     return (
