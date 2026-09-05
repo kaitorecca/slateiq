@@ -1,0 +1,13 @@
+# SlateIQ agent service.
+# NOTE: ADK 2.8 pins mcp 1.x; the mcp-clickhouse *server* needs mcp 2.x and
+# therefore lives in its own venv/container. Never merge the two.
+google-adk==2.8.0
+mcp>=1.29,<2
+google-genai>=2.10,<3
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1
+sse-starlette>=2.1
+python-multipart>=0.0.9
+clickhouse-connect>=0.8,<2
+pyyaml>=6.0
+sqlalchemy>=2.0,<3

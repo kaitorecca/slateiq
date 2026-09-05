@@ -1,0 +1,276 @@
+#!/usr/bin/env python3
+"""SlateIQ eval harness.
+
+Runs every question in questions.yaml through the real agent network (real
+Gemini, real ClickHouse MCP), records the tool calls, the SQL, the latency and
+whether `run_query` was actually reached, then asks Gemini to score the answer
+1-5 against the question's rubric. Writes agent/evals/last_run.md.
+
+Usage (from repo root, with .venv active and .env sourced):
+    python agent/evals/run_eval.py                 # everything
+    python agent/evals/run_eval.py --only dpr on_schedule
+    python agent/evals/run_eval.py --no-judge      # skip the LLM judge
+    python agent/evals/run_eval.py --concurrency 3
+"""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import json
+import os
+import statistics
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+import yaml
+
+EVAL_DIR = Path(__file__).resolve().parent
+AGENT_DIR = EVAL_DIR.parent
+sys.path.insert(0, str(AGENT_DIR))
+
+from slateiq_agent import config  # noqa: E402
+from slateiq_agent.runtime import run_once  # noqa: E402
+
+JUDGE_MODEL = os.environ.get("SLATEIQ_JUDGE_MODEL", "gemini-3.5-flash")
+
+JUDGE_PROMPT = """\
+You are grading an AI assistant that answers film-production questions by
+querying a ClickHouse database of takes, events, schedule and telemetry.
+
+QUESTION
+{question}
+
+RUBRIC FOR A 5/5 ANSWER
+{rubric}
+
+SQL THE AGENT ACTUALLY RAN
+{sql}
+
+THE AGENT'S ANSWER
+{answer}
+
+Score 1-5:
+5 = fully answers the question, every number is grounded in the SQL results,
+    industry-correct language, actionable, correct structured output if takes
+    are referenced.
+4 = correct and grounded, minor omission.
+3 = partially answers, or hedges, or leaves out detail the rubric requires.
+2 = mostly unhelpful, or answers a different question.
+1 = wrong, or states numbers that no query could have produced (hallucination).
+
+A truthful "there is no data matching that" backed by a real query that
+returned nothing is a 4, not a 1.
+
+Reply with ONLY a JSON object:
+{{"score": <1-5>, "grounded": <true|false>, "reason": "<one sentence>"}}
+"""
+
+
+async def judge(client, question: str, rubric: str, answer: str, sql: list[str]) -> dict:
+    if not answer.strip():
+        return {"score": 1, "grounded": False, "reason": "empty answer"}
+    prompt = JUDGE_PROMPT.format(
+        question=question,
+        rubric=rubric.strip(),
+        sql="\n".join(f"- {s}" for s in sql) or "(none -- the agent never queried)",
+        answer=answer[:12000],
+    )
+    try:
+        resp = await client.aio.models.generate_content(
+            model=JUDGE_MODEL, contents=prompt
+        )
+        text = (resp.text or "").strip()
+        if text.startswith("```"):
+            text = text.strip("`")
+            text = text[text.find("{"):]
+        start, end = text.find("{"), text.rfind("}")
+        return json.loads(text[start : end + 1])
+    except Exception as exc:
+        return {"score": 0, "grounded": False, "reason": f"judge failed: {exc}"}
+
+
+async def run_question(q: dict, client, do_judge: bool, timeout: float) -> dict:
+    started = time.perf_counter()
+    try:
+        result = await asyncio.wait_for(
+            run_once(
+                q["question"], user_id=f"eval_{q['id']}", agent_key="coordinator"
+            ),
+            timeout=timeout,
+        )
+    except asyncio.TimeoutError:
+        return {
+            **q, "latency_s": time.perf_counter() - started,
+            "error": f"timed out after {timeout:.0f}s",
+            "answer": "", "sql": [], "tool_calls": [], "ran_query": False,
+            "agents": [], "takes": 0,
+            "judge": {"score": 0, "grounded": False,
+                      "reason": f"timed out after {timeout:.0f}s"},
+        }
+    except Exception as exc:
+        return {
+            **q, "latency_s": time.perf_counter() - started, "error": str(exc),
+            "answer": "", "sql": [], "tool_calls": [], "ran_query": False,
+            "agents": [], "takes": 0, "judge": {"score": 0, "grounded": False,
+                                                "reason": f"crashed: {exc}"},
+        }
+    latency = time.perf_counter() - started
+    agents = []
+    for ev in result["events"]:
+        if ev["type"] == "agent" and ev["name"] not in agents:
+            agents.append(ev["name"])
+    verdict = (
+        await judge(client, q["question"], q.get("rubric", ""), result["text"], result["sql"])
+        if do_judge
+        else {"score": None, "grounded": None, "reason": "judge skipped"}
+    )
+    return {
+        **q,
+        "latency_s": latency,
+        "error": result.get("error"),
+        "answer": result["text"],
+        "sql": result["sql"],
+        "tool_calls": result["tool_calls"],
+        "ran_query": result["ran_query"],
+        "agents": agents,
+        "takes": len(result["takes"]),
+        "judge": verdict,
+    }
+
+
+def render(rows: list[dict], elapsed: float) -> str:
+    n = len(rows)
+    queried = sum(1 for r in rows if r["ran_query"])
+    scores = [r["judge"]["score"] for r in rows if isinstance(r["judge"].get("score"), int) and r["judge"]["score"] > 0]
+    routed = sum(
+        1 for r in rows
+        if not r.get("expect_agent") or r["expect_agent"] in r["agents"]
+    )
+    lat = [r["latency_s"] for r in rows]
+
+    out = [
+        "# SlateIQ eval — last run",
+        "",
+        f"- Run at: {datetime.now(timezone.utc).isoformat(timespec='seconds')}",
+        f"- Coordinator model: `{config.MODEL}` · report model: `{config.REPORT_MODEL}` · judge: `{JUDGE_MODEL}`",
+        f"- ClickHouse MCP: `{config.MCP_URL}` (auth: {bool(config.MCP_TOKEN)})",
+        f"- Questions: **{n}** · wall clock {elapsed:.1f}s",
+        f"- Reached MCP `run_query`: **{queried}/{n}** ({queried / n * 100:.0f}%)",
+        f"- Routed to the expected specialist: **{routed}/{n}**",
+    ]
+    if scores:
+        out.append(
+            f"- Judge score: **mean {statistics.mean(scores):.2f}/5**, "
+            f"median {statistics.median(scores):.1f}, min {min(scores)}, "
+            f"{sum(1 for s in scores if s >= 4)}/{len(scores)} at 4+"
+        )
+    out += [
+        f"- Latency: mean {statistics.mean(lat):.1f}s, "
+        f"median {statistics.median(lat):.1f}s, max {max(lat):.1f}s",
+        "",
+        "| # | id | user | agent(s) | run_query | SQL | takes | score | latency |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
+    for i, r in enumerate(rows, 1):
+        agents = ", ".join(a for a in r["agents"] if a != "slateiq_coordinator") or "—"
+        score = r["judge"].get("score")
+        out.append(
+            f"| {i} | `{r['id']}` | {r['user']} | {agents} | "
+            f"{'yes' if r['ran_query'] else '**NO**'} | {len(r['sql'])} | "
+            f"{r['takes']} | {score if score else '—'} | {r['latency_s']:.1f}s |"
+        )
+
+    out += ["", "## Detail", ""]
+    for r in rows:
+        out += [
+            f"### `{r['id']}` — {r['user']}",
+            "",
+            f"**Q:** {r['question'].strip()}",
+            "",
+            f"**Routing:** {' → '.join(r['agents']) or 'none'} "
+            f"(expected `{r.get('expect_agent', 'any')}`)  ",
+            f"**Tools:** {', '.join(tc['name'] for tc in r['tool_calls']) or 'none'}  ",
+            f"**Judge:** {r['judge'].get('score')}/5 — {r['judge'].get('reason')}  ",
+            f"**Latency:** {r['latency_s']:.1f}s",
+            "",
+        ]
+        if r.get("error"):
+            out += [f"> ERROR: {r['error']}", ""]
+        if r["sql"]:
+            out += ["<details><summary>SQL executed via MCP</summary>", "", "```sql"]
+            out += [s.strip() + ";" for s in r["sql"]]
+            out += ["```", "", "</details>", ""]
+        answer = r["answer"].strip()
+        out += [
+            "<details><summary>Answer</summary>", "",
+            answer[:4000] + ("\n\n…truncated…" if len(answer) > 4000 else ""),
+            "", "</details>", "", "---", "",
+        ]
+    return "\n".join(out)
+
+
+async def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--questions", default=str(EVAL_DIR / "questions.yaml"))
+    ap.add_argument("--out", default=str(EVAL_DIR / "last_run.md"))
+    ap.add_argument("--only", nargs="*", help="question ids to run")
+    ap.add_argument("--no-judge", action="store_true")
+    ap.add_argument("--concurrency", type=int, default=2)
+    ap.add_argument("--timeout", type=float, default=240.0,
+                    help="per-question wall-clock limit in seconds")
+    args = ap.parse_args()
+
+    spec = yaml.safe_load(Path(args.questions).read_text())
+    questions = spec["questions"]
+    if args.only:
+        wanted = set(args.only)
+        questions = [q for q in questions if q["id"] in wanted]
+    if not questions:
+        print("no questions selected", file=sys.stderr)
+        return 2
+
+    client = None
+    if not args.no_judge:
+        from google import genai
+
+        client = genai.Client()
+
+    sem = asyncio.Semaphore(max(1, args.concurrency))
+
+    async def guarded(q):
+        async with sem:
+            print(f"→ {q['id']}", flush=True)
+            r = await run_question(q, client, not args.no_judge, args.timeout)
+            print(
+                f"✓ {q['id']}: run_query={r['ran_query']} "
+                f"sql={len(r['sql'])} score={r['judge'].get('score')} "
+                f"{r['latency_s']:.1f}s",
+                flush=True,
+            )
+            return r
+
+    started = time.perf_counter()
+    rows = await asyncio.gather(*(guarded(q) for q in questions))
+    elapsed = time.perf_counter() - started
+
+    order = {q["id"]: i for i, q in enumerate(questions)}
+    rows = sorted(rows, key=lambda r: order[r["id"]])
+
+    Path(args.out).write_text(render(rows, elapsed), encoding="utf-8")
+    Path(args.out).with_suffix(".json").write_text(
+        json.dumps(rows, indent=2, default=str), encoding="utf-8"
+    )
+    print(f"\nwrote {args.out}")
+
+    missed = [r["id"] for r in rows if r.get("must_query") and not r["ran_query"]]
+    if missed:
+        print(f"FAIL: never reached run_query: {', '.join(missed)}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(asyncio.run(main()))

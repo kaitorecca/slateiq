@@ -52,9 +52,10 @@ Database: `{DB}`. Always fully qualify tables as `{DB}.<table>`.
 - `{DB}.scene_progress` -- per scene rollup (takes, circled, pages).
 
 ## Domain rules
-- Pages = page_eighths / 8.0. Report pages as e.g. "3 2/8" or 3.25.
-- A "circled take" is `take.status = 'circled'` -- the take the editor should cut.
-- Shooting ratio = total takes (or total footage duration) / printed (circled) takes.
+- Pages = page_eighths / 8.0. 8/8 is "1 page"; otherwise eighths, e.g. "3 2/8 pages".
+- A "circled take" is `take.status = 'circled'` -- the director circles it, the
+  script supervisor records it, and it is the take post should cut with.
+- Print ratio = total takes / printed (circled) takes. Not "shooting ratio".
 - Setups = distinct `shot` values on a day.
 """
 

@@ -1,0 +1,165 @@
+# SlateIQ eval set -- realistic questions from the four users who would open
+# this product at 10pm after wrap. Every one of these must reach the
+# ClickHouse MCP `run_query` tool; an answer produced without a query is a
+# failure regardless of how good it reads.
+#
+# fields:
+#   id            stable identifier
+#   user          editor | script_supervisor | ad | producer | director
+#   question      what gets sent to the coordinator
+#   expect_agent  which specialist should handle it (soft check)
+#   must_query    true  -> run_query must have been called
+#   rubric        what a 5/5 answer contains
+version: 1
+questions:
+  - id: best_takes_scene
+    user: editor
+    question: "What are the best takes for scene 12?"
+    expect_agent: editor_agent
+    must_query: true
+    rubric: >
+      Names specific takes by shot/take number with their status (circled or
+      ranked by score), gives the director's note or the reason each is good,
+      and returns clip URIs/take ids in the JSON block.
+
+  - id: dialogue_search
+    user: editor
+    question: "Find every take where Celia says 'robot hand'. I need the timecode."
+    expect_agent: editor_agent
+    must_query: true
+    rubric: >
+      Searches take_event dialogue text case-insensitively, lists the takes
+      with speaker, the line, and the offset in seconds, or clearly says no
+      dialogue matches that word.
+
+  - id: boom_in_shot
+    user: editor
+    question: "Which takes have the boom in shot or soft focus problems?"
+    expect_agent: editor_agent
+    must_query: true
+    rubric: >
+      Filters take_event kind='flag' on flag_type boom_in_shot/soft_focus,
+      reports affected takes grouped (counts, not raw event dumps) with the
+      first offset of each problem.
+
+  - id: circled_today
+    user: editor
+    question: "Give me the circled takes from day 12 with the reason each was circled."
+    expect_agent: editor_agent
+    must_query: true
+    rubric: >
+      Lists circled takes for day 12 by scene/shot/take with director note or
+      analysis reason, and a total count.
+
+  - id: ng_rate
+    user: editor
+    question: "Which scene has the worst NG rate so far?"
+    expect_agent: editor_agent
+    must_query: true
+    rubric: >
+      Aggregates countIf(status='ng') / count() per scene, names the worst
+      scene with the actual ratio, and gives a plausible cause if the data
+      supports one.
+
+  - id: on_schedule
+    user: ad
+    question: "Are we on schedule? Pages planned versus pages actually shot."
+    expect_agent: production_agent
+    must_query: true
+    rubric: >
+      Compares planned pages (scene.page_eighths/8 for planned_scenes) to
+      shot pages, states ahead/behind with a number in pages, and says which
+      day of how many we are on.
+
+  - id: print_ratio
+    user: producer
+    question: "What's our print ratio by scene? Where are we burning the most film?"
+    expect_agent: production_agent
+    must_query: true
+    rubric: >
+      Computes the print ratio (takes per circled take) per scene, ranks
+      them, and flags the worst offenders with a judgement. Uses the term
+      "print ratio" correctly (shooting ratio would be footage shot vs
+      footage printed, from durations).
+
+  - id: scenes_at_risk
+    user: ad
+    question: "Which scenes are at risk of not being finished?"
+    expect_agent: production_agent
+    must_query: true
+    rubric: >
+      Identifies scenes scheduled but under-covered (few/no takes, nothing
+      circled, high NG, open continuity notes) with evidence per scene.
+
+  - id: overtime_trend
+    user: producer
+    question: "How is our wrap time trending? Are we going into overtime?"
+    expect_agent: production_agent
+    must_query: true
+    rubric: >
+      Uses shooting_day call_time/wrap_time to compute day length across
+      days, shows the trend, and flags days over 12 hours.
+
+  - id: forecast
+    user: producer
+    question: "At the current pace, how many more shooting days do we need?"
+    expect_agent: production_agent
+    must_query: true
+    rubric: >
+      Derives pages/day achieved, pages remaining, projects days needed vs
+      days scheduled, and states its assumption explicitly.
+
+  - id: setups_per_day
+    user: ad
+    question: "How many setups did we get on day 12 and how does that compare to our average?"
+    expect_agent: production_agent
+    must_query: true
+    rubric: >
+      uniqExact(shot) for day 12 plus the per-day average across the shoot,
+      with a one-line judgement.
+
+  - id: continuity_scene
+    user: script_supervisor
+    question: "Are there any continuity problems in scene 12? Which takes conflict?"
+    expect_agent: continuity_agent
+    must_query: true
+    rubric: >
+      Pulls continuity_note and continuity flags for the scene and says which
+      specific takes disagree and how, or clearly states there are none.
+
+  - id: line_variations
+    user: script_supervisor
+    question: "Did the dialogue change between takes in scene 6? Show me the line variations."
+    expect_agent: continuity_agent
+    must_query: true
+    rubric: >
+      Compares dialogue take_event text across takes of scene 6 for the
+      same speaker, shows the variants with take ids and offsets.
+
+  - id: emotional_intensity
+    user: director
+    question: "Show me the three takes with the most emotionally intense delivery in scene 6."
+    expect_agent: editor_agent
+    must_query: true
+    rubric: >
+      Ranks emotion-kind take_events by score for the scene, returns three
+      takes with speaker, moment and offset, plus clip links.
+
+  - id: dpr
+    user: ad
+    question: "Generate the daily progress report for day 12."
+    expect_agent: report_agent
+    must_query: true
+    rubric: >
+      Proper DPR markdown -- day X of Y, date, call/wrap, per-scene table with
+      pages and status, day totals (scenes, pages, setups, takes, ratio),
+      cumulative position, notes. All values from queries.
+
+  - id: editors_log
+    user: editor
+    question: "Give me the editor's log for day 12 -- circled takes per scene with reasons."
+    expect_agent: report_agent
+    must_query: true
+    rubric: >
+      Markdown editor's log grouped by scene, take table with TC in and
+      duration, and a circled line per scene with the reason.
