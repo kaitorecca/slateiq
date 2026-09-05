@@ -11,7 +11,9 @@ supervisor** finishing the lined script and facing pages, the production office 
 **Daily Progress Report**, and tomorrow morning an assistant editor who will watch two to four hours
 of dailies so somebody in the cutting room knows what is in there. Call it **≈3 crew-hours per
 shooting day — ≈90 hours, about two crew-weeks, over a 30-day feature** — and at the end of it the
-knowledge lands in PDFs where nobody can ask it anything. SlateIQ fixes the shape of the problem
+knowledge lands in PDFs where nobody can ask it anything. The hours are the small cost: the expensive
+failure is the soft-focus take nobody noticed until the cut, when a single reshoot day on a mid-budget
+feature runs well into six figures — the kind of miss SlateIQ catches the same night, in 65 ms. SlateIQ fixes the shape of the problem
 rather than the paperwork: **Gemini watches every take and writes structured, timestamped knowledge
 into ClickHouse**, and a **Google Cloud Agent Builder (Agent Development Kit / ADK)** crew —
 coordinator plus four specialists modelled on the editor, the script supervisor, the 1st AD and the

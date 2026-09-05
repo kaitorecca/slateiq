@@ -28,7 +28,10 @@ of it, so that somebody in the cutting room knows what is in there.
 
 Call it **three crew-hours per shooting day**. Over a thirty-day feature that is roughly **ninety
 hours — about two crew-weeks, per production.** And at the end of it the knowledge lands in PDFs and
-spreadsheets, where nobody can ask it anything.
+spreadsheets, where nobody can ask it anything. And the hours are the cheap part. The expensive
+failure is the circled take that turns out soft when the editor finally sees it: a single reshoot day
+on a mid-budget feature runs well into six figures once cast, crew, locations and equipment come back.
+SlateIQ finds that take the same night, in 65 milliseconds.
 
 The strange part is that a film set already generates beautifully structured data: takes, slates,
 timecode, rolls, lenses, circled takes, continuity notes, camera and sound reports. It is a
