@@ -32,3 +32,4 @@
 | 16:05 | infra | Cost: everything inside Always Free; only non-zero line item is the external IPv4 (~$2.50/mo), mitigations in `deploy/cost.md`. VM has deletion protection; other projects' Cloud Run services untouched. | note |
 | 16:05 | deploy eng | deploy/ done: Cloud Run agent+UI live, Grafana live, VM e2-micro (CH+mcp-clickhouse+Caddy TLS) seeded 3.07M rows with parity, GCS clips; e2e chat verified via hosted MCP; $0 except IPv4 ~$2.5/mo | done |
 | 16:05 | orchestrator | raised MCP probe timeout to 10s; redeploy Cloud Run after QC#2 lands; video producer + QC#2 running | in progress |
+| 16:08 | orchestrator | hosted health ok:true mcp:up; launched judge review #2 (hosted experience, report-only); video + QC#2 running | in progress |
