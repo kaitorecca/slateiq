@@ -15,7 +15,7 @@ const CHIPS = [
   'Which circled takes have more than 3 seconds of soft focus?',
   'Best takes for scene 27?',
   'Are we on schedule after day 12?',
-  "Every take where Celia says 'forty years'",
+  "Where does Celia mention her robot hand?",
   'Takes with boom in shot today',
   'Continuity issues in scene 41',
   "Write today's Daily Progress Report",
