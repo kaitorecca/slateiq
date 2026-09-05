@@ -15,7 +15,7 @@ Read `docs/PLAN.md` first. Deadline: 9 Sep 2026 14:00 PDT. Judging: Tech impleme
 - Local ports: SlateIQ API=8811, Vite dev=5188 (8080/3000/8000 are taken by other apps on this machine). Local ClickHouse: docker `slateiq-ch` → http://localhost:8123 user `default` / pass `clickhouse`. (Port 8000 is taken by Airbyte — never use it.)
 - Env: `set -a; source .env; set +a` (GEMINI/GOOGLE_API_KEY, GOOGLE_CLOUD_PROJECT=gke-hackathon-472816, GOOGLE_APPLICATION_CREDENTIALS=.secrets/gcp-sa.json, CLICKHOUSE_*).
 - ffmpeg: `~/miniconda3/envs/media/bin/ffmpeg`. Node 24 available. gcloud authed (project gke-hackathon-472816). `gh` authed (kaitorecca).
-- ADK MCP import: `from google.adk.tools.mcp_tool.mcp_toolset import McpToolset`; `from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams` (set `timeout=30, sse_read_timeout=300`). Verified working smoke test: `docs/smoke_mcp_adk.py`.
+- ADK MCP import: `from google.adk.tools.mcp_tool.mcp_toolset import McpToolset`; `from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams` (set `timeout=30, sse_read_timeout=300`). Verified working smoke test: `scripts/smoke_mcp_adk.py`.
 - Gemini models verified with our key: gemini-3.5-flash, gemini-3.1-pro-preview, gemini-3.8-flash, gemini-3.1-flash-tts-preview, gemini-2.5-flash-preview-tts, imagen via gemini-3.1-flash-image, veo-3.1-*.
 
 ## Layout / ownership

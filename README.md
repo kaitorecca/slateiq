@@ -297,6 +297,10 @@ curl -N -X POST localhost:8811/api/chat -H 'Content-Type: application/json' \
   -d '{"message":"Are we on schedule after day 12?"}'
 ```
 
+Once the two venvs exist, every command above has a one-word target in the root
+[`Makefile`](Makefile) — `make mcp` · `api` · `web` · `test` · `verify` · `eval` · `lint` ·
+`build` · `deploy` (`make` on its own lists them).
+
 ---
 
 ## Deploy it
@@ -349,9 +353,11 @@ Full transcript, per-question SQL and judge reasoning: **[`agent/evals/last_run.
 | [`agent/`](agent/README.md) | the ADK package `slateiq_agent/` (coordinator + 4 specialists, MCP toolset, guardrails, runtime), FastAPI `main.py`, `evals/` |
 | [`web/`](web/README.md) | React 18 + Vite + Tailwind SPA — Ask, Takes, Production Health, About; `dist/` committed |
 | [`deploy/`](deploy/README.md) | VM bootstrap + compose, Cloud Run deploy scripts, Grafana provisioning, GCS publish, [`cost.md`](deploy/cost.md) |
-| [`docs/`](docs/) | [`ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`PLAN.md`](docs/PLAN.md), [`DEVPOST.md`](docs/DEVPOST.md), [`DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md), [`JUDGE_REVIEW_1.md`](docs/JUDGE_REVIEW_1.md), `TRACKING.md` |
-| `scripts/` | `mcp_up.sh` — starts the official `mcp-clickhouse` on 8765 |
-| `data/` | `cache/` (Gemini results, **committed**); clips, thumbs and footage are gitignored and published to GCS |
+| [`docs/`](docs/README.md) | [`ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`PLAN.md`](docs/PLAN.md), [`DEVPOST.md`](docs/DEVPOST.md), [`DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md), the three `JUDGE_REVIEW_*.md` self-reviews, the `QC_*.md` passes, `TRACKING.md` |
+| [`video/`](video/README.md) | the ≤3-min trailer — script cards, voiceover, `build.py`, and the rendered MP4 |
+| [`scripts/`](scripts/README.md) | `mcp_up.sh` — starts the official `mcp-clickhouse` on 8765 — and `smoke_mcp_adk.py`, the ADK↔MCP smoke test |
+| [`data/`](data/README.md) | `cache/` (Gemini results, **committed**, so the pipeline replays for free); clips, thumbs and footage are gitignored and published to GCS |
+| `Makefile` · `ruff.toml` | one-command targets (`make mcp`, `make api`, `make test`, `make verify`, …) and the lint ruleset (`ruff check agent ingest db scripts` is clean) |
 
 ---
 

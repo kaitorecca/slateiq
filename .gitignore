@@ -8,6 +8,13 @@
 data/*
 !data/cache
 !data/cache/**
+!data/README.md
 
 __pycache__/
 *.pyc
+
+# tool caches / build artefacts
+.pytest_cache/
+.ruff_cache/
+node_modules/
+*.tsbuildinfo
